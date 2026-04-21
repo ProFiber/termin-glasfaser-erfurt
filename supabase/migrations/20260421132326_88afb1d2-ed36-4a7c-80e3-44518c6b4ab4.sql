@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.bulk_import_contacts(jsonb) TO PUBLIC;
