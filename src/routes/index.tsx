@@ -148,7 +148,7 @@ function Index() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return contacts.filter((c) => {
+    const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       if (filter !== "alle" && st !== filter) return false;
       if (street !== "alle" && c.strasse !== street) return false;
@@ -157,6 +157,16 @@ function Index() {
         if (!hay.includes(q)) return false;
       }
       return true;
+    });
+    return list.sort((a, b) => {
+      const s = a.strasse.localeCompare(b.strasse, "de");
+      if (s !== 0) return s;
+      const na = parseInt(a.hnr, 10);
+      const nb = parseInt(b.hnr, 10);
+      const ai = Number.isNaN(na) ? Number.MAX_SAFE_INTEGER : na;
+      const bi = Number.isNaN(nb) ? Number.MAX_SAFE_INTEGER : nb;
+      if (ai !== bi) return ai - bi;
+      return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
   }, [contacts, states, filter, street, search]);
 
