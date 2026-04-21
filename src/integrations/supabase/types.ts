@@ -111,7 +111,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      bulk_import_contacts: { Args: { payload: Json }; Returns: number }
     }
     Enums: {
       call_status:
