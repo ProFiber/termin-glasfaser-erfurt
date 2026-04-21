@@ -170,6 +170,61 @@ function Index() {
     });
   }, [contacts, states, filter, street, search]);
 
+  const appointments = useMemo(() => {
+    return contacts
+      .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
+      .sort((a, b) => {
+        const sa = states[a.bid]?.termin_slot ?? "";
+        const sb = states[b.bid]?.termin_slot ?? "";
+        const order = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
+        const ia = order.indexOf(sa); const ib = order.indexOf(sb);
+        if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        const s = a.strasse.localeCompare(b.strasse, "de");
+        if (s !== 0) return s;
+        return (parseInt(a.hnr,10)||0) - (parseInt(b.hnr,10)||0);
+      });
+  }, [contacts, states]);
+
+  function shareAppointmentsWhatsApp() {
+    if (appointments.length === 0) {
+      alert("Noch keine Termine vereinbart.");
+      return;
+    }
+    const lines: string[] = [];
+    lines.push("📅 *Glasfaser-Termine · An der Schmücke*");
+    lines.push("_Störmer Bau i.A. Telekom_");
+    lines.push("");
+
+    // Gruppiert nach Tag/Slot
+    const grouped: Record<string, Contact[]> = {};
+    appointments.forEach((c) => {
+      const slot = states[c.bid]?.termin_slot ?? "ohne Slot";
+      (grouped[slot] = grouped[slot] || []).push(c);
+    });
+
+    Object.entries(grouped).forEach(([slot, list]) => {
+      lines.push(`🗓 *${SLOT_LABEL[slot] ?? slot}*`);
+      list.forEach((c) => {
+        const cs = states[c.bid];
+        lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+        const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
+        if (meta) lines.push(`  🏠 ${meta}`);
+        lines.push(`  📍 ${c.plz} ${c.ort}`);
+        if (c.mobil) lines.push(`  📱 ${c.mobil}`);
+        if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
+        lines.push(`  🆔 NVT-BID: ${c.bid}`);
+        if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
+        lines.push("");
+      });
+    });
+
+    lines.push(`_Gesamt: ${appointments.length} Termin${appointments.length === 1 ? "" : "e"}_`);
+
+    const text = lines.join("\n");
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  }
+
   const counts = useMemo(() => {
     const c: Record<CallStatus, number> = {
       offen: 0, angerufen: 0, termin: 0, nichtErreicht: 0, abgelehnt: 0, erledigt: 0,
