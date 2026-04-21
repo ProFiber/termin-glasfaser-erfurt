@@ -14,7 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      call_states: {
+        Row: {
+          bid: string
+          notiz: string
+          status: Database["public"]["Enums"]["call_status"]
+          termin_slot: string
+          updated_at: string
+        }
+        Insert: {
+          bid: string
+          notiz?: string
+          status?: Database["public"]["Enums"]["call_status"]
+          termin_slot?: string
+          updated_at?: string
+        }
+        Update: {
+          bid?: string
+          notiz?: string
+          status?: Database["public"]["Enums"]["call_status"]
+          termin_slot?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_states_bid_fkey"
+            columns: ["bid"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["bid"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          bid: string
+          created_at: string
+          email: string
+          festnetz: string
+          ge: number
+          hnr: string
+          hnr_zusatz: string
+          lat: number | null
+          lng: number | null
+          mobil: string
+          name: string
+          ort: string
+          plz: string
+          strasse: string
+          typ: string
+          we: number
+          zustimmung: string
+        }
+        Insert: {
+          bid: string
+          created_at?: string
+          email?: string
+          festnetz?: string
+          ge?: number
+          hnr?: string
+          hnr_zusatz?: string
+          lat?: number | null
+          lng?: number | null
+          mobil?: string
+          name?: string
+          ort?: string
+          plz?: string
+          strasse?: string
+          typ?: string
+          we?: number
+          zustimmung?: string
+        }
+        Update: {
+          bid?: string
+          created_at?: string
+          email?: string
+          festnetz?: string
+          ge?: number
+          hnr?: string
+          hnr_zusatz?: string
+          lat?: number | null
+          lng?: number | null
+          mobil?: string
+          name?: string
+          ort?: string
+          plz?: string
+          strasse?: string
+          typ?: string
+          we?: number
+          zustimmung?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +114,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      call_status:
+        | "offen"
+        | "angerufen"
+        | "termin"
+        | "nichtErreicht"
+        | "abgelehnt"
+        | "erledigt"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +247,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      call_status: [
+        "offen",
+        "angerufen",
+        "termin",
+        "nichtErreicht",
+        "abgelehnt",
+        "erledigt",
+      ],
+    },
   },
 } as const
