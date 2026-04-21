@@ -382,13 +382,27 @@ function Index() {
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        padding: "10px 18px", display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
       }}>
-        <div style={{ fontSize: 12, color: "#999" }}>
-          {counts.nichtErreicht} n. erreicht · {counts.abgelehnt} abgel. · {counts.erledigt} erled.
+        <div style={{ fontSize: 11, color: "#999", flexShrink: 0 }}>
+          {counts.nichtErreicht} n.err. · {counts.abgelehnt} abg. · {counts.erledigt} erl.
         </div>
-        <div style={{ fontWeight: 800, fontSize: 15, color: counts.termin >= 4 ? "#16a34a" : "#e20074" }}>
-          {counts.termin} Termine ✓
+        <button
+          onClick={shareAppointmentsWhatsApp}
+          disabled={appointments.length === 0}
+          style={{
+            background: appointments.length ? "#25D366" : "#d1d5db",
+            color: "white", border: "none", borderRadius: 9,
+            padding: "8px 12px", fontSize: 12, fontWeight: 700,
+            cursor: appointments.length ? "pointer" : "not-allowed",
+            display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+          }}
+          title="Alle Termine per WhatsApp teilen"
+        >
+          💬 Teilen ({appointments.length})
+        </button>
+        <div style={{ fontWeight: 800, fontSize: 14, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
+          {counts.termin} ✓
         </div>
       </div>
     </div>
