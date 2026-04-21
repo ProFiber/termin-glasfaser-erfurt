@@ -58,6 +58,7 @@ function Index() {
   const [street, setStreet] = useState<string>("alle");
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
+  const [showPlan, setShowPlan] = useState(false);
   const flashTimer = useRef<number | null>(null);
 
   // Initial load
