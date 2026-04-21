@@ -379,15 +379,133 @@ function Index() {
         )}
       </div>
 
+      {/* TERMIN-PLAN OVERLAY */}
+      {showPlan && (
+        <div
+          onClick={() => setShowPlan(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+            zIndex: 50, display: "flex", justifyContent: "center", alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#f8fafc", width: "100%", maxWidth: 480, maxHeight: "92vh",
+              borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: "hidden",
+              display: "flex", flexDirection: "column",
+            }}
+          >
+            <div style={{ background: "#e20074", color: "white", padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 11, opacity: 0.8 }}>Wochenplan · Glasfaser</div>
+                <div style={{ fontSize: 17, fontWeight: 800 }}>📅 {appointments.length} Termin{appointments.length === 1 ? "" : "e"}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={shareAppointmentsWhatsApp} disabled={appointments.length === 0}
+                  style={{ background: "#25D366", color: "white", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12, fontWeight: 700, cursor: appointments.length ? "pointer" : "not-allowed", opacity: appointments.length ? 1 : 0.5 }}>
+                  💬 Teilen
+                </button>
+                <button onClick={() => setShowPlan(false)}
+                  style={{ background: "rgba(255,255,255,0.22)", color: "white", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div style={{ overflowY: "auto", padding: "10px 12px 24px", flex: 1 }}>
+              {appointments.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40, color: "#888", fontSize: 13 }}>
+                  Noch keine Termine vereinbart.
+                </div>
+              ) : (
+                SLOT_DAYS.map(({ day, vm, nm }) => {
+                  const dayAppts = appointments.filter((c) => {
+                    const slot = states[c.bid]?.termin_slot;
+                    return slot === vm || slot === nm;
+                  });
+                  if (dayAppts.length === 0) return null;
+                  return (
+                    <div key={day} style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#e20074", padding: "4px 4px 6px", borderBottom: "2px solid #e20074", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
+                        <span>🗓 {day}</span>
+                        <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{dayAppts.length} Termin{dayAppts.length === 1 ? "" : "e"}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        {[{ key: vm, lbl: "☀️ Vormittag", color: "#fbbf24" }, { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa" }].map(({ key, lbl, color }) => {
+                          const slotAppts = appointments.filter((c) => states[c.bid]?.termin_slot === key);
+                          return (
+                            <div key={key} style={{ background: "white", borderRadius: 9, border: `1.5px solid ${slotAppts.length ? color : "#e5e7eb"}`, padding: 8, minHeight: 60 }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: slotAppts.length ? color : "#bbb", letterSpacing: 0.4, marginBottom: 6 }}>{lbl}</div>
+                              {slotAppts.length === 0 ? (
+                                <div style={{ fontSize: 11, color: "#ccc", fontStyle: "italic" }}>—</div>
+                              ) : (
+                                slotAppts.map((c) => {
+                                  const cs = states[c.bid];
+                                  return (
+                                    <div key={c.bid}
+                                      onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
+                                      style={{ background: "#f0fff6", borderRadius: 6, padding: "6px 7px", marginBottom: 4, cursor: "pointer", borderLeft: "3px solid #22c55e" }}>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", lineHeight: 1.25 }}>
+                                        {c.strasse} {c.hnr}{c.hnr_zusatz}
+                                      </div>
+                                      <div style={{ fontSize: 11, color: "#444", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {c.name}
+                                      </div>
+                                      <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
+                                        {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
+                                      </div>
+                                      {c.mobil && (
+                                        <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
+                                          style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
+                                          📱 {c.mobil}
+                                        </a>
+                                      )}
+                                      {cs?.notiz?.trim() && (
+                                        <div style={{ fontSize: 10, color: "#666", marginTop: 3, fontStyle: "italic", borderTop: "1px dashed #d4d4d8", paddingTop: 3 }}>
+                                          📝 {cs.notiz.trim()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BOTTOM BAR */}
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
+        padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
       }}>
-        <div style={{ fontSize: 11, color: "#999", flexShrink: 0 }}>
-          {counts.nichtErreicht} n.err. · {counts.abgelehnt} abg. · {counts.erledigt} erl.
+        <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
+          {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
         </div>
+        <button
+          onClick={() => setShowPlan(true)}
+          disabled={appointments.length === 0}
+          style={{
+            background: appointments.length ? "#e20074" : "#d1d5db",
+            color: "white", border: "none", borderRadius: 9,
+            padding: "8px 12px", fontSize: 12, fontWeight: 700,
+            cursor: appointments.length ? "pointer" : "not-allowed",
+            whiteSpace: "nowrap",
+          }}
+          title="Termine als Wochenplan anzeigen"
+        >
+          📅 Plan ({appointments.length})
+        </button>
         <button
           onClick={shareAppointmentsWhatsApp}
           disabled={appointments.length === 0}
@@ -396,14 +514,14 @@ function Index() {
             color: "white", border: "none", borderRadius: 9,
             padding: "8px 12px", fontSize: 12, fontWeight: 700,
             cursor: appointments.length ? "pointer" : "not-allowed",
-            display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+            whiteSpace: "nowrap",
           }}
           title="Alle Termine per WhatsApp teilen"
         >
-          💬 Teilen ({appointments.length})
+          💬 WA
         </button>
-        <div style={{ fontWeight: 800, fontSize: 14, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
-          {counts.termin} ✓
+        <div style={{ fontWeight: 800, fontSize: 13, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
+          {counts.termin}✓
         </div>
       </div>
     </div>
