@@ -170,6 +170,61 @@ function Index() {
     });
   }, [contacts, states, filter, street, search]);
 
+  const appointments = useMemo(() => {
+    return contacts
+      .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
+      .sort((a, b) => {
+        const sa = states[a.bid]?.termin_slot ?? "";
+        const sb = states[b.bid]?.termin_slot ?? "";
+        const order = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
+        const ia = order.indexOf(sa); const ib = order.indexOf(sb);
+        if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        const s = a.strasse.localeCompare(b.strasse, "de");
+        if (s !== 0) return s;
+        return (parseInt(a.hnr,10)||0) - (parseInt(b.hnr,10)||0);
+      });
+  }, [contacts, states]);
+
+  function shareAppointmentsWhatsApp() {
+    if (appointments.length === 0) {
+      alert("Noch keine Termine vereinbart.");
+      return;
+    }
+    const lines: string[] = [];
+    lines.push("📅 *Glasfaser-Termine · An der Schmücke*");
+    lines.push("_Störmer Bau i.A. Telekom_");
+    lines.push("");
+
+    // Gruppiert nach Tag/Slot
+    const grouped: Record<string, Contact[]> = {};
+    appointments.forEach((c) => {
+      const slot = states[c.bid]?.termin_slot ?? "ohne Slot";
+      (grouped[slot] = grouped[slot] || []).push(c);
+    });
+
+    Object.entries(grouped).forEach(([slot, list]) => {
+      lines.push(`🗓 *${SLOT_LABEL[slot] ?? slot}*`);
+      list.forEach((c) => {
+        const cs = states[c.bid];
+        lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+        const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
+        if (meta) lines.push(`  🏠 ${meta}`);
+        lines.push(`  📍 ${c.plz} ${c.ort}`);
+        if (c.mobil) lines.push(`  📱 ${c.mobil}`);
+        if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
+        lines.push(`  🆔 NVT-BID: ${c.bid}`);
+        if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
+        lines.push("");
+      });
+    });
+
+    lines.push(`_Gesamt: ${appointments.length} Termin${appointments.length === 1 ? "" : "e"}_`);
+
+    const text = lines.join("\n");
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  }
+
   const counts = useMemo(() => {
     const c: Record<CallStatus, number> = {
       offen: 0, angerufen: 0, termin: 0, nichtErreicht: 0, abgelehnt: 0, erledigt: 0,
@@ -327,13 +382,27 @@ function Index() {
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        padding: "10px 18px", display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
       }}>
-        <div style={{ fontSize: 12, color: "#999" }}>
-          {counts.nichtErreicht} n. erreicht · {counts.abgelehnt} abgel. · {counts.erledigt} erled.
+        <div style={{ fontSize: 11, color: "#999", flexShrink: 0 }}>
+          {counts.nichtErreicht} n.err. · {counts.abgelehnt} abg. · {counts.erledigt} erl.
         </div>
-        <div style={{ fontWeight: 800, fontSize: 15, color: counts.termin >= 4 ? "#16a34a" : "#e20074" }}>
-          {counts.termin} Termine ✓
+        <button
+          onClick={shareAppointmentsWhatsApp}
+          disabled={appointments.length === 0}
+          style={{
+            background: appointments.length ? "#25D366" : "#d1d5db",
+            color: "white", border: "none", borderRadius: 9,
+            padding: "8px 12px", fontSize: 12, fontWeight: 700,
+            cursor: appointments.length ? "pointer" : "not-allowed",
+            display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+          }}
+          title="Alle Termine per WhatsApp teilen"
+        >
+          💬 Teilen ({appointments.length})
+        </button>
+        <div style={{ fontWeight: 800, fontSize: 14, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
+          {counts.termin} ✓
         </div>
       </div>
     </div>
