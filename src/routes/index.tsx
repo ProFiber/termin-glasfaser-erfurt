@@ -49,6 +49,22 @@ const cardBg = (st: CallStatus) =>
 
 const lastName = (name: string) => name.trim().split(/\s+/).pop() || name;
 
+function fmtAuskundung(von: string | null, bis: string | null): string | null {
+  if (!von) return null;
+  try {
+    const d = new Date(von);
+    const datum = d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+    const t1 = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    if (bis) {
+      const t2 = new Date(bis).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      return `${datum} · ${t1}–${t2}`;
+    }
+    return `${datum} · ${t1}`;
+  } catch {
+    return von;
+  }
+}
+
 function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
