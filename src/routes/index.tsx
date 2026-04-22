@@ -187,8 +187,13 @@ function Index() {
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
-        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.nvt}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+        const digits = q.replace(/\D/g, "");
+        const phones = `${c.mobil} ${c.festnetz}`;
+        const phoneDigits = phones.replace(/\D/g, "");
+        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.hnr} ${c.hnr_zusatz} ${c.nvt} ${phones}`.toLowerCase();
+        const matchesText = hay.includes(q);
+        const matchesPhone = digits.length >= 3 && phoneDigits.includes(digits);
+        if (!matchesText && !matchesPhone) return false;
       }
       return true;
     });
