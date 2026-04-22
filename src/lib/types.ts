@@ -15,6 +15,8 @@ export type Contact = {
   zustimmung: string;
   lat: number | null;
   lng: number | null;
+  auskundung_von: string | null;
+  auskundung_bis: string | null;
 };
 
 export type CallStatus =
