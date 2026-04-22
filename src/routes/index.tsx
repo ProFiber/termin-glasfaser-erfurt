@@ -18,12 +18,23 @@ export const Route = createFileRoute("/")({
 });
 
 const SLOT_DAYS = [
-  { day: "Di 21.04.", vm: "di-vm", nm: "di-nm" },
-  { day: "Mi 22.04.", vm: "mi-vm", nm: "mi-nm" },
-  { day: "Do 23.04.", vm: "do-vm", nm: "do-nm" },
-  { day: "Fr 24.04.", vm: "fr-vm", nm: "fr-nm" },
-  { day: "Sa 25.04.", vm: "sa-vm", nm: "sa-nm" },
+  { day: "Di 21.04.", date: "2026-04-21", vm: "di-vm", nm: "di-nm" },
+  { day: "Mi 22.04.", date: "2026-04-22", vm: "mi-vm", nm: "mi-nm" },
+  { day: "Do 23.04.", date: "2026-04-23", vm: "do-vm", nm: "do-nm" },
+  { day: "Fr 24.04.", date: "2026-04-24", vm: "fr-vm", nm: "fr-nm" },
+  { day: "Sa 25.04.", date: "2026-04-25", vm: "sa-vm", nm: "sa-nm" },
 ];
+
+function relativeDayLabel(dateIso: string): string | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateIso + "T00:00:00");
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return "Heute";
+  if (diff === 1) return "Morgen";
+  if (diff === 2) return "Übermorgen";
+  return null;
+}
 
 const SLOT_LABEL: Record<string, string> = {
   "di-vm": "Di VM", "di-nm": "Di NM",
@@ -187,8 +198,13 @@ function Index() {
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
-        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.nvt}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+        const digits = q.replace(/\D/g, "");
+        const phones = `${c.mobil} ${c.festnetz}`;
+        const phoneDigits = phones.replace(/\D/g, "");
+        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.hnr} ${c.hnr_zusatz} ${c.nvt} ${phones}`.toLowerCase();
+        const matchesText = hay.includes(q);
+        const matchesPhone = digits.length >= 3 && phoneDigits.includes(digits);
+        if (!matchesText && !matchesPhone) return false;
       }
       return true;
     });
@@ -347,7 +363,7 @@ function Index() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Name, Straße oder Hausnummer…"
+          placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
         <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
@@ -474,15 +490,21 @@ function Index() {
 
                   <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 7 }}>TERMIN</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
-                    {SLOT_DAYS.map(({ day, vm, nm }) => (
-                      <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0 }}>{day}</div>
-                        {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
-                          <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
-                            style={slotBtn(appt === key)}>{lbl}</button>
-                        ))}
-                      </div>
-                    ))}
+                    {SLOT_DAYS.map(({ day, date, vm, nm }) => {
+                      const rel = relativeDayLabel(date);
+                      return (
+                        <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0, lineHeight: 1.1 }}>
+                            <div>{day}</div>
+                            {rel && <div style={{ fontSize: 9, fontWeight: 500, color: "#0891b2", marginTop: 1 }}>{rel}</div>}
+                          </div>
+                          {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
+                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
+                              style={slotBtn(appt === key)}>{lbl}</button>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
