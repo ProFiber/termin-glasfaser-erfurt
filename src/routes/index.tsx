@@ -159,19 +159,35 @@ function Index() {
     }
   }
 
-  const streets = useMemo(
-    () => Array.from(new Set(contacts.map((c) => c.strasse))).sort(),
+  const nvts = useMemo(
+    () => Array.from(new Set(contacts.map((c) => c.nvt).filter(Boolean))).sort(),
     [contacts]
   );
+
+  const streets = useMemo(() => {
+    const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
+    return Array.from(new Set(src.map((c) => c.strasse))).sort();
+  }, [contacts, nvtSel]);
+
+  // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
+  useEffect(() => {
+    if (streetSel.size === 0) return;
+    const valid = new Set(streets);
+    let changed = false;
+    const next = new Set<string>();
+    streetSel.forEach((s) => { if (valid.has(s)) next.add(s); else changed = true; });
+    if (changed) setStreetSel(next);
+  }, [streets, streetSel]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       if (filter !== "alle" && st !== filter) return false;
-      if (street !== "alle" && c.strasse !== street) return false;
+      if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
+      if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
-        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz}`.toLowerCase();
+        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.nvt}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -186,7 +202,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, street, search]);
+  }, [contacts, states, filter, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
     return contacts
