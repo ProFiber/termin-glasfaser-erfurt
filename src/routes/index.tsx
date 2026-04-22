@@ -363,7 +363,7 @@ function Index() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Name, Straße oder Hausnummer…"
+          placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
         <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
