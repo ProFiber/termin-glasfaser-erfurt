@@ -415,7 +415,30 @@ function Index() {
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
                     placeholder="Notiz…"
                     style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
-                  <div style={{ fontSize: 9, color: "#bbb", marginTop: 3, display: "flex", justifyContent: "space-between" }}>
+
+                  {st === "termin" && appt && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 6 }}>TERMIN TEILEN</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        <button
+                          onClick={() => shareSingleCustomer(c)}
+                          style={{ background: "#25D366", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                          title="Terminbestätigung an Kunde senden"
+                        >
+                          💬 Kunde<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Bestätigung</span>
+                        </button>
+                        <button
+                          onClick={() => shareSingleInternal(c)}
+                          style={{ background: "#128C7E", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                          title="Termin-Info an Kollegen senden"
+                        >
+                          💬 Intern<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Kollegen-Info</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 9, color: "#bbb", marginTop: 8, display: "flex", justifyContent: "space-between" }}>
                     <span>BID {c.bid}</span>
                     {cs?.updated_at && <span>geändert: {new Date(cs.updated_at).toLocaleString("de-DE")}</span>}
                   </div>
