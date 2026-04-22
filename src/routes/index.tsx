@@ -230,6 +230,8 @@ function Index() {
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
         lines.push(`  🔌 NVT: ${c.bid}`);
+        const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+        if (auskInfo) lines.push(`  🔍 Auskundung: ${auskInfo}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
         lines.push("");
       });
@@ -286,6 +288,8 @@ function Index() {
     if (c.mobil) lines.push(`📱 ${c.mobil}`);
     if (c.festnetz && c.festnetz !== c.mobil) lines.push(`☎️ ${c.festnetz}`);
     lines.push(`🔌 NVT: ${c.bid}`);
+    const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+    if (auskInfo) lines.push(`🔍 Auskundung: ${auskInfo}`);
     if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
     const text = lines.join("\n");
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -380,6 +384,14 @@ function Index() {
                   </div>
                   <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {SLOT_LABEL[appt] ?? appt}</div>}
+                  {(() => {
+                    const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+                    return a ? (
+                      <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
+                        🔍 Auskundung: {a}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
                 <div style={{ color: "#bbb", fontSize: 14 }}>{open ? "▲" : "▼"}</div>
               </div>
