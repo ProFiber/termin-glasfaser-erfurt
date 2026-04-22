@@ -49,6 +49,22 @@ const cardBg = (st: CallStatus) =>
 
 const lastName = (name: string) => name.trim().split(/\s+/).pop() || name;
 
+function fmtAuskundung(von: string | null, bis: string | null): string | null {
+  if (!von) return null;
+  try {
+    const d = new Date(von);
+    const datum = d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+    const t1 = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    if (bis) {
+      const t2 = new Date(bis).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      return `${datum} · ${t1}–${t2}`;
+    }
+    return `${datum} · ${t1}`;
+  } catch {
+    return von;
+  }
+}
+
 function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
@@ -214,6 +230,8 @@ function Index() {
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
         lines.push(`  🔌 NVT: ${c.bid}`);
+        const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+        if (auskInfo) lines.push(`  🔍 Auskundung: ${auskInfo}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
         lines.push("");
       });
@@ -270,6 +288,8 @@ function Index() {
     if (c.mobil) lines.push(`📱 ${c.mobil}`);
     if (c.festnetz && c.festnetz !== c.mobil) lines.push(`☎️ ${c.festnetz}`);
     lines.push(`🔌 NVT: ${c.bid}`);
+    const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+    if (auskInfo) lines.push(`🔍 Auskundung: ${auskInfo}`);
     if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
     const text = lines.join("\n");
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -364,6 +384,14 @@ function Index() {
                   </div>
                   <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {SLOT_LABEL[appt] ?? appt}</div>}
+                  {(() => {
+                    const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+                    return a ? (
+                      <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
+                        🔍 Auskundung: {a}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
                 <div style={{ color: "#bbb", fontSize: 14 }}>{open ? "▲" : "▼"}</div>
               </div>
@@ -487,6 +515,39 @@ function Index() {
             </div>
 
             <div style={{ overflowY: "auto", padding: "10px 12px 24px", flex: 1 }}>
+              {(() => {
+                const ausk = contacts
+                  .filter((c) => !!c.auskundung_von)
+                  .sort((a, b) => (a.auskundung_von ?? "").localeCompare(b.auskundung_von ?? ""));
+                if (ausk.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#0891b2", padding: "4px 4px 6px", borderBottom: "2px solid #0891b2", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
+                      <span>🔍 Auskundungs-Termine</span>
+                      <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{ausk.length}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {ausk.map((c) => {
+                        const info = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+                        return (
+                          <div key={c.bid}
+                            onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
+                            style={{ background: "white", borderRadius: 8, padding: "7px 9px", cursor: "pointer", borderLeft: "3px solid #0891b2", border: "1px solid #e0f2fe" }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "#0891b2" }}>{info}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b", marginTop: 1 }}>
+                              {c.strasse} {c.hnr}{c.hnr_zusatz}
+                              <span style={{ fontWeight: 400, color: "#888", marginLeft: 5, fontSize: 11 }}>
+                                {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               {appointments.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 40, color: "#888", fontSize: 13 }}>
                   Noch keine Termine vereinbart.
