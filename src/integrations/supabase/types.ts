@@ -61,6 +61,7 @@ export type Database = {
           lng: number | null
           mobil: string
           name: string
+          nvt: string
           ort: string
           plz: string
           strasse: string
@@ -82,6 +83,7 @@ export type Database = {
           lng?: number | null
           mobil?: string
           name?: string
+          nvt?: string
           ort?: string
           plz?: string
           strasse?: string
@@ -103,6 +105,7 @@ export type Database = {
           lng?: number | null
           mobil?: string
           name?: string
+          nvt?: string
           ort?: string
           plz?: string
           strasse?: string

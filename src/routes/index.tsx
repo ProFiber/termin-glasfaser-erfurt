@@ -71,7 +71,8 @@ function Index() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
-  const [street, setStreet] = useState<string>("alle");
+  const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
+  const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
@@ -158,19 +159,35 @@ function Index() {
     }
   }
 
-  const streets = useMemo(
-    () => Array.from(new Set(contacts.map((c) => c.strasse))).sort(),
+  const nvts = useMemo(
+    () => Array.from(new Set(contacts.map((c) => c.nvt).filter(Boolean))).sort(),
     [contacts]
   );
+
+  const streets = useMemo(() => {
+    const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
+    return Array.from(new Set(src.map((c) => c.strasse))).sort();
+  }, [contacts, nvtSel]);
+
+  // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
+  useEffect(() => {
+    if (streetSel.size === 0) return;
+    const valid = new Set(streets);
+    let changed = false;
+    const next = new Set<string>();
+    streetSel.forEach((s) => { if (valid.has(s)) next.add(s); else changed = true; });
+    if (changed) setStreetSel(next);
+  }, [streets, streetSel]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       if (filter !== "alle" && st !== filter) return false;
-      if (street !== "alle" && c.strasse !== street) return false;
+      if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
+      if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
-        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz}`.toLowerCase();
+        const hay = `${c.name} ${c.strasse} ${c.hnr}${c.hnr_zusatz} ${c.nvt}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -185,7 +202,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, street, search]);
+  }, [contacts, states, filter, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
     return contacts
@@ -334,9 +351,37 @@ function Index() {
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
         <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
-          <button onClick={() => setStreet("alle")} style={chip(street === "alle", "#e20074")}>Alle Straßen</button>
+          <button
+            onClick={() => setNvtSel(new Set())}
+            style={chip(nvtSel.size === 0, "#0891b2")}
+          >Alle NVTs</button>
+          {nvts.map((n) => (
+            <button
+              key={n}
+              onClick={() => setNvtSel((prev) => {
+                const next = new Set(prev);
+                if (next.has(n)) next.delete(n); else next.add(n);
+                return next;
+              })}
+              style={chip(nvtSel.has(n), "#0891b2")}
+            >{n}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+          <button
+            onClick={() => setStreetSel(new Set())}
+            style={chip(streetSel.size === 0, "#e20074")}
+          >Alle Straßen</button>
           {streets.map((s) => (
-            <button key={s} onClick={() => setStreet(s)} style={chip(street === s, "#e20074")}>{s}</button>
+            <button
+              key={s}
+              onClick={() => setStreetSel((prev) => {
+                const next = new Set(prev);
+                if (next.has(s)) next.delete(s); else next.add(s);
+                return next;
+              })}
+              style={chip(streetSel.has(s), "#e20074")}
+            >{s}</button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
