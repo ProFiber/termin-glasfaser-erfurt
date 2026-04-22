@@ -213,7 +213,7 @@ function Index() {
         lines.push(`  📍 ${c.plz} ${c.ort}`);
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
-        lines.push(`  🆔 NVT-BID: ${c.bid}`);
+        lines.push(`  🔌 NVT: ${c.bid}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
         lines.push("");
       });
@@ -221,6 +221,56 @@ function Index() {
 
     lines.push(`_Gesamt: ${appointments.length} Termin${appointments.length === 1 ? "" : "e"}_`);
 
+    const text = lines.join("\n");
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  }
+
+  function shareSingleCustomer(c: Contact) {
+    const cs = states[c.bid];
+    const slot = cs?.termin_slot ?? "";
+    const slotLabel = SLOT_LABEL[slot] ?? slot ?? "—";
+    const lines = [
+      `Guten Tag Herr/Frau ${lastName(c.name)},`,
+      ``,
+      `vielen Dank für das nette Telefonat. Hiermit bestätigen wir Ihren Termin für den Glasfaser-Hausanschluss:`,
+      ``,
+      `📅 *Termin:* ${slotLabel}`,
+      `📍 *Adresse:* ${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}`,
+      ``,
+      `Vormittagstermine ab 7:30 Uhr · Nachmittagstermine ab 13:00 Uhr.`,
+      `Bitte sorgen Sie dafür, dass eine erwachsene Person zu Hause ist und der Hauseingang sowie ggf. der Keller zugänglich sind.`,
+      ``,
+      `Bei Fragen oder Änderungen melden Sie sich gerne kurz zurück.`,
+      ``,
+      `Mit freundlichen Grüßen`,
+      `Störmer Bau – im Auftrag der Telekom`,
+    ];
+    const text = lines.join("\n");
+    const phone = (c.mobil || c.festnetz || "").replace(/[^\d+]/g, "");
+    const url = phone
+      ? `https://wa.me/${phone.replace(/^\+/, "")}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  }
+
+  function shareSingleInternal(c: Contact) {
+    const cs = states[c.bid];
+    const slot = cs?.termin_slot ?? "";
+    const slotLabel = SLOT_LABEL[slot] ?? slot ?? "—";
+    const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
+    const lines: string[] = [];
+    lines.push(`📅 *Neuer Termin · Glasfaser*`);
+    lines.push(`_Störmer Bau i.A. Telekom_`);
+    lines.push("");
+    lines.push(`🗓 *${slotLabel}*`);
+    lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+    if (meta) lines.push(`🏠 ${meta}`);
+    lines.push(`📮 ${c.plz} ${c.ort}`);
+    if (c.mobil) lines.push(`📱 ${c.mobil}`);
+    if (c.festnetz && c.festnetz !== c.mobil) lines.push(`☎️ ${c.festnetz}`);
+    lines.push(`🔌 NVT: ${c.bid}`);
+    if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
     const text = lines.join("\n");
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
@@ -365,7 +415,30 @@ function Index() {
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
                     placeholder="Notiz…"
                     style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
-                  <div style={{ fontSize: 9, color: "#bbb", marginTop: 3, display: "flex", justifyContent: "space-between" }}>
+
+                  {st === "termin" && appt && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 6 }}>TERMIN TEILEN</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        <button
+                          onClick={() => shareSingleCustomer(c)}
+                          style={{ background: "#25D366", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                          title="Terminbestätigung an Kunde senden"
+                        >
+                          💬 Kunde<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Bestätigung</span>
+                        </button>
+                        <button
+                          onClick={() => shareSingleInternal(c)}
+                          style={{ background: "#128C7E", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                          title="Termin-Info an Kollegen senden"
+                        >
+                          💬 Intern<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Kollegen-Info</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 9, color: "#bbb", marginTop: 8, display: "flex", justifyContent: "space-between" }}>
                     <span>BID {c.bid}</span>
                     {cs?.updated_at && <span>geändert: {new Date(cs.updated_at).toLocaleString("de-DE")}</span>}
                   </div>
