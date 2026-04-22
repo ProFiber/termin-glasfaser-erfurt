@@ -515,6 +515,39 @@ function Index() {
             </div>
 
             <div style={{ overflowY: "auto", padding: "10px 12px 24px", flex: 1 }}>
+              {(() => {
+                const ausk = contacts
+                  .filter((c) => !!c.auskundung_von)
+                  .sort((a, b) => (a.auskundung_von ?? "").localeCompare(b.auskundung_von ?? ""));
+                if (ausk.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#0891b2", padding: "4px 4px 6px", borderBottom: "2px solid #0891b2", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
+                      <span>🔍 Auskundungs-Termine</span>
+                      <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{ausk.length}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {ausk.map((c) => {
+                        const info = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
+                        return (
+                          <div key={c.bid}
+                            onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
+                            style={{ background: "white", borderRadius: 8, padding: "7px 9px", cursor: "pointer", borderLeft: "3px solid #0891b2", border: "1px solid #e0f2fe" }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "#0891b2" }}>{info}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b", marginTop: 1 }}>
+                              {c.strasse} {c.hnr}{c.hnr_zusatz}
+                              <span style={{ fontWeight: 400, color: "#888", marginLeft: 5, fontSize: 11 }}>
+                                {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               {appointments.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 40, color: "#888", fontSize: 13 }}>
                   Noch keine Termine vereinbart.
