@@ -18,12 +18,23 @@ export const Route = createFileRoute("/")({
 });
 
 const SLOT_DAYS = [
-  { day: "Di 21.04.", vm: "di-vm", nm: "di-nm" },
-  { day: "Mi 22.04.", vm: "mi-vm", nm: "mi-nm" },
-  { day: "Do 23.04.", vm: "do-vm", nm: "do-nm" },
-  { day: "Fr 24.04.", vm: "fr-vm", nm: "fr-nm" },
-  { day: "Sa 25.04.", vm: "sa-vm", nm: "sa-nm" },
+  { day: "Di 21.04.", date: "2026-04-21", vm: "di-vm", nm: "di-nm" },
+  { day: "Mi 22.04.", date: "2026-04-22", vm: "mi-vm", nm: "mi-nm" },
+  { day: "Do 23.04.", date: "2026-04-23", vm: "do-vm", nm: "do-nm" },
+  { day: "Fr 24.04.", date: "2026-04-24", vm: "fr-vm", nm: "fr-nm" },
+  { day: "Sa 25.04.", date: "2026-04-25", vm: "sa-vm", nm: "sa-nm" },
 ];
+
+function relativeDayLabel(dateIso: string): string | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateIso + "T00:00:00");
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return "Heute";
+  if (diff === 1) return "Morgen";
+  if (diff === 2) return "Übermorgen";
+  return null;
+}
 
 const SLOT_LABEL: Record<string, string> = {
   "di-vm": "Di VM", "di-nm": "Di NM",
