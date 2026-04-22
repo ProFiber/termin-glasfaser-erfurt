@@ -490,15 +490,21 @@ function Index() {
 
                   <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 7 }}>TERMIN</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
-                    {SLOT_DAYS.map(({ day, vm, nm }) => (
-                      <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0 }}>{day}</div>
-                        {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
-                          <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
-                            style={slotBtn(appt === key)}>{lbl}</button>
-                        ))}
-                      </div>
-                    ))}
+                    {SLOT_DAYS.map(({ day, date, vm, nm }) => {
+                      const rel = relativeDayLabel(date);
+                      return (
+                        <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0, lineHeight: 1.1 }}>
+                            <div>{day}</div>
+                            {rel && <div style={{ fontSize: 9, fontWeight: 500, color: "#0891b2", marginTop: 1 }}>{rel}</div>}
+                          </div>
+                          {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
+                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
+                              style={slotBtn(appt === key)}>{lbl}</button>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
