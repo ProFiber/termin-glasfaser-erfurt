@@ -71,7 +71,8 @@ function Index() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
-  const [street, setStreet] = useState<string>("alle");
+  const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
+  const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
