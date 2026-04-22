@@ -48,6 +48,8 @@ export type Database = {
       }
       contacts: {
         Row: {
+          auskundung_bis: string | null
+          auskundung_von: string | null
           bid: string
           created_at: string
           email: string
@@ -67,6 +69,8 @@ export type Database = {
           zustimmung: string
         }
         Insert: {
+          auskundung_bis?: string | null
+          auskundung_von?: string | null
           bid: string
           created_at?: string
           email?: string
@@ -86,6 +90,8 @@ export type Database = {
           zustimmung?: string
         }
         Update: {
+          auskundung_bis?: string | null
+          auskundung_von?: string | null
           bid?: string
           created_at?: string
           email?: string
