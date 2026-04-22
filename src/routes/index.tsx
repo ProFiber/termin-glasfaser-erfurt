@@ -213,7 +213,7 @@ function Index() {
         lines.push(`  📍 ${c.plz} ${c.ort}`);
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
-        lines.push(`  🆔 NVT-BID: ${c.bid}`);
+        lines.push(`  🔌 NVT: ${c.bid}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
         lines.push("");
       });
