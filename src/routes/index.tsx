@@ -84,6 +84,8 @@ function Index() {
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
+  const [streetSort, setStreetSort] = useState<"az" | "count">("az");
+  const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
