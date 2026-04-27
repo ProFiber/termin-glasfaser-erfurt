@@ -298,8 +298,20 @@ function Index() {
   }, [contacts, states]);
 
   function shareAppointmentsWhatsApp() {
-    if (appointments.length === 0) {
-      alert("Noch keine Termine vereinbart.");
+    // Nur künftige Termine dieser Woche (heute + kommende Wochentage bis Sa)
+    // Slot-Tag → JS-Wochentag (So=0, Mo=1, ..., Sa=6)
+    const SLOT_DOW: Record<string, number> = { di: 2, mi: 3, do: 4, fr: 5, sa: 6 };
+    const todayDow = new Date().getDay();
+    const futureAppts = appointments.filter((c) => {
+      const slot = states[c.bid]?.termin_slot ?? "";
+      const day = slot.split("-")[0];
+      const dow = SLOT_DOW[day];
+      if (dow === undefined) return false;
+      return dow >= todayDow; // heute eingeschlossen, vergangene Tage raus
+    });
+
+    if (futureAppts.length === 0) {
+      alert("Keine künftigen Termine in dieser Woche.");
       return;
     }
     const lines: string[] = [];
@@ -309,7 +321,7 @@ function Index() {
 
     // Gruppiert nach Tag/Slot
     const grouped: Record<string, Contact[]> = {};
-    appointments.forEach((c) => {
+    futureAppts.forEach((c) => {
       const slot = states[c.bid]?.termin_slot ?? "ohne Slot";
       (grouped[slot] = grouped[slot] || []).push(c);
     });
