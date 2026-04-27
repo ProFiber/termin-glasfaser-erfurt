@@ -17,13 +17,43 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const SLOT_DAYS = [
-  { day: "Di 21.04.", date: "2026-04-21", vm: "di-vm", nm: "di-nm" },
-  { day: "Mi 22.04.", date: "2026-04-22", vm: "mi-vm", nm: "mi-nm" },
-  { day: "Do 23.04.", date: "2026-04-23", vm: "do-vm", nm: "do-nm" },
-  { day: "Fr 24.04.", date: "2026-04-24", vm: "fr-vm", nm: "fr-nm" },
-  { day: "Sa 25.04.", date: "2026-04-25", vm: "sa-vm", nm: "sa-nm" },
+// Wochentag-Codes für Slots (Di–Sa)
+const WEEK_DAYS = [
+  { code: "di", short: "Di", dow: 2 },
+  { code: "mi", short: "Mi", dow: 3 },
+  { code: "do", short: "Do", dow: 4 },
+  { code: "fr", short: "Fr", dow: 5 },
+  { code: "sa", short: "Sa", dow: 6 },
 ];
+
+// ISO-Datum (yyyy-mm-dd) lokal, ohne UTC-Offset-Probleme
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Montag der Woche zu einem Datum
+function mondayOf(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const dow = x.getDay(); // 0=So..6=Sa
+  const diff = dow === 0 ? -6 : 1 - dow;
+  x.setDate(x.getDate() + diff);
+  return x;
+}
+
+// Liefert die fünf Termin-Tage (Di–Sa) der Woche, in der weekStart (Mo) liegt
+function getWeekSlots(weekStart: Date) {
+  return WEEK_DAYS.map(({ code, short, dow }) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Di=+1, ..., Sa=+5
+    const iso = toIsoDate(d);
+    const label = `${short} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+    return { code, day: label, date: iso, vm: `${code}-vm`, nm: `${code}-nm` };
+  });
+}
 
 function relativeDayLabel(dateIso: string): string | null {
   const today = new Date();
@@ -43,6 +73,19 @@ const SLOT_LABEL: Record<string, string> = {
   "fr-vm": "Fr VM", "fr-nm": "Fr NM",
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
+
+// Formatiert "di-vm" + Datum → "Di 28.04. VM"
+function fmtSlotDate(slot: string, dateIso: string | null): string {
+  const half = slot.endsWith("-vm") ? "VM" : slot.endsWith("-nm") ? "NM" : "";
+  if (dateIso) {
+    const d = new Date(dateIso + "T00:00:00");
+    const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
+    const dd = String(d.getDate()).padStart(2,"0");
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    return `${wk} ${dd}.${mm}. ${half}`.trim();
+  }
+  return SLOT_LABEL[slot] ?? slot;
+}
 
 type Ort = "Heldrungen" | "Oldisleben";
 const NVT_ORT: Record<string, Ort> = {
@@ -104,6 +147,14 @@ function Index() {
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+  const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
+  const weekRangeLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(weekStart.getDate() + 5); // Mo + 5 = Sa
+    const f = (d: Date) => `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`;
+    return `${f(weekStart)} – ${f(end)}`;
+  }, [weekStart]);
   const flashTimer = useRef<number | null>(null);
 
   // Initial load
@@ -156,12 +207,13 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum">>) {
     const prev = states[bid];
     const optimistic: CallState = {
       bid,
       status: changes.status ?? prev?.status ?? "offen",
       termin_slot: changes.termin_slot ?? prev?.termin_slot ?? "",
+      termin_datum: changes.termin_datum !== undefined ? changes.termin_datum : (prev?.termin_datum ?? null),
       notiz: changes.notiz ?? prev?.notiz ?? "",
       updated_at: new Date().toISOString(),
     };
@@ -174,6 +226,7 @@ function Index() {
           bid,
           status: optimistic.status,
           termin_slot: optimistic.termin_slot,
+          termin_datum: optimistic.termin_datum,
           notiz: optimistic.notiz,
         },
         { onConflict: "bid" }
@@ -283,13 +336,16 @@ function Index() {
   }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
+    const slotOrder = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
     return contacts
       .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
       .sort((a, b) => {
+        const da = states[a.bid]?.termin_datum ?? "9999-12-31";
+        const db = states[b.bid]?.termin_datum ?? "9999-12-31";
+        if (da !== db) return da.localeCompare(db);
         const sa = states[a.bid]?.termin_slot ?? "";
         const sb = states[b.bid]?.termin_slot ?? "";
-        const order = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
-        const ia = order.indexOf(sa); const ib = order.indexOf(sb);
+        const ia = slotOrder.indexOf(sa); const ib = slotOrder.indexOf(sb);
         if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
         const s = a.strasse.localeCompare(b.strasse, "de");
         if (s !== 0) return s;
@@ -298,20 +354,15 @@ function Index() {
   }, [contacts, states]);
 
   function shareAppointmentsWhatsApp() {
-    // Nur künftige Termine dieser Woche (heute + kommende Wochentage bis Sa)
-    // Slot-Tag → JS-Wochentag (So=0, Mo=1, ..., Sa=6)
-    const SLOT_DOW: Record<string, number> = { di: 2, mi: 3, do: 4, fr: 5, sa: 6 };
-    const todayDow = new Date().getDay();
+    // Nur künftige Termine ab heute (basierend auf konkretem Datum)
+    const todayIso = toIsoDate(new Date());
     const futureAppts = appointments.filter((c) => {
-      const slot = states[c.bid]?.termin_slot ?? "";
-      const day = slot.split("-")[0];
-      const dow = SLOT_DOW[day];
-      if (dow === undefined) return false;
-      return dow >= todayDow; // heute eingeschlossen, vergangene Tage raus
+      const d = states[c.bid]?.termin_datum;
+      return !!d && d >= todayIso;
     });
 
     if (futureAppts.length === 0) {
-      alert("Keine künftigen Termine in dieser Woche.");
+      alert("Keine künftigen Termine.");
       return;
     }
     const lines: string[] = [];
@@ -319,16 +370,18 @@ function Index() {
     lines.push("_Störmer Bau i.A. Telekom_");
     lines.push("");
 
-    // Gruppiert nach Tag/Slot
+    // Gruppiert nach Datum + Slot
     const grouped: Record<string, Contact[]> = {};
     futureAppts.forEach((c) => {
-      const slot = states[c.bid]?.termin_slot ?? "ohne Slot";
-      (grouped[slot] = grouped[slot] || []).push(c);
+      const cs = states[c.bid];
+      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}`;
+      (grouped[key] = grouped[key] || []).push(c);
     });
 
-    Object.entries(grouped).forEach(([slot, list]) => {
-      lines.push(`🗓 *${SLOT_LABEL[slot] ?? slot}*`);
-      list.forEach((c) => {
+    Object.keys(grouped).sort().forEach((key) => {
+      const [date, slot] = key.split("|");
+      lines.push(`🗓 *${fmtSlotDate(slot, date || null)}*`);
+      grouped[key].forEach((c) => {
         const cs = states[c.bid];
         lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
         const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
@@ -354,7 +407,7 @@ function Index() {
   function shareSingleCustomer(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = SLOT_LABEL[slot] ?? slot ?? "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
     const lines = [
       `Guten Tag Herr/Frau ${lastName(c.name)},`,
       ``,
@@ -382,7 +435,7 @@ function Index() {
   function shareSingleInternal(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = SLOT_LABEL[slot] ?? slot ?? "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
     const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
     const lines: string[] = [];
     lines.push(`📅 *Neuer Termin · Glasfaser*`);
@@ -519,6 +572,7 @@ function Index() {
           const cs = states[c.bid];
           const st = (cs?.status ?? "offen") as CallStatus;
           const appt = cs?.termin_slot ?? "";
+          const apptDate = cs?.termin_datum ?? null;
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
           return (
@@ -544,7 +598,7 @@ function Index() {
                     {c.name}
                     {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}</span>}
                   </div>
-                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {SLOT_LABEL[appt] ?? appt}</div>}
+                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate)}</div>}
                   {(() => {
                     const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
                     return a ? (
@@ -583,24 +637,35 @@ function Index() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
-                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "" } : {}) })}
+                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null } : {}) })}
                         style={statusBtn(st === s)}>{STATUS_META[s].label}</button>
                     ))}
                   </div>
 
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 7 }}>TERMIN</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1 }}>TERMIN</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() - 7); return x; }); }}
+                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#475569" }}>‹</button>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 105, textAlign: "center" }}>{weekRangeLabel}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() + 7); return x; }); }}
+                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#475569" }}>›</button>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart(mondayOf(new Date())); }}
+                        style={{ background: "#e0f2fe", border: "none", borderRadius: 6, padding: "3px 7px", fontSize: 10, fontWeight: 700, cursor: "pointer", color: "#0891b2", marginLeft: 2 }}>Heute</button>
+                    </div>
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
-                    {SLOT_DAYS.map(({ day, date, vm, nm }) => {
+                    {slotDays.map(({ day, date, vm, nm }) => {
                       const rel = relativeDayLabel(date);
                       return (
-                        <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div key={date} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0, lineHeight: 1.1 }}>
                             <div>{day}</div>
                             {rel && <div style={{ fontSize: 9, fontWeight: 500, color: "#0891b2", marginTop: 1 }}>{rel}</div>}
                           </div>
                           {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
-                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
-                              style={slotBtn(appt === key)}>{lbl}</button>
+                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, termin_datum: date, status: "termin" })}
+                              style={slotBtn(appt === key && apptDate === date)}>{lbl}</button>
                           ))}
                         </div>
                       );
@@ -720,64 +785,83 @@ function Index() {
                   Noch keine Termine vereinbart.
                 </div>
               ) : (
-                SLOT_DAYS.map(({ day, vm, nm }) => {
-                  const dayAppts = appointments.filter((c) => {
-                    const slot = states[c.bid]?.termin_slot;
-                    return slot === vm || slot === nm;
+                (() => {
+                  // Gruppiere alle Termine nach Datum (Termine ohne Datum am Ende)
+                  const byDate: Record<string, Contact[]> = {};
+                  appointments.forEach((c) => {
+                    const key = states[c.bid]?.termin_datum ?? "ohne-datum";
+                    (byDate[key] = byDate[key] || []).push(c);
                   });
-                  if (dayAppts.length === 0) return null;
-                  return (
-                    <div key={day} style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "#e20074", padding: "4px 4px 6px", borderBottom: "2px solid #e20074", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
-                        <span>🗓 {day}</span>
-                        <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{dayAppts.length} Termin{dayAppts.length === 1 ? "" : "e"}</span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                        {[{ key: vm, lbl: "☀️ Vormittag", color: "#fbbf24" }, { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa" }].map(({ key, lbl, color }) => {
-                          const slotAppts = appointments.filter((c) => states[c.bid]?.termin_slot === key);
-                          return (
-                            <div key={key} style={{ background: "white", borderRadius: 9, border: `1.5px solid ${slotAppts.length ? color : "#e5e7eb"}`, padding: 8, minHeight: 60 }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: slotAppts.length ? color : "#bbb", letterSpacing: 0.4, marginBottom: 6 }}>{lbl}</div>
-                              {slotAppts.length === 0 ? (
-                                <div style={{ fontSize: 11, color: "#ccc", fontStyle: "italic" }}>—</div>
-                              ) : (
-                                slotAppts.map((c) => {
-                                  const cs = states[c.bid];
-                                  return (
-                                    <div key={c.bid}
-                                      onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
-                                      style={{ background: "#f0fff6", borderRadius: 6, padding: "6px 7px", marginBottom: 4, cursor: "pointer", borderLeft: "3px solid #22c55e" }}>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", lineHeight: 1.25 }}>
-                                        {c.strasse} {c.hnr}{c.hnr_zusatz}
-                                      </div>
-                                      <div style={{ fontSize: 11, color: "#444", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {c.name}
-                                      </div>
-                                      <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
-                                        {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
-                                      </div>
-                                      {c.mobil && (
-                                        <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
-                                          style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
-                                          📱 {c.mobil}
-                                        </a>
-                                      )}
-                                      {cs?.notiz?.trim() && (
-                                        <div style={{ fontSize: 10, color: "#666", marginTop: 3, fontStyle: "italic", borderTop: "1px dashed #d4d4d8", paddingTop: 3 }}>
-                                          📝 {cs.notiz.trim()}
+                  const dateKeys = Object.keys(byDate).sort((a, b) => {
+                    if (a === "ohne-datum") return 1;
+                    if (b === "ohne-datum") return -1;
+                    return a.localeCompare(b);
+                  });
+                  return dateKeys.map((dateKey) => {
+                    const dayAppts = byDate[dateKey];
+                    let dayLabel: string;
+                    let rel: string | null = null;
+                    if (dateKey === "ohne-datum") {
+                      dayLabel = "Ohne Datum";
+                    } else {
+                      const d = new Date(dateKey + "T00:00:00");
+                      const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
+                      dayLabel = `${wk} ${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`;
+                      rel = relativeDayLabel(dateKey);
+                    }
+                    return (
+                      <div key={dateKey} style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#e20074", padding: "4px 4px 6px", borderBottom: "2px solid #e20074", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
+                          <span>🗓 {dayLabel}{rel ? ` · ${rel}` : ""}</span>
+                          <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{dayAppts.length} Termin{dayAppts.length === 1 ? "" : "e"}</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                          {[{ suffix: "-vm", lbl: "☀️ Vormittag", color: "#fbbf24" }, { suffix: "-nm", lbl: "🌤 Nachmittag", color: "#60a5fa" }].map(({ suffix, lbl, color }) => {
+                            const slotAppts = dayAppts.filter((c) => (states[c.bid]?.termin_slot ?? "").endsWith(suffix));
+                            return (
+                              <div key={suffix} style={{ background: "white", borderRadius: 9, border: `1.5px solid ${slotAppts.length ? color : "#e5e7eb"}`, padding: 8, minHeight: 60 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: slotAppts.length ? color : "#bbb", letterSpacing: 0.4, marginBottom: 6 }}>{lbl}</div>
+                                {slotAppts.length === 0 ? (
+                                  <div style={{ fontSize: 11, color: "#ccc", fontStyle: "italic" }}>—</div>
+                                ) : (
+                                  slotAppts.map((c) => {
+                                    const cs = states[c.bid];
+                                    return (
+                                      <div key={c.bid}
+                                        onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
+                                        style={{ background: "#f0fff6", borderRadius: 6, padding: "6px 7px", marginBottom: 4, cursor: "pointer", borderLeft: "3px solid #22c55e" }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", lineHeight: 1.25 }}>
+                                          {c.strasse} {c.hnr}{c.hnr_zusatz}
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          );
+                                        <div style={{ fontSize: 11, color: "#444", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {c.name}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
+                                          {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
+                                        </div>
+                                        {c.mobil && (
+                                          <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
+                                            style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
+                                            📱 {c.mobil}
+                                          </a>
+                                        )}
+                                        {cs?.notiz?.trim() && (
+                                          <div style={{ fontSize: 10, color: "#666", marginTop: 3, fontStyle: "italic", borderTop: "1px dashed #d4d4d8", paddingTop: 3 }}>
+                                            📝 {cs.notiz.trim()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            );
                         })}
                       </div>
                     </div>
                   );
-                })
+                  });
+                })()
               )}
             </div>
           </div>
