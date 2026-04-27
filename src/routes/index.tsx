@@ -407,7 +407,7 @@ function Index() {
   function shareSingleCustomer(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = SLOT_LABEL[slot] ?? slot ?? "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
     const lines = [
       `Guten Tag Herr/Frau ${lastName(c.name)},`,
       ``,
