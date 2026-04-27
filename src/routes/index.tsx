@@ -187,9 +187,35 @@ function Index() {
     }
   }
 
+  // Kontakte gefiltert nach Ort (Basis für NVT-/Straßenlisten)
+  const ortContacts = useMemo(
+    () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
+    [contacts, ortSel]
+  );
+
+  // Wenn Ort wechselt: NVT-Auswahl bereinigen
+  useEffect(() => {
+    if (nvtSel.size === 0) return;
+    const valid = new Set(ortContacts.map((c) => c.nvt));
+    let changed = false;
+    const next = new Set<string>();
+    nvtSel.forEach((n) => { if (valid.has(n)) next.add(n); else changed = true; });
+    if (changed) setNvtSel(next);
+  }, [ortContacts, nvtSel]);
+
+  const ortCounts = useMemo(() => {
+    let h = 0, o = 0;
+    contacts.forEach((c) => {
+      const x = ortOf(c.nvt);
+      if (x === "Heldrungen") h++;
+      else if (x === "Oldisleben") o++;
+    });
+    return { Heldrungen: h, Oldisleben: o };
+  }, [contacts]);
+
   const nvts = useMemo(() => {
     const counts = new Map<string, number>();
-    contacts.forEach((c) => {
+    ortContacts.forEach((c) => {
       if (!c.nvt) return;
       counts.set(c.nvt, (counts.get(c.nvt) ?? 0) + 1);
     });
@@ -200,10 +226,10 @@ function Index() {
       arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
     }
     return arr;
-  }, [contacts, nvtSort]);
+  }, [ortContacts, nvtSort]);
 
   const streets = useMemo(() => {
-    const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
+    const src = nvtSel.size === 0 ? ortContacts : ortContacts.filter((c) => nvtSel.has(c.nvt));
     const counts = new Map<string, number>();
     src.forEach((c) => counts.set(c.strasse, (counts.get(c.strasse) ?? 0) + 1));
     const arr = Array.from(counts.entries());
@@ -213,7 +239,7 @@ function Index() {
       arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
     }
     return arr;
-  }, [contacts, nvtSel, streetSort]);
+  }, [ortContacts, nvtSel, streetSort]);
 
   // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
   useEffect(() => {
