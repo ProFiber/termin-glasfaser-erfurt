@@ -344,7 +344,7 @@ function Index() {
       });
     });
 
-    lines.push(`_Gesamt: ${appointments.length} Termin${appointments.length === 1 ? "" : "e"}_`);
+    lines.push(`_Gesamt: ${futureAppts.length} Termin${futureAppts.length === 1 ? "" : "e"} (ab heute)_`);
 
     const text = lines.join("\n");
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
