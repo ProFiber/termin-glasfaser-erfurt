@@ -147,6 +147,14 @@ function Index() {
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+  const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
+  const weekRangeLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(weekStart.getDate() + 5); // Mo + 5 = Sa
+    const f = (d: Date) => `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`;
+    return `${f(weekStart)} – ${f(end)}`;
+  }, [weekStart]);
   const flashTimer = useRef<number | null>(null);
 
   // Initial load
