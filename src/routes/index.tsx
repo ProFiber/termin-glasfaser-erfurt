@@ -203,7 +203,7 @@ function Index() {
   // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
   useEffect(() => {
     if (streetSel.size === 0) return;
-    const valid = new Set(streets);
+    const valid = new Set(streets.map(([s]) => s));
     let changed = false;
     const next = new Set<string>();
     streetSel.forEach((s) => { if (valid.has(s)) next.add(s); else changed = true; });
