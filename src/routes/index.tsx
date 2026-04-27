@@ -386,12 +386,17 @@ function Index() {
           placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
-        <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setNvtSort((s) => (s === "az" ? "count" : "az"))}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{nvtSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
             onClick={() => setNvtSel(new Set())}
             style={chip(nvtSel.size === 0, "#0891b2")}
           >Alle NVTs</button>
-          {nvts.map((n) => (
+          {nvts.map(([n, count]) => (
             <button
               key={n}
               onClick={() => setNvtSel((prev) => {
@@ -400,15 +405,20 @@ function Index() {
                 return next;
               })}
               style={chip(nvtSel.has(n), "#0891b2")}
-            >{n}</button>
+            >{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setStreetSort((s) => (s === "az" ? "count" : "az"))}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{streetSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
             onClick={() => setStreetSel(new Set())}
             style={chip(streetSel.size === 0, "#e20074")}
           >Alle Straßen</button>
-          {streets.map((s) => (
+          {streets.map(([s, count]) => (
             <button
               key={s}
               onClick={() => setStreetSel((prev) => {
@@ -417,7 +427,7 @@ function Index() {
                 return next;
               })}
               style={chip(streetSel.has(s), "#e20074")}
-            >{s}</button>
+            >{s} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
