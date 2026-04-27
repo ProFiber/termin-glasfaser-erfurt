@@ -44,6 +44,20 @@ const SLOT_LABEL: Record<string, string> = {
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
 
+type Ort = "Heldrungen" | "Oldisleben";
+const NVT_ORT: Record<string, Ort> = {
+  "2V8007": "Heldrungen", "2V8008": "Heldrungen", "2V8009": "Heldrungen",
+  "2V8010": "Heldrungen", "2V8011": "Heldrungen", "2V8012": "Heldrungen",
+  "2V8013": "Heldrungen", "2V8014": "Heldrungen", "2V8015": "Heldrungen",
+  "2V8016": "Heldrungen", "2V8017": "Heldrungen", "2V8018": "Heldrungen",
+  "2V8019": "Heldrungen", "2V8020": "Heldrungen", "2V8021": "Heldrungen",
+  "2V8031": "Oldisleben", "2V8032": "Oldisleben", "2V8033": "Oldisleben",
+  "2V8034": "Oldisleben", "2V8035": "Oldisleben", "2V8036": "Oldisleben",
+  "2V8037": "Oldisleben", "2V8038": "Oldisleben", "2V8039": "Oldisleben",
+  "2V8041": "Oldisleben", "2V8042": "Oldisleben", "2V8043": "Oldisleben",
+};
+const ortOf = (nvt: string): Ort | null => NVT_ORT[nvt] ?? null;
+
 const STATUS_META: Record<CallStatus, { label: string; dot: string }> = {
   offen:         { label: "Offen",          dot: "#9ca3af" },
   angerufen:     { label: "Angerufen",      dot: "#facc15" },
@@ -82,6 +96,7 @@ function Index() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
+  const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
@@ -172,9 +187,35 @@ function Index() {
     }
   }
 
+  // Kontakte gefiltert nach Ort (Basis für NVT-/Straßenlisten)
+  const ortContacts = useMemo(
+    () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
+    [contacts, ortSel]
+  );
+
+  // Wenn Ort wechselt: NVT-Auswahl bereinigen
+  useEffect(() => {
+    if (nvtSel.size === 0) return;
+    const valid = new Set(ortContacts.map((c) => c.nvt));
+    let changed = false;
+    const next = new Set<string>();
+    nvtSel.forEach((n) => { if (valid.has(n)) next.add(n); else changed = true; });
+    if (changed) setNvtSel(next);
+  }, [ortContacts, nvtSel]);
+
+  const ortCounts = useMemo(() => {
+    let h = 0, o = 0;
+    contacts.forEach((c) => {
+      const x = ortOf(c.nvt);
+      if (x === "Heldrungen") h++;
+      else if (x === "Oldisleben") o++;
+    });
+    return { Heldrungen: h, Oldisleben: o };
+  }, [contacts]);
+
   const nvts = useMemo(() => {
     const counts = new Map<string, number>();
-    contacts.forEach((c) => {
+    ortContacts.forEach((c) => {
       if (!c.nvt) return;
       counts.set(c.nvt, (counts.get(c.nvt) ?? 0) + 1);
     });
@@ -185,10 +226,10 @@ function Index() {
       arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
     }
     return arr;
-  }, [contacts, nvtSort]);
+  }, [ortContacts, nvtSort]);
 
   const streets = useMemo(() => {
-    const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
+    const src = nvtSel.size === 0 ? ortContacts : ortContacts.filter((c) => nvtSel.has(c.nvt));
     const counts = new Map<string, number>();
     src.forEach((c) => counts.set(c.strasse, (counts.get(c.strasse) ?? 0) + 1));
     const arr = Array.from(counts.entries());
@@ -198,7 +239,7 @@ function Index() {
       arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
     }
     return arr;
-  }, [contacts, nvtSel, streetSort]);
+  }, [ortContacts, nvtSel, streetSort]);
 
   // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
   useEffect(() => {
@@ -215,6 +256,7 @@ function Index() {
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       if (filter !== "alle" && st !== filter) return false;
+      if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
@@ -238,7 +280,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, nvtSel, streetSel, search]);
+  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
     return contacts
@@ -386,6 +428,19 @@ function Index() {
           placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
+            const active = ortSel === o;
+            const label = o === "alle"
+              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
+              : `${o} (${ortCounts[o]})`;
+            return (
+              <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           <button
             onClick={() => setNvtSort((s) => (s === "az" ? "count" : "az"))}
