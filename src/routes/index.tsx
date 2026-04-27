@@ -429,6 +429,19 @@ function Index() {
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
+            const active = ortSel === o;
+            const label = o === "alle"
+              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
+              : `${o} (${ortCounts[o]})`;
+            return (
+              <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           <button
             onClick={() => setNvtSort((s) => (s === "az" ? "count" : "az"))}
             title="Sortierung umschalten"
