@@ -207,12 +207,13 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum">>) {
     const prev = states[bid];
     const optimistic: CallState = {
       bid,
       status: changes.status ?? prev?.status ?? "offen",
       termin_slot: changes.termin_slot ?? prev?.termin_slot ?? "",
+      termin_datum: changes.termin_datum !== undefined ? changes.termin_datum : (prev?.termin_datum ?? null),
       notiz: changes.notiz ?? prev?.notiz ?? "",
       updated_at: new Date().toISOString(),
     };
@@ -225,6 +226,7 @@ function Index() {
           bid,
           status: optimistic.status,
           termin_slot: optimistic.termin_slot,
+          termin_datum: optimistic.termin_datum,
           notiz: optimistic.notiz,
         },
         { onConflict: "bid" }
