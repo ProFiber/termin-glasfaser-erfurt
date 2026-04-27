@@ -785,59 +785,77 @@ function Index() {
                   Noch keine Termine vereinbart.
                 </div>
               ) : (
-                SLOT_DAYS.map(({ day, vm, nm }) => {
-                  const dayAppts = appointments.filter((c) => {
-                    const slot = states[c.bid]?.termin_slot;
-                    return slot === vm || slot === nm;
+                (() => {
+                  // Gruppiere alle Termine nach Datum (Termine ohne Datum am Ende)
+                  const byDate: Record<string, Contact[]> = {};
+                  appointments.forEach((c) => {
+                    const key = states[c.bid]?.termin_datum ?? "ohne-datum";
+                    (byDate[key] = byDate[key] || []).push(c);
                   });
-                  if (dayAppts.length === 0) return null;
-                  return (
-                    <div key={day} style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "#e20074", padding: "4px 4px 6px", borderBottom: "2px solid #e20074", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
-                        <span>🗓 {day}</span>
-                        <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{dayAppts.length} Termin{dayAppts.length === 1 ? "" : "e"}</span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                        {[{ key: vm, lbl: "☀️ Vormittag", color: "#fbbf24" }, { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa" }].map(({ key, lbl, color }) => {
-                          const slotAppts = appointments.filter((c) => states[c.bid]?.termin_slot === key);
-                          return (
-                            <div key={key} style={{ background: "white", borderRadius: 9, border: `1.5px solid ${slotAppts.length ? color : "#e5e7eb"}`, padding: 8, minHeight: 60 }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: slotAppts.length ? color : "#bbb", letterSpacing: 0.4, marginBottom: 6 }}>{lbl}</div>
-                              {slotAppts.length === 0 ? (
-                                <div style={{ fontSize: 11, color: "#ccc", fontStyle: "italic" }}>—</div>
-                              ) : (
-                                slotAppts.map((c) => {
-                                  const cs = states[c.bid];
-                                  return (
-                                    <div key={c.bid}
-                                      onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
-                                      style={{ background: "#f0fff6", borderRadius: 6, padding: "6px 7px", marginBottom: 4, cursor: "pointer", borderLeft: "3px solid #22c55e" }}>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", lineHeight: 1.25 }}>
-                                        {c.strasse} {c.hnr}{c.hnr_zusatz}
-                                      </div>
-                                      <div style={{ fontSize: 11, color: "#444", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {c.name}
-                                      </div>
-                                      <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
-                                        {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
-                                      </div>
-                                      {c.mobil && (
-                                        <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
-                                          style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
-                                          📱 {c.mobil}
-                                        </a>
-                                      )}
-                                      {cs?.notiz?.trim() && (
-                                        <div style={{ fontSize: 10, color: "#666", marginTop: 3, fontStyle: "italic", borderTop: "1px dashed #d4d4d8", paddingTop: 3 }}>
-                                          📝 {cs.notiz.trim()}
+                  const dateKeys = Object.keys(byDate).sort((a, b) => {
+                    if (a === "ohne-datum") return 1;
+                    if (b === "ohne-datum") return -1;
+                    return a.localeCompare(b);
+                  });
+                  return dateKeys.map((dateKey) => {
+                    const dayAppts = byDate[dateKey];
+                    let dayLabel: string;
+                    let rel: string | null = null;
+                    if (dateKey === "ohne-datum") {
+                      dayLabel = "Ohne Datum";
+                    } else {
+                      const d = new Date(dateKey + "T00:00:00");
+                      const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
+                      dayLabel = `${wk} ${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`;
+                      rel = relativeDayLabel(dateKey);
+                    }
+                    return (
+                      <div key={dateKey} style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#e20074", padding: "4px 4px 6px", borderBottom: "2px solid #e20074", marginBottom: 7, display: "flex", justifyContent: "space-between" }}>
+                          <span>🗓 {dayLabel}{rel ? ` · ${rel}` : ""}</span>
+                          <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>{dayAppts.length} Termin{dayAppts.length === 1 ? "" : "e"}</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                          {[{ suffix: "-vm", lbl: "☀️ Vormittag", color: "#fbbf24" }, { suffix: "-nm", lbl: "🌤 Nachmittag", color: "#60a5fa" }].map(({ suffix, lbl, color }) => {
+                            const slotAppts = dayAppts.filter((c) => (states[c.bid]?.termin_slot ?? "").endsWith(suffix));
+                            return (
+                              <div key={suffix} style={{ background: "white", borderRadius: 9, border: `1.5px solid ${slotAppts.length ? color : "#e5e7eb"}`, padding: 8, minHeight: 60 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: slotAppts.length ? color : "#bbb", letterSpacing: 0.4, marginBottom: 6 }}>{lbl}</div>
+                                {slotAppts.length === 0 ? (
+                                  <div style={{ fontSize: 11, color: "#ccc", fontStyle: "italic" }}>—</div>
+                                ) : (
+                                  slotAppts.map((c) => {
+                                    const cs = states[c.bid];
+                                    return (
+                                      <div key={c.bid}
+                                        onClick={() => { setShowPlan(false); setExpanded(c.bid); }}
+                                        style={{ background: "#f0fff6", borderRadius: 6, padding: "6px 7px", marginBottom: 4, cursor: "pointer", borderLeft: "3px solid #22c55e" }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", lineHeight: 1.25 }}>
+                                          {c.strasse} {c.hnr}{c.hnr_zusatz}
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          );
+                                        <div style={{ fontSize: 11, color: "#444", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {c.name}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
+                                          {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
+                                        </div>
+                                        {c.mobil && (
+                                          <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
+                                            style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
+                                            📱 {c.mobil}
+                                          </a>
+                                        )}
+                                        {cs?.notiz?.trim() && (
+                                          <div style={{ fontSize: 10, color: "#666", marginTop: 3, fontStyle: "italic", borderTop: "1px dashed #d4d4d8", paddingTop: 3 }}>
+                                            📝 {cs.notiz.trim()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            );
                         })}
                       </div>
                     </div>
