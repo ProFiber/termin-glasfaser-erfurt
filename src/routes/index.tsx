@@ -84,6 +84,8 @@ function Index() {
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
+  const [streetSort, setStreetSort] = useState<"az" | "count">("az");
+  const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
@@ -170,20 +172,38 @@ function Index() {
     }
   }
 
-  const nvts = useMemo(
-    () => Array.from(new Set(contacts.map((c) => c.nvt).filter(Boolean))).sort(),
-    [contacts]
-  );
+  const nvts = useMemo(() => {
+    const counts = new Map<string, number>();
+    contacts.forEach((c) => {
+      if (!c.nvt) return;
+      counts.set(c.nvt, (counts.get(c.nvt) ?? 0) + 1);
+    });
+    const arr = Array.from(counts.entries());
+    if (nvtSort === "count") {
+      arr.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
+    } else {
+      arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
+    }
+    return arr;
+  }, [contacts, nvtSort]);
 
   const streets = useMemo(() => {
     const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
-    return Array.from(new Set(src.map((c) => c.strasse))).sort();
-  }, [contacts, nvtSel]);
+    const counts = new Map<string, number>();
+    src.forEach((c) => counts.set(c.strasse, (counts.get(c.strasse) ?? 0) + 1));
+    const arr = Array.from(counts.entries());
+    if (streetSort === "count") {
+      arr.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
+    } else {
+      arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
+    }
+    return arr;
+  }, [contacts, nvtSel, streetSort]);
 
   // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
   useEffect(() => {
     if (streetSel.size === 0) return;
-    const valid = new Set(streets);
+    const valid = new Set(streets.map(([s]) => s));
     let changed = false;
     const next = new Set<string>();
     streetSel.forEach((s) => { if (valid.has(s)) next.add(s); else changed = true; });
@@ -366,12 +386,17 @@ function Index() {
           placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
           style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
         />
-        <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setNvtSort((s) => (s === "az" ? "count" : "az"))}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{nvtSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
             onClick={() => setNvtSel(new Set())}
             style={chip(nvtSel.size === 0, "#0891b2")}
           >Alle NVTs</button>
-          {nvts.map((n) => (
+          {nvts.map(([n, count]) => (
             <button
               key={n}
               onClick={() => setNvtSel((prev) => {
@@ -380,15 +405,20 @@ function Index() {
                 return next;
               })}
               style={chip(nvtSel.has(n), "#0891b2")}
-            >{n}</button>
+            >{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setStreetSort((s) => (s === "az" ? "count" : "az"))}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{streetSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
             onClick={() => setStreetSel(new Set())}
             style={chip(streetSel.size === 0, "#e20074")}
           >Alle Straßen</button>
-          {streets.map((s) => (
+          {streets.map(([s, count]) => (
             <button
               key={s}
               onClick={() => setStreetSel((prev) => {
@@ -397,7 +427,7 @@ function Index() {
                 return next;
               })}
               style={chip(streetSel.has(s), "#e20074")}
-            >{s}</button>
+            >{s} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
@@ -443,7 +473,10 @@ function Index() {
                       {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
                     </span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                  <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.name}
+                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}</span>}
+                  </div>
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {SLOT_LABEL[appt] ?? appt}</div>}
                   {(() => {
                     const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
@@ -732,6 +765,11 @@ function Index() {
 const chip = (active: boolean, color: string): React.CSSProperties => ({
   padding: "4px 13px", borderRadius: 16, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
   background: active ? color : "#f0f0f0", color: active ? "white" : "#444",
+});
+
+const sortBtn = (): React.CSSProperties => ({
+  padding: "4px 9px", borderRadius: 16, border: "1px solid #d4d4d8", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+  background: "white", color: "#52525b", flexShrink: 0,
 });
 
 const pill = (active: boolean): React.CSSProperties => ({
