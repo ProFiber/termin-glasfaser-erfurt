@@ -598,7 +598,7 @@ function Index() {
                     {c.name}
                     {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}</span>}
                   </div>
-                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {SLOT_LABEL[appt] ?? appt}</div>}
+                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate)}</div>}
                   {(() => {
                     const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
                     return a ? (
