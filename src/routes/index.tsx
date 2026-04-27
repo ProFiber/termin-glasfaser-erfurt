@@ -172,15 +172,33 @@ function Index() {
     }
   }
 
-  const nvts = useMemo(
-    () => Array.from(new Set(contacts.map((c) => c.nvt).filter(Boolean))).sort(),
-    [contacts]
-  );
+  const nvts = useMemo(() => {
+    const counts = new Map<string, number>();
+    contacts.forEach((c) => {
+      if (!c.nvt) return;
+      counts.set(c.nvt, (counts.get(c.nvt) ?? 0) + 1);
+    });
+    const arr = Array.from(counts.entries());
+    if (nvtSort === "count") {
+      arr.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
+    } else {
+      arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
+    }
+    return arr;
+  }, [contacts, nvtSort]);
 
   const streets = useMemo(() => {
     const src = nvtSel.size === 0 ? contacts : contacts.filter((c) => nvtSel.has(c.nvt));
-    return Array.from(new Set(src.map((c) => c.strasse))).sort();
-  }, [contacts, nvtSel]);
+    const counts = new Map<string, number>();
+    src.forEach((c) => counts.set(c.strasse, (counts.get(c.strasse) ?? 0) + 1));
+    const arr = Array.from(counts.entries());
+    if (streetSort === "count") {
+      arr.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
+    } else {
+      arr.sort((a, b) => a[0].localeCompare(b[0], "de"));
+    }
+    return arr;
+  }, [contacts, nvtSel, streetSort]);
 
   // Wenn ausgewählte Straßen nicht mehr in den verfügbaren stecken (NVT geändert), bereinigen
   useEffect(() => {
