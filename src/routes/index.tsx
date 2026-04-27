@@ -642,19 +642,30 @@ function Index() {
                     ))}
                   </div>
 
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 7 }}>TERMIN</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1 }}>TERMIN</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() - 7); return x; }); }}
+                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#475569" }}>‹</button>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 105, textAlign: "center" }}>{weekRangeLabel}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() + 7); return x; }); }}
+                        style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#475569" }}>›</button>
+                      <button onClick={(e) => { e.stopPropagation(); setWeekStart(mondayOf(new Date())); }}
+                        style={{ background: "#e0f2fe", border: "none", borderRadius: 6, padding: "3px 7px", fontSize: 10, fontWeight: 700, cursor: "pointer", color: "#0891b2", marginLeft: 2 }}>Heute</button>
+                    </div>
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
-                    {SLOT_DAYS.map(({ day, date, vm, nm }) => {
+                    {slotDays.map(({ day, date, vm, nm }) => {
                       const rel = relativeDayLabel(date);
                       return (
-                        <div key={day} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div key={date} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <div style={{ width: 62, fontSize: 12, fontWeight: 600, color: "#555", flexShrink: 0, lineHeight: 1.1 }}>
                             <div>{day}</div>
                             {rel && <div style={{ fontSize: 9, fontWeight: 500, color: "#0891b2", marginTop: 1 }}>{rel}</div>}
                           </div>
                           {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
-                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, status: "termin" })}
-                              style={slotBtn(appt === key)}>{lbl}</button>
+                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, termin_datum: date, status: "termin" })}
+                              style={slotBtn(appt === key && apptDate === date)}>{lbl}</button>
                           ))}
                         </div>
                       );
