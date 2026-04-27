@@ -32,6 +32,7 @@ export type CallState = {
   bid: string;
   status: CallStatus;
   termin_slot: string;
+  termin_datum: string | null;
   notiz: string;
   updated_at: string;
 };
