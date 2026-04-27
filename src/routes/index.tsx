@@ -764,6 +764,11 @@ const chip = (active: boolean, color: string): React.CSSProperties => ({
   background: active ? color : "#f0f0f0", color: active ? "white" : "#444",
 });
 
+const sortBtn = (): React.CSSProperties => ({
+  padding: "4px 9px", borderRadius: 16, border: "1px solid #d4d4d8", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+  background: "white", color: "#52525b", flexShrink: 0,
+});
+
 const pill = (active: boolean): React.CSSProperties => ({
   padding: "3px 10px", borderRadius: 14, border: "1px solid #ddd", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
   background: active ? "#222" : "white", color: active ? "white" : "#555",
