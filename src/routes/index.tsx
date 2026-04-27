@@ -572,6 +572,7 @@ function Index() {
           const cs = states[c.bid];
           const st = (cs?.status ?? "offen") as CallStatus;
           const appt = cs?.termin_slot ?? "";
+          const apptDate = cs?.termin_datum ?? null;
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
           return (
