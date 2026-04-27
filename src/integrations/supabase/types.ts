@@ -19,6 +19,7 @@ export type Database = {
           bid: string
           notiz: string
           status: Database["public"]["Enums"]["call_status"]
+          termin_datum: string | null
           termin_slot: string
           updated_at: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           bid: string
           notiz?: string
           status?: Database["public"]["Enums"]["call_status"]
+          termin_datum?: string | null
           termin_slot?: string
           updated_at?: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           bid?: string
           notiz?: string
           status?: Database["public"]["Enums"]["call_status"]
+          termin_datum?: string | null
           termin_slot?: string
           updated_at?: string
         }
