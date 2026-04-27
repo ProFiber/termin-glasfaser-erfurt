@@ -336,13 +336,16 @@ function Index() {
   }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
+    const slotOrder = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
     return contacts
       .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
       .sort((a, b) => {
+        const da = states[a.bid]?.termin_datum ?? "9999-12-31";
+        const db = states[b.bid]?.termin_datum ?? "9999-12-31";
+        if (da !== db) return da.localeCompare(db);
         const sa = states[a.bid]?.termin_slot ?? "";
         const sb = states[b.bid]?.termin_slot ?? "";
-        const order = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
-        const ia = order.indexOf(sa); const ib = order.indexOf(sb);
+        const ia = slotOrder.indexOf(sa); const ib = slotOrder.indexOf(sb);
         if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
         const s = a.strasse.localeCompare(b.strasse, "de");
         if (s !== 0) return s;
@@ -351,20 +354,15 @@ function Index() {
   }, [contacts, states]);
 
   function shareAppointmentsWhatsApp() {
-    // Nur künftige Termine dieser Woche (heute + kommende Wochentage bis Sa)
-    // Slot-Tag → JS-Wochentag (So=0, Mo=1, ..., Sa=6)
-    const SLOT_DOW: Record<string, number> = { di: 2, mi: 3, do: 4, fr: 5, sa: 6 };
-    const todayDow = new Date().getDay();
+    // Nur künftige Termine ab heute (basierend auf konkretem Datum)
+    const todayIso = toIsoDate(new Date());
     const futureAppts = appointments.filter((c) => {
-      const slot = states[c.bid]?.termin_slot ?? "";
-      const day = slot.split("-")[0];
-      const dow = SLOT_DOW[day];
-      if (dow === undefined) return false;
-      return dow >= todayDow; // heute eingeschlossen, vergangene Tage raus
+      const d = states[c.bid]?.termin_datum;
+      return !!d && d >= todayIso;
     });
 
     if (futureAppts.length === 0) {
-      alert("Keine künftigen Termine in dieser Woche.");
+      alert("Keine künftigen Termine.");
       return;
     }
     const lines: string[] = [];
@@ -372,16 +370,18 @@ function Index() {
     lines.push("_Störmer Bau i.A. Telekom_");
     lines.push("");
 
-    // Gruppiert nach Tag/Slot
+    // Gruppiert nach Datum + Slot
     const grouped: Record<string, Contact[]> = {};
     futureAppts.forEach((c) => {
-      const slot = states[c.bid]?.termin_slot ?? "ohne Slot";
-      (grouped[slot] = grouped[slot] || []).push(c);
+      const cs = states[c.bid];
+      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}`;
+      (grouped[key] = grouped[key] || []).push(c);
     });
 
-    Object.entries(grouped).forEach(([slot, list]) => {
-      lines.push(`🗓 *${SLOT_LABEL[slot] ?? slot}*`);
-      list.forEach((c) => {
+    Object.keys(grouped).sort().forEach((key) => {
+      const [date, slot] = key.split("|");
+      lines.push(`🗓 *${fmtSlotDate(slot, date || null)}*`);
+      grouped[key].forEach((c) => {
         const cs = states[c.bid];
         lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
         const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
