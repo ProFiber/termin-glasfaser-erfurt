@@ -17,13 +17,43 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const SLOT_DAYS = [
-  { day: "Di 21.04.", date: "2026-04-21", vm: "di-vm", nm: "di-nm" },
-  { day: "Mi 22.04.", date: "2026-04-22", vm: "mi-vm", nm: "mi-nm" },
-  { day: "Do 23.04.", date: "2026-04-23", vm: "do-vm", nm: "do-nm" },
-  { day: "Fr 24.04.", date: "2026-04-24", vm: "fr-vm", nm: "fr-nm" },
-  { day: "Sa 25.04.", date: "2026-04-25", vm: "sa-vm", nm: "sa-nm" },
+// Wochentag-Codes für Slots (Di–Sa)
+const WEEK_DAYS = [
+  { code: "di", short: "Di", dow: 2 },
+  { code: "mi", short: "Mi", dow: 3 },
+  { code: "do", short: "Do", dow: 4 },
+  { code: "fr", short: "Fr", dow: 5 },
+  { code: "sa", short: "Sa", dow: 6 },
 ];
+
+// ISO-Datum (yyyy-mm-dd) lokal, ohne UTC-Offset-Probleme
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Montag der Woche zu einem Datum
+function mondayOf(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const dow = x.getDay(); // 0=So..6=Sa
+  const diff = dow === 0 ? -6 : 1 - dow;
+  x.setDate(x.getDate() + diff);
+  return x;
+}
+
+// Liefert die fünf Termin-Tage (Di–Sa) der Woche, in der weekStart (Mo) liegt
+function getWeekSlots(weekStart: Date) {
+  return WEEK_DAYS.map(({ code, short, dow }) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Di=+1, ..., Sa=+5
+    const iso = toIsoDate(d);
+    const label = `${short} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+    return { code, day: label, date: iso, vm: `${code}-vm`, nm: `${code}-nm` };
+  });
+}
 
 function relativeDayLabel(dateIso: string): string | null {
   const today = new Date();
@@ -43,6 +73,19 @@ const SLOT_LABEL: Record<string, string> = {
   "fr-vm": "Fr VM", "fr-nm": "Fr NM",
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
+
+// Formatiert "di-vm" + Datum → "Di 28.04. VM"
+function fmtSlotDate(slot: string, dateIso: string | null): string {
+  const half = slot.endsWith("-vm") ? "VM" : slot.endsWith("-nm") ? "NM" : "";
+  if (dateIso) {
+    const d = new Date(dateIso + "T00:00:00");
+    const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
+    const dd = String(d.getDate()).padStart(2,"0");
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    return `${wk} ${dd}.${mm}. ${half}`.trim();
+  }
+  return SLOT_LABEL[slot] ?? slot;
+}
 
 type Ort = "Heldrungen" | "Oldisleben";
 const NVT_ORT: Record<string, Ort> = {
