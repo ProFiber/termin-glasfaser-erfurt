@@ -44,6 +44,20 @@ const SLOT_LABEL: Record<string, string> = {
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
 
+type Ort = "Heldrungen" | "Oldisleben";
+const NVT_ORT: Record<string, Ort> = {
+  "2V8007": "Heldrungen", "2V8008": "Heldrungen", "2V8009": "Heldrungen",
+  "2V8010": "Heldrungen", "2V8011": "Heldrungen", "2V8012": "Heldrungen",
+  "2V8013": "Heldrungen", "2V8014": "Heldrungen", "2V8015": "Heldrungen",
+  "2V8016": "Heldrungen", "2V8017": "Heldrungen", "2V8018": "Heldrungen",
+  "2V8019": "Heldrungen", "2V8020": "Heldrungen", "2V8021": "Heldrungen",
+  "2V8031": "Oldisleben", "2V8032": "Oldisleben", "2V8033": "Oldisleben",
+  "2V8034": "Oldisleben", "2V8035": "Oldisleben", "2V8036": "Oldisleben",
+  "2V8037": "Oldisleben", "2V8038": "Oldisleben", "2V8039": "Oldisleben",
+  "2V8041": "Oldisleben", "2V8042": "Oldisleben", "2V8043": "Oldisleben",
+};
+const ortOf = (nvt: string): Ort | null => NVT_ORT[nvt] ?? null;
+
 const STATUS_META: Record<CallStatus, { label: string; dot: string }> = {
   offen:         { label: "Offen",          dot: "#9ca3af" },
   angerufen:     { label: "Angerufen",      dot: "#facc15" },
