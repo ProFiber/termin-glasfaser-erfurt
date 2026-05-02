@@ -17,8 +17,9 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-// Wochentag-Codes für Slots (Di–Sa)
+// Wochentag-Codes für Slots (Mo–Sa)
 const WEEK_DAYS = [
+  { code: "mo", short: "Mo", dow: 1 },
   { code: "di", short: "Di", dow: 2 },
   { code: "mi", short: "Mi", dow: 3 },
   { code: "do", short: "Do", dow: 4 },
@@ -44,11 +45,11 @@ function mondayOf(d: Date): Date {
   return x;
 }
 
-// Liefert die fünf Termin-Tage (Di–Sa) der Woche, in der weekStart (Mo) liegt
+// Liefert die sechs Termin-Tage (Mo–Sa) der Woche, in der weekStart (Mo) liegt
 function getWeekSlots(weekStart: Date) {
   return WEEK_DAYS.map(({ code, short, dow }) => {
     const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Di=+1, ..., Sa=+5
+    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Mo=+0, ..., Sa=+5
     const iso = toIsoDate(d);
     const label = `${short} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
     return { code, day: label, date: iso, vm: `${code}-vm`, nm: `${code}-nm` };
@@ -67,6 +68,7 @@ function relativeDayLabel(dateIso: string): string | null {
 }
 
 const SLOT_LABEL: Record<string, string> = {
+  "mo-vm": "Mo VM", "mo-nm": "Mo NM",
   "di-vm": "Di VM", "di-nm": "Di NM",
   "mi-vm": "Mi VM", "mi-nm": "Mi NM",
   "do-vm": "Do VM", "do-nm": "Do NM",
@@ -336,7 +338,7 @@ function Index() {
   }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
-    const slotOrder = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
+    const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
     return contacts
       .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
       .sort((a, b) => {
