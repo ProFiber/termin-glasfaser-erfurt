@@ -21,6 +21,7 @@ export type Database = {
           status: Database["public"]["Enums"]["call_status"]
           termin_datum: string | null
           termin_slot: string
+          termin_zeit: string
           updated_at: string
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["call_status"]
           termin_datum?: string | null
           termin_slot?: string
+          termin_zeit?: string
           updated_at?: string
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["call_status"]
           termin_datum?: string | null
           termin_slot?: string
+          termin_zeit?: string
           updated_at?: string
         }
         Relationships: [

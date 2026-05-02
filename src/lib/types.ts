@@ -33,6 +33,7 @@ export type CallState = {
   status: CallStatus;
   termin_slot: string;
   termin_datum: string | null;
+  termin_zeit: string;
   notiz: string;
   updated_at: string;
 };

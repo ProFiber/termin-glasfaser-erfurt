@@ -76,18 +76,30 @@ const SLOT_LABEL: Record<string, string> = {
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
 
-// Formatiert "di-vm" + Datum → "Di 28.04. VM"
-function fmtSlotDate(slot: string, dateIso: string | null): string {
+// Formatiert "di-vm" + Datum + optionale Uhrzeit → "Di 28.04. VM ab 16:30"
+function fmtSlotDate(slot: string, dateIso: string | null, zeit?: string): string {
   const half = slot.endsWith("-vm") ? "VM" : slot.endsWith("-nm") ? "NM" : "";
+  const z = zeit && zeit.trim() ? ` ab ${zeit.trim()}` : "";
   if (dateIso) {
     const d = new Date(dateIso + "T00:00:00");
     const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
     const dd = String(d.getDate()).padStart(2,"0");
     const mm = String(d.getMonth()+1).padStart(2,"0");
-    return `${wk} ${dd}.${mm}. ${half}`.trim();
+    return `${wk} ${dd}.${mm}. ${half}${z}`.trim();
   }
-  return SLOT_LABEL[slot] ?? slot;
+  return `${SLOT_LABEL[slot] ?? slot}${z}`;
 }
+
+// 30-Min-Slots 07:00–20:00
+const TIME_OPTIONS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      out.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
+    }
+  }
+  return out;
+})();
 
 type Ort = "Heldrungen" | "Oldisleben";
 const NVT_ORT: Record<string, Ort> = {
@@ -209,13 +221,14 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit">>) {
     const prev = states[bid];
     const optimistic: CallState = {
       bid,
       status: changes.status ?? prev?.status ?? "offen",
       termin_slot: changes.termin_slot ?? prev?.termin_slot ?? "",
       termin_datum: changes.termin_datum !== undefined ? changes.termin_datum : (prev?.termin_datum ?? null),
+      termin_zeit: changes.termin_zeit !== undefined ? changes.termin_zeit : (prev?.termin_zeit ?? ""),
       notiz: changes.notiz ?? prev?.notiz ?? "",
       updated_at: new Date().toISOString(),
     };
@@ -229,6 +242,7 @@ function Index() {
           status: optimistic.status,
           termin_slot: optimistic.termin_slot,
           termin_datum: optimistic.termin_datum,
+          termin_zeit: optimistic.termin_zeit,
           notiz: optimistic.notiz,
         },
         { onConflict: "bid" }
@@ -372,17 +386,17 @@ function Index() {
     lines.push("_Störmer Bau i.A. Telekom_");
     lines.push("");
 
-    // Gruppiert nach Datum + Slot
+    // Gruppiert nach Datum + Slot + Zeit
     const grouped: Record<string, Contact[]> = {};
     futureAppts.forEach((c) => {
       const cs = states[c.bid];
-      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}`;
+      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}|${cs?.termin_zeit ?? ""}`;
       (grouped[key] = grouped[key] || []).push(c);
     });
 
     Object.keys(grouped).sort().forEach((key) => {
-      const [date, slot] = key.split("|");
-      lines.push(`🗓 *${fmtSlotDate(slot, date || null)}*`);
+      const [date, slot, zeit] = key.split("|");
+      lines.push(`🗓 *${fmtSlotDate(slot, date || null, zeit)}*`);
       grouped[key].forEach((c) => {
         const cs = states[c.bid];
         lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
@@ -409,7 +423,7 @@ function Index() {
   function shareSingleCustomer(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null, cs?.termin_zeit) : "—";
     const lines = [
       `Guten Tag Herr/Frau ${lastName(c.name)},`,
       ``,
@@ -437,7 +451,7 @@ function Index() {
   function shareSingleInternal(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null, cs?.termin_zeit) : "—";
     const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
     const lines: string[] = [];
     lines.push(`📅 *Neuer Termin · Glasfaser*`);
@@ -600,7 +614,7 @@ function Index() {
                     {c.name}
                     {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}</span>}
                   </div>
-                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate)}</div>}
+                  {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
                     const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
                     return a ? (
@@ -639,7 +653,7 @@ function Index() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
-                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null } : {}) })}
+                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) })}
                         style={statusBtn(st === s)}>{STATUS_META[s].label}</button>
                     ))}
                   </div>
@@ -673,6 +687,27 @@ function Index() {
                       );
                     })}
                   </div>
+
+                  {appt && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 10px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>⏰ Frühestens ab</span>
+                      <select
+                        value={cs?.termin_zeit ?? ""}
+                        onChange={(e) => patch(c.bid, { termin_zeit: e.target.value })}
+                        style={{ flex: 1, padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "white", color: "#1e293b" }}
+                      >
+                        <option value="">— keine Vorgabe —</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{t} Uhr</option>
+                        ))}
+                      </select>
+                      {cs?.termin_zeit && (
+                        <button onClick={() => patch(c.bid, { termin_zeit: "" })}
+                          style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: 16, cursor: "pointer", padding: "0 4px" }}
+                          title="Zeit entfernen">✕</button>
+                      )}
+                    </div>
+                  )}
 
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
                     placeholder="Notiz…"
@@ -841,6 +876,11 @@ function Index() {
                                         <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
                                           {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
                                         </div>
+                                        {cs?.termin_zeit && (
+                                          <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 800, marginTop: 2 }}>
+                                            ⏰ ab {cs.termin_zeit} Uhr
+                                          </div>
+                                        )}
                                         {c.mobil && (
                                           <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
                                             style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
