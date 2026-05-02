@@ -423,7 +423,7 @@ function Index() {
   function shareSingleCustomer(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null, cs?.termin_zeit) : "—";
     const lines = [
       `Guten Tag Herr/Frau ${lastName(c.name)},`,
       ``,
