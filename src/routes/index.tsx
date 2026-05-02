@@ -688,6 +688,27 @@ function Index() {
                     })}
                   </div>
 
+                  {appt && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 10px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>⏰ Frühestens ab</span>
+                      <select
+                        value={cs?.termin_zeit ?? ""}
+                        onChange={(e) => patch(c.bid, { termin_zeit: e.target.value })}
+                        style={{ flex: 1, padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "white", color: "#1e293b" }}
+                      >
+                        <option value="">— keine Vorgabe —</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{t} Uhr</option>
+                        ))}
+                      </select>
+                      {cs?.termin_zeit && (
+                        <button onClick={() => patch(c.bid, { termin_zeit: "" })}
+                          style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: 16, cursor: "pointer", padding: "0 4px" }}
+                          title="Zeit entfernen">✕</button>
+                      )}
+                    </div>
+                  )}
+
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
                     placeholder="Notiz…"
                     style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
