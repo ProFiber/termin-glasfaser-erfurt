@@ -45,11 +45,11 @@ function mondayOf(d: Date): Date {
   return x;
 }
 
-// Liefert die fünf Termin-Tage (Di–Sa) der Woche, in der weekStart (Mo) liegt
+// Liefert die sechs Termin-Tage (Mo–Sa) der Woche, in der weekStart (Mo) liegt
 function getWeekSlots(weekStart: Date) {
   return WEEK_DAYS.map(({ code, short, dow }) => {
     const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Di=+1, ..., Sa=+5
+    d.setDate(weekStart.getDate() + (dow - 1)); // Mo=1 → Mo=+0, ..., Sa=+5
     const iso = toIsoDate(d);
     const label = `${short} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
     return { code, day: label, date: iso, vm: `${code}-vm`, nm: `${code}-nm` };
