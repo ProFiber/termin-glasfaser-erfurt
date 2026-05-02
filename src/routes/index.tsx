@@ -68,6 +68,7 @@ function relativeDayLabel(dateIso: string): string | null {
 }
 
 const SLOT_LABEL: Record<string, string> = {
+  "mo-vm": "Mo VM", "mo-nm": "Mo NM",
   "di-vm": "Di VM", "di-nm": "Di NM",
   "mi-vm": "Mi VM", "mi-nm": "Mi NM",
   "do-vm": "Do VM", "do-nm": "Do NM",
