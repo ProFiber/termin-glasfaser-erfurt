@@ -386,17 +386,17 @@ function Index() {
     lines.push("_Störmer Bau i.A. Telekom_");
     lines.push("");
 
-    // Gruppiert nach Datum + Slot
+    // Gruppiert nach Datum + Slot + Zeit
     const grouped: Record<string, Contact[]> = {};
     futureAppts.forEach((c) => {
       const cs = states[c.bid];
-      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}`;
+      const key = `${cs?.termin_datum ?? ""}|${cs?.termin_slot ?? ""}|${cs?.termin_zeit ?? ""}`;
       (grouped[key] = grouped[key] || []).push(c);
     });
 
     Object.keys(grouped).sort().forEach((key) => {
-      const [date, slot] = key.split("|");
-      lines.push(`🗓 *${fmtSlotDate(slot, date || null)}*`);
+      const [date, slot, zeit] = key.split("|");
+      lines.push(`🗓 *${fmtSlotDate(slot, date || null, zeit)}*`);
       grouped[key].forEach((c) => {
         const cs = states[c.bid];
         lines.push(`• *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
