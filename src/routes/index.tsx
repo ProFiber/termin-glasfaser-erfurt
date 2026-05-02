@@ -338,7 +338,7 @@ function Index() {
   }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
 
   const appointments = useMemo(() => {
-    const slotOrder = ["di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
+    const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
     return contacts
       .filter((c) => (states[c.bid]?.status ?? "offen") === "termin")
       .sort((a, b) => {
