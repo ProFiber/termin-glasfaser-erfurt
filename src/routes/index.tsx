@@ -76,18 +76,30 @@ const SLOT_LABEL: Record<string, string> = {
   "sa-vm": "Sa VM", "sa-nm": "Sa NM",
 };
 
-// Formatiert "di-vm" + Datum → "Di 28.04. VM"
-function fmtSlotDate(slot: string, dateIso: string | null): string {
+// Formatiert "di-vm" + Datum + optionale Uhrzeit → "Di 28.04. VM ab 16:30"
+function fmtSlotDate(slot: string, dateIso: string | null, zeit?: string): string {
   const half = slot.endsWith("-vm") ? "VM" : slot.endsWith("-nm") ? "NM" : "";
+  const z = zeit && zeit.trim() ? ` ab ${zeit.trim()}` : "";
   if (dateIso) {
     const d = new Date(dateIso + "T00:00:00");
     const wk = ["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()];
     const dd = String(d.getDate()).padStart(2,"0");
     const mm = String(d.getMonth()+1).padStart(2,"0");
-    return `${wk} ${dd}.${mm}. ${half}`.trim();
+    return `${wk} ${dd}.${mm}. ${half}${z}`.trim();
   }
-  return SLOT_LABEL[slot] ?? slot;
+  return `${SLOT_LABEL[slot] ?? slot}${z}`;
 }
+
+// 30-Min-Slots 07:00–20:00
+const TIME_OPTIONS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      out.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
+    }
+  }
+  return out;
+})();
 
 type Ort = "Heldrungen" | "Oldisleben";
 const NVT_ORT: Record<string, Ort> = {
