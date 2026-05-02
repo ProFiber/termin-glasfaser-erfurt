@@ -1,0 +1,1 @@
+ALTER TABLE public.call_states ADD COLUMN IF NOT EXISTS termin_zeit text NOT NULL DEFAULT '';
