@@ -451,7 +451,7 @@ function Index() {
   function shareSingleInternal(c: Contact) {
     const cs = states[c.bid];
     const slot = cs?.termin_slot ?? "";
-    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null) : "—";
+    const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null, cs?.termin_zeit) : "—";
     const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
     const lines: string[] = [];
     lines.push(`📅 *Neuer Termin · Glasfaser*`);
