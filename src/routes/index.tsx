@@ -17,8 +17,9 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-// Wochentag-Codes für Slots (Di–Sa)
+// Wochentag-Codes für Slots (Mo–Sa)
 const WEEK_DAYS = [
+  { code: "mo", short: "Mo", dow: 1 },
   { code: "di", short: "Di", dow: 2 },
   { code: "mi", short: "Mi", dow: 3 },
   { code: "do", short: "Do", dow: 4 },
