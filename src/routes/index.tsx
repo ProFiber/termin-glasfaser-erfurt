@@ -876,6 +876,11 @@ function Index() {
                                         <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>
                                           {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
                                         </div>
+                                        {cs?.termin_zeit && (
+                                          <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 800, marginTop: 2 }}>
+                                            ⏰ ab {cs.termin_zeit} Uhr
+                                          </div>
+                                        )}
                                         {c.mobil && (
                                           <a href={`tel:${c.mobil}`} onClick={(e) => e.stopPropagation()}
                                             style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#e20074", fontWeight: 700, textDecoration: "none" }}>
