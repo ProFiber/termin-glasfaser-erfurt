@@ -86,6 +86,74 @@ function Admin() {
     setBusy(false);
   }
 
+  async function migrateSchmueckeErledigt() {
+    setBusy(true);
+    append("Lade schmuecke-erledigt.json…");
+    try {
+      const res = await fetch("/schmuecke-erledigt.json");
+      const rows = (await res.json()) as { strasse: string; hnr: string; hnr_zusatz: string }[];
+      append(`${rows.length} Zeilen aus Excel geladen`);
+
+      const { data: contacts, error: cErr } = await supabase
+        .from("contacts")
+        .select("bid,strasse,hnr,hnr_zusatz")
+        .range(0, 9999);
+      if (cErr) { append(`❌ ${cErr.message}`); setBusy(false); return; }
+      append(`${contacts?.length ?? 0} Kontakte geladen`);
+
+      const key = (s: string, h: string, z: string) =>
+        `${(s ?? "").trim().toLowerCase()}|${(h ?? "").trim().toLowerCase()}|${(z ?? "").trim().toLowerCase()}`;
+      const map = new Map<string, string>();
+      for (const c of contacts as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+        map.set(key(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
+      }
+
+      const matchedBids: string[] = [];
+      const missing: typeof rows = [];
+      for (const r of rows) {
+        const bid = map.get(key(r.strasse, r.hnr, r.hnr_zusatz));
+        if (bid) matchedBids.push(bid);
+        else missing.push(r);
+      }
+      append(`✓ ${matchedBids.length} Treffer · ${missing.length} ohne Match`);
+      if (missing.length) {
+        append("Fehlende (max 10):");
+        for (const m of missing.slice(0, 10)) {
+          append(`  • ${m.strasse} ${m.hnr}${m.hnr_zusatz ? " " + m.hnr_zusatz : ""}`);
+        }
+      }
+
+      let ok = 0, fail = 0;
+      for (let i = 0; i < matchedBids.length; i += 50) {
+        const chunk = matchedBids.slice(i, i + 50);
+        const { data: existing } = await supabase
+          .from("call_states")
+          .select("bid,termin_slot,termin_datum,termin_zeit,notiz")
+          .in("bid", chunk);
+        const existingMap = new Map((existing ?? []).map((e) => [e.bid, e]));
+        const payload = chunk.map((bid) => {
+          const e = existingMap.get(bid);
+          return {
+            bid,
+            status: "erledigt" as const,
+            termin_slot: e?.termin_slot ?? "",
+            termin_datum: e?.termin_datum ?? null,
+            termin_zeit: e?.termin_zeit ?? "",
+            notiz: e?.notiz ?? "",
+          };
+        });
+        const { error } = await supabase.from("call_states").upsert(payload, { onConflict: "bid" });
+        if (error) { fail += chunk.length; append(`  ⚠ Chunk ${i / 50 + 1}: ${error.message}`); }
+        else { ok += chunk.length; append(`  ✓ Chunk ${i / 50 + 1}: ${chunk.length} aktualisiert`); }
+      }
+      append(`✅ Fertig: ${ok} aktualisiert, ${fail} fehlgeschlagen`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function counts() {
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
       supabase.from("contacts").select("*", { count: "exact", head: true }),
