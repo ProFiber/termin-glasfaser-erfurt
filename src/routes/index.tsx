@@ -783,6 +783,7 @@ function Index() {
           <div style={{ padding: 30, textAlign: "center", color: "#999", fontSize: 13 }}>Keine Objekte mit diesen Filtern.</div>
         )}
       </div>
+      </>)}
 
       {/* TERMIN-PLAN OVERLAY */}
       {showPlan && (
