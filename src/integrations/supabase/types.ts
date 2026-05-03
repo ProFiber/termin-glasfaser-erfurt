@@ -121,6 +121,39 @@ export type Database = {
         }
         Relationships: []
       }
+      doku_states: {
+        Row: {
+          bid: string
+          durchfuehrt_am: string | null
+          durchfuehrt_von: string
+          foto: boolean
+          notiz: string
+          protokoll: boolean
+          sharepoint: boolean
+          updated_at: string
+        }
+        Insert: {
+          bid: string
+          durchfuehrt_am?: string | null
+          durchfuehrt_von?: string
+          foto?: boolean
+          notiz?: string
+          protokoll?: boolean
+          sharepoint?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bid?: string
+          durchfuehrt_am?: string | null
+          durchfuehrt_von?: string
+          foto?: boolean
+          notiz?: string
+          protokoll?: boolean
+          sharepoint?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
