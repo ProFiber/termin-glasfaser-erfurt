@@ -2,6 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
+import { KalenderTab } from "@/components/KalenderTab";
+import DokuTab from "@/components/DokuTab";
+import KarteTab from "@/components/KarteTab";
+
+type TabKey = "call" | "karte" | "kalender" | "doku";
+const TAB_TITLE: Record<TabKey, string> = {
+  call: "📞 Call-Liste",
+  karte: "🗺️ Karte",
+  kalender: "📅 Kalender",
+  doku: "📋 Dokumentation",
+};
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -159,6 +170,7 @@ function Index() {
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<TabKey>("call");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
@@ -489,7 +501,7 @@ function Index() {
       <div style={{ background: "#e20074", color: "white", padding: "12px 16px", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ fontSize: 11, opacity: 0.75, letterSpacing: 0.3 }}>An der Schmücke · Glasfaser · Störmer Bau · ☁️ Cloud-Sync</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 18, fontWeight: 700 }}>📞 Call-Liste</span>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>{TAB_TITLE[activeTab]}</span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {flash === "saving" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>⏳ Speichern…</span>}
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
@@ -501,6 +513,29 @@ function Index() {
         </div>
       </div>
 
+      {activeTab === "karte" && (
+        <div style={{ position: "relative", height: "calc(100vh - 110px)" }}>
+          <KarteTab
+            contacts={contacts}
+            states={states}
+            onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+          />
+        </div>
+      )}
+
+      {activeTab === "kalender" && (
+        <KalenderTab
+          contacts={contacts}
+          states={states}
+          onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+        />
+      )}
+
+      {activeTab === "doku" && (
+        <DokuTab contacts={contacts} callStates={states} />
+      )}
+
+      {activeTab === "call" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
         <input
@@ -592,7 +627,7 @@ function Index() {
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
           return (
-            <div key={c.bid} style={{
+            <div key={c.bid} id={`card-${c.bid}`} style={{
               background: cardBg(st),
               borderRadius: 11,
               marginBottom: 8,
@@ -748,6 +783,7 @@ function Index() {
           <div style={{ padding: 30, textAlign: "center", color: "#999", fontSize: 13 }}>Keine Objekte mit diesen Filtern.</div>
         )}
       </div>
+      </>)}
 
       {/* TERMIN-PLAN OVERLAY */}
       {showPlan && (
@@ -910,46 +946,82 @@ function Index() {
         </div>
       )}
 
-      {/* BOTTOM BAR */}
+      {/* BOTTOM BAR (only on call tab) */}
+      {activeTab === "call" && (
+        <div style={{
+          position: "fixed", bottom: 56, left: "50%", transform: "translateX(-50%)",
+          width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
+          padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
+          zIndex: 25,
+        }}>
+          <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
+            {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
+          </div>
+          <button
+            onClick={() => setShowPlan(true)}
+            disabled={appointments.length === 0}
+            style={{
+              background: appointments.length ? "#e20074" : "#d1d5db",
+              color: "white", border: "none", borderRadius: 9,
+              padding: "8px 12px", fontSize: 12, fontWeight: 700,
+              cursor: appointments.length ? "pointer" : "not-allowed",
+              whiteSpace: "nowrap",
+            }}
+            title="Termine als Wochenplan anzeigen"
+          >
+            📅 Plan ({appointments.length})
+          </button>
+          <button
+            onClick={shareAppointmentsWhatsApp}
+            disabled={appointments.length === 0}
+            style={{
+              background: appointments.length ? "#25D366" : "#d1d5db",
+              color: "white", border: "none", borderRadius: 9,
+              padding: "8px 12px", fontSize: 12, fontWeight: 700,
+              cursor: appointments.length ? "pointer" : "not-allowed",
+              whiteSpace: "nowrap",
+            }}
+            title="Alle Termine per WhatsApp teilen"
+          >
+            💬 WA
+          </button>
+          <div style={{ fontWeight: 800, fontSize: 13, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
+            {counts.termin}✓
+          </div>
+        </div>
+      )}
+
+      {/* TAB NAV */}
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
+        display: "flex", zIndex: 30,
       }}>
-        <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
-          {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
-        </div>
-        <button
-          onClick={() => setShowPlan(true)}
-          disabled={appointments.length === 0}
-          style={{
-            background: appointments.length ? "#e20074" : "#d1d5db",
-            color: "white", border: "none", borderRadius: 9,
-            padding: "8px 12px", fontSize: 12, fontWeight: 700,
-            cursor: appointments.length ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
-          }}
-          title="Termine als Wochenplan anzeigen"
-        >
-          📅 Plan ({appointments.length})
-        </button>
-        <button
-          onClick={shareAppointmentsWhatsApp}
-          disabled={appointments.length === 0}
-          style={{
-            background: appointments.length ? "#25D366" : "#d1d5db",
-            color: "white", border: "none", borderRadius: 9,
-            padding: "8px 12px", fontSize: 12, fontWeight: 700,
-            cursor: appointments.length ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
-          }}
-          title="Alle Termine per WhatsApp teilen"
-        >
-          💬 WA
-        </button>
-        <div style={{ fontWeight: 800, fontSize: 13, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
-          {counts.termin}✓
-        </div>
+        {([
+          ["call", "📞", "Call"],
+          ["karte", "🗺️", "Karte"],
+          ["kalender", "📅", "Kalender"],
+          ["doku", "📋", "Doku"],
+        ] as const).map(([key, icon, label]) => {
+          const active = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={{
+                flex: 1, background: "white", border: "none",
+                borderTop: `3px solid ${active ? "#e20074" : "transparent"}`,
+                padding: "8px 4px 10px", cursor: "pointer",
+                color: active ? "#e20074" : "#94a3b8",
+                fontWeight: active ? 700 : 500, fontSize: 11,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
