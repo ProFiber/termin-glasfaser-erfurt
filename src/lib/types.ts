@@ -37,3 +37,14 @@ export type CallState = {
   notiz: string;
   updated_at: string;
 };
+
+export type DokuState = {
+  bid: string;
+  foto: boolean;
+  protokoll: boolean;
+  sharepoint: boolean;
+  durchfuehrt_von: string;
+  durchfuehrt_am: string | null;
+  notiz: string;
+  updated_at: string;
+};
