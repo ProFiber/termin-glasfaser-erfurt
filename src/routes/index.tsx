@@ -946,46 +946,82 @@ function Index() {
         </div>
       )}
 
-      {/* BOTTOM BAR */}
+      {/* BOTTOM BAR (only on call tab) */}
+      {activeTab === "call" && (
+        <div style={{
+          position: "fixed", bottom: 56, left: "50%", transform: "translateX(-50%)",
+          width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
+          padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
+          zIndex: 25,
+        }}>
+          <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
+            {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
+          </div>
+          <button
+            onClick={() => setShowPlan(true)}
+            disabled={appointments.length === 0}
+            style={{
+              background: appointments.length ? "#e20074" : "#d1d5db",
+              color: "white", border: "none", borderRadius: 9,
+              padding: "8px 12px", fontSize: 12, fontWeight: 700,
+              cursor: appointments.length ? "pointer" : "not-allowed",
+              whiteSpace: "nowrap",
+            }}
+            title="Termine als Wochenplan anzeigen"
+          >
+            📅 Plan ({appointments.length})
+          </button>
+          <button
+            onClick={shareAppointmentsWhatsApp}
+            disabled={appointments.length === 0}
+            style={{
+              background: appointments.length ? "#25D366" : "#d1d5db",
+              color: "white", border: "none", borderRadius: 9,
+              padding: "8px 12px", fontSize: 12, fontWeight: 700,
+              cursor: appointments.length ? "pointer" : "not-allowed",
+              whiteSpace: "nowrap",
+            }}
+            title="Alle Termine per WhatsApp teilen"
+          >
+            💬 WA
+          </button>
+          <div style={{ fontWeight: 800, fontSize: 13, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
+            {counts.termin}✓
+          </div>
+        </div>
+      )}
+
+      {/* TAB NAV */}
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
+        display: "flex", zIndex: 30,
       }}>
-        <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
-          {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
-        </div>
-        <button
-          onClick={() => setShowPlan(true)}
-          disabled={appointments.length === 0}
-          style={{
-            background: appointments.length ? "#e20074" : "#d1d5db",
-            color: "white", border: "none", borderRadius: 9,
-            padding: "8px 12px", fontSize: 12, fontWeight: 700,
-            cursor: appointments.length ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
-          }}
-          title="Termine als Wochenplan anzeigen"
-        >
-          📅 Plan ({appointments.length})
-        </button>
-        <button
-          onClick={shareAppointmentsWhatsApp}
-          disabled={appointments.length === 0}
-          style={{
-            background: appointments.length ? "#25D366" : "#d1d5db",
-            color: "white", border: "none", borderRadius: 9,
-            padding: "8px 12px", fontSize: 12, fontWeight: 700,
-            cursor: appointments.length ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
-          }}
-          title="Alle Termine per WhatsApp teilen"
-        >
-          💬 WA
-        </button>
-        <div style={{ fontWeight: 800, fontSize: 13, color: counts.termin >= 4 ? "#16a34a" : "#e20074", flexShrink: 0 }}>
-          {counts.termin}✓
-        </div>
+        {([
+          ["call", "📞", "Call"],
+          ["karte", "🗺️", "Karte"],
+          ["kalender", "📅", "Kalender"],
+          ["doku", "📋", "Doku"],
+        ] as const).map(([key, icon, label]) => {
+          const active = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={{
+                flex: 1, background: "white", border: "none",
+                borderTop: `3px solid ${active ? "#e20074" : "transparent"}`,
+                padding: "8px 4px 10px", cursor: "pointer",
+                color: active ? "#e20074" : "#94a3b8",
+                fontWeight: active ? 700 : 500, fontSize: 11,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
