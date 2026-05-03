@@ -177,6 +177,9 @@ function Admin() {
         <button onClick={applyMarkings} disabled={busy} style={btn("#16a34a")}>
           2️⃣ Hauptstr. 3/15/17/46/47 → Erledigt &nbsp;·&nbsp; Hauptstr. 9 → Mi VM
         </button>
+        <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
+          3️⃣ Schmücke „erledigt" aus Excel übernehmen (203 Einträge)
+        </button>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
