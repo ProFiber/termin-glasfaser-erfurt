@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
-import KalenderTab from "@/components/KalenderTab";
+import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 
