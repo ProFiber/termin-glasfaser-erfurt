@@ -501,7 +501,7 @@ function Index() {
       <div style={{ background: "#e20074", color: "white", padding: "12px 16px", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ fontSize: 11, opacity: 0.75, letterSpacing: 0.3 }}>An der Schmücke · Glasfaser · Störmer Bau · ☁️ Cloud-Sync</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 18, fontWeight: 700 }}>📞 Call-Liste</span>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>{TAB_TITLE[activeTab]}</span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {flash === "saving" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>⏳ Speichern…</span>}
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
