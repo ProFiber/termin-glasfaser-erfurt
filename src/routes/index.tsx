@@ -604,7 +604,7 @@ function Index() {
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
           return (
-            <div key={c.bid} style={{
+            <div key={c.bid} id={`card-${c.bid}`} style={{
               background: cardBg(st),
               borderRadius: 11,
               marginBottom: 8,
