@@ -513,6 +513,29 @@ function Index() {
         </div>
       </div>
 
+      {activeTab === "karte" && (
+        <div style={{ position: "relative", height: "calc(100vh - 110px)" }}>
+          <KarteTab
+            contacts={contacts}
+            states={states}
+            onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+          />
+        </div>
+      )}
+
+      {activeTab === "kalender" && (
+        <KalenderTab
+          contacts={contacts}
+          states={states}
+          onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+        />
+      )}
+
+      {activeTab === "doku" && (
+        <DokuTab contacts={contacts} callStates={states} />
+      )}
+
+      {activeTab === "call" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
         <input
