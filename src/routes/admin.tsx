@@ -88,6 +88,7 @@ function Admin() {
 
   async function migrateSchmueckeErledigt() {
     setBusy(true);
+    setLog([]);
     append("Lade schmuecke-erledigt.json…");
     try {
       const res = await fetch("/schmuecke-erledigt.json");
@@ -178,7 +179,7 @@ function Admin() {
           2️⃣ Hauptstr. 3/15/17/46/47 → Erledigt &nbsp;·&nbsp; Hauptstr. 9 → Mi VM
         </button>
         <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
-          3️⃣ Schmücke „erledigt" aus Excel übernehmen (203 Einträge)
+          3️⃣ An der Schmücke: 203 „erledigt"-Einträge importieren
         </button>
       </div>
 
