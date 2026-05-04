@@ -12,10 +12,10 @@ const MAGENTA = "#e20074";
 const STATUS_COLOR: Record<CallStatus, string> = {
   offen: "#9ca3af",
   angerufen: "#facc15",
-  termin: "#22c55e",
+  termin: "#3b82f6",
   nichtErreicht: "#fb923c",
   abgelehnt: "#ef4444",
-  erledigt: "#3b82f6",
+  erledigt: "#22c55e",
 };
 
 const STATUS_LABEL: Record<CallStatus, string> = {
