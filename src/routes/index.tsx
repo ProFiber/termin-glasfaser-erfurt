@@ -1011,7 +1011,8 @@ function Index() {
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        display: "flex", zIndex: 30,
+        display: "flex", zIndex: 5000, height: "calc(56px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)", boxSizing: "border-box",
       }}>
         {([
           ["call", "📞", "Call"],
@@ -1027,7 +1028,7 @@ function Index() {
               style={{
                 flex: 1, background: "white", border: "none",
                 borderTop: `3px solid ${active ? "#e20074" : "transparent"}`,
-                padding: "8px 4px 10px", cursor: "pointer",
+                padding: "6px 4px 8px", cursor: "pointer",
                 color: active ? "#e20074" : "#94a3b8",
                 fontWeight: active ? 700 : 500, fontSize: 11,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
