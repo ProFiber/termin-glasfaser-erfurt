@@ -1,4 +1,8 @@
 import { useMemo } from "react";
+import {
+  PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
 import type { Contact, CallState } from "@/lib/types";
 
 const MAGENTA = "#e20074";
