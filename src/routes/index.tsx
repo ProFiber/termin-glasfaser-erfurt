@@ -129,16 +129,16 @@ const ortOf = (nvt: string): Ort | null => NVT_ORT[nvt] ?? null;
 const STATUS_META: Record<CallStatus, { label: string; dot: string }> = {
   offen:         { label: "Offen",          dot: "#9ca3af" },
   angerufen:     { label: "Angerufen",      dot: "#facc15" },
-  termin:        { label: "✅ Termin",       dot: "#22c55e" },
+  termin:        { label: "✅ Termin",       dot: "#3b82f6" },
   nichtErreicht: { label: "Nicht erreicht", dot: "#fb923c" },
   abgelehnt:     { label: "Abgelehnt",      dot: "#ef4444" },
-  erledigt:      { label: "✓ Erledigt",     dot: "#3b82f6" },
+  erledigt:      { label: "✓ Erledigt",     dot: "#22c55e" },
 };
 
 const cardBorder = (st: CallStatus) =>
-  ({ termin: "#22c55e", abgelehnt: "#ef4444", nichtErreicht: "#fb923c", angerufen: "#facc15", erledigt: "#3b82f6", offen: "#e5e7eb" }[st]);
+  ({ termin: "#3b82f6", abgelehnt: "#ef4444", nichtErreicht: "#fb923c", angerufen: "#facc15", erledigt: "#22c55e", offen: "#e5e7eb" }[st]);
 const cardBg = (st: CallStatus) =>
-  ({ termin: "#f0fff6", abgelehnt: "#fff5f5", nichtErreicht: "#fffbf0", erledigt: "#eff6ff" } as Record<string, string>)[st] || "white";
+  ({ termin: "#eff6ff", abgelehnt: "#fff5f5", nichtErreicht: "#fffbf0", erledigt: "#f0fff6" } as Record<string, string>)[st] || "white";
 
 const lastName = (name: string) => name.trim().split(/\s+/).pop() || name;
 
