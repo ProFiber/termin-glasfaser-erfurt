@@ -365,7 +365,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       {locError && (
         <div
           style={{
-            position: "absolute", top: 104, right: 8, zIndex: 1001,
+            position: "absolute", top: 56, right: 56, zIndex: 1001,
             background: "#fee2e2", color: "#991b1b", padding: "6px 10px",
             borderRadius: 8, fontSize: 12, fontWeight: 600,
             boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
