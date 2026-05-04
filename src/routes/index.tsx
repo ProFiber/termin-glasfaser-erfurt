@@ -5,13 +5,15 @@ import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
+import NvtTab from "@/components/NvtTab";
 
-type TabKey = "call" | "karte" | "kalender" | "doku";
+type TabKey = "call" | "karte" | "kalender" | "doku" | "nvt";
 const TAB_TITLE: Record<TabKey, string> = {
   call: "📞 Call-Liste",
   karte: "🗺️ Karte",
   kalender: "📅 Kalender",
   doku: "📋 Dokumentation",
+  nvt: "📊 NVT-Übersicht",
 };
 
 export const Route = createFileRoute("/")({
@@ -551,6 +553,10 @@ function Index() {
         <DokuTab contacts={contacts} callStates={states} />
       )}
 
+      {activeTab === "nvt" && (
+        <NvtTab contacts={contacts} states={states} />
+      )}
+
       {activeTab === "call" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
@@ -1019,6 +1025,7 @@ function Index() {
           ["karte", "🗺️", "Karte"],
           ["kalender", "📅", "Kalender"],
           ["doku", "📋", "Doku"],
+          ["nvt", "📊", "NVT"],
         ] as const).map(([key, icon, label]) => {
           const active = activeTab === key;
           return (
