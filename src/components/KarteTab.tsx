@@ -78,6 +78,105 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const [geocoding, setGeocoding] = useState(false);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
   const [selected, setSelected] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userMarkerRef = useRef<any>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const firstLocFixRef = useRef(true);
+
+  const stopWatching = () => {
+    if (watchIdRef.current != null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopWatching();
+    };
+  }, []);
+
+  const handleLocate = () => {
+    if (!mapRef.current || !window.L) return;
+    if (!navigator.geolocation) {
+      setLocError("Geolocation nicht unterstützt");
+      setTimeout(() => setLocError(null), 3000);
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = window.L as any;
+    const map = mapRef.current;
+
+    // Inject pulse CSS once
+    if (!document.getElementById("user-loc-pulse-style")) {
+      const style = document.createElement("style");
+      style.id = "user-loc-pulse-style";
+      style.textContent = `
+        @keyframes userLocPulse {
+          0% { transform: scale(1); opacity: 0.6; }
+          70% { transform: scale(2.6); opacity: 0; }
+          100% { transform: scale(2.6); opacity: 0; }
+        }
+        .user-loc-wrap { position: relative; width: 18px; height: 18px; }
+        .user-loc-pulse {
+          position: absolute; inset: 0; border-radius: 50%;
+          background: #1d8bf8; opacity: 0.5;
+          animation: userLocPulse 1.8s ease-out infinite;
+        }
+        .user-loc-dot {
+          position: absolute; inset: 0; border-radius: 50%;
+          background: #1d8bf8; border: 2px solid white;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    setLocError(null);
+    setLocating(true);
+    firstLocFixRef.current = true;
+    stopWatching();
+
+    const onPos = (pos: GeolocationPosition) => {
+      const { latitude, longitude } = pos.coords;
+      const html = `<div class="user-loc-wrap"><div class="user-loc-pulse"></div><div class="user-loc-dot"></div></div>`;
+      const icon = L.divIcon({ html, className: "", iconSize: [18, 18], iconAnchor: [9, 9] });
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([latitude, longitude]);
+        userMarkerRef.current.setIcon(icon);
+      } else {
+        userMarkerRef.current = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(map);
+      }
+      if (firstLocFixRef.current) {
+        map.setView([latitude, longitude], 16);
+        firstLocFixRef.current = false;
+        setLocating(false);
+      }
+    };
+
+    const onErr = (err: GeolocationPositionError) => {
+      setLocating(false);
+      const msg = err.code === err.PERMISSION_DENIED
+        ? "Standort verweigert"
+        : err.code === err.POSITION_UNAVAILABLE
+        ? "Standort nicht verfügbar"
+        : "Standort-Fehler";
+      setLocError(msg);
+      setTimeout(() => setLocError(null), 3500);
+    };
+
+    navigator.geolocation.getCurrentPosition(onPos, onErr, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    });
+    watchIdRef.current = navigator.geolocation.watchPosition(onPos, onErr, {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+    });
+  };
 
   // Initialize map
   useEffect(() => {
