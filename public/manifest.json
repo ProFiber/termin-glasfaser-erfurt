@@ -1,0 +1,10 @@
+{
+  "name": "Glasfaser Erfurt Terminierung",
+  "short_name": "Glasfaser Erfurt",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#e20074",
+  "background_color": "#ffffff",
+  "icons": []
+}
