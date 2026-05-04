@@ -142,3 +142,146 @@ export default function NvtTab({
     </div>
   );
 }
+
+type NvtRowMin = {
+  nvt: string; gesamt: number; erledigt: number; termin: number; offen: number; abgelehnt: number; pct: number;
+};
+
+function ChartsSection({
+  rows, states, totalPct,
+}: {
+  rows: NvtRowMin[];
+  states: Record<string, CallState>;
+  totalPct: number;
+}) {
+  const totals = useMemo(() => {
+    let erledigt = 0, termin = 0, offen = 0, abgelehnt = 0;
+    for (const r of rows) {
+      erledigt += r.erledigt; termin += r.termin; offen += r.offen; abgelehnt += r.abgelehnt;
+    }
+    return [
+      { name: "Erledigt", value: erledigt, color: "#22c55e" },
+      { name: "Termin", value: termin, color: "#3b82f6" },
+      { name: "Offen", value: offen, color: "#9ca3af" },
+      { name: "Abgelehnt", value: abgelehnt, color: "#ef4444" },
+    ];
+  }, [rows]);
+
+  const barData = useMemo(
+    () => rows.map((r) => ({
+      nvt: r.nvt,
+      Erledigt: r.erledigt,
+      Termin: r.termin,
+      Offen: r.offen,
+      Abgelehnt: r.abgelehnt,
+      pct: Math.round(r.pct),
+      gesamt: r.gesamt,
+    })),
+    [rows],
+  );
+
+  const lineData = useMemo(() => {
+    const days: { date: string; label: string }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      const label = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
+      days.push({ date: iso, label });
+    }
+    const perDay = new Map<string, number>(days.map((d) => [d.date, 0]));
+    for (const s of Object.values(states)) {
+      if (s.status !== "erledigt" || !s.updated_at) continue;
+      const iso = new Date(s.updated_at).toISOString().slice(0, 10);
+      if (perDay.has(iso)) perDay.set(iso, (perDay.get(iso) ?? 0) + 1);
+    }
+    let cum = 0;
+    return days.map((d) => {
+      cum += perDay.get(d.date) ?? 0;
+      return { label: d.label, kumuliert: cum };
+    });
+  }, [states]);
+
+  const cardStyle: React.CSSProperties = {
+    background: "white", borderRadius: 12, padding: 16, marginBottom: 12, border: "1px solid #e5e7eb",
+  };
+
+  return (
+    <>
+      <div style={cardStyle}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 8, textAlign: "center" }}>
+          Gesamtverteilung
+        </div>
+        <div style={{ position: "relative", width: "100%", height: 220, display: "flex", justifyContent: "center" }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={totals}
+                dataKey="value"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={2}
+              >
+                {totals.map((e, i) => <Cell key={i} fill={e.color} />)}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -65%)",
+            textAlign: "center", pointerEvents: "none",
+          }}>
+            <div style={{ fontSize: 26, fontWeight: 900, color: "#111" }}>{totalPct}%</div>
+            <div style={{ fontSize: 11, color: "#666" }}>erledigt</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 8 }}>
+          Status pro NVT
+        </div>
+        <ResponsiveContainer width="100%" height={Math.max(180, barData.length * 38)}>
+          <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 40, left: 0, bottom: 5 }}>
+            <XAxis type="number" fontSize={11} />
+            <YAxis type="category" dataKey="nvt" fontSize={11} width={70} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="Erledigt" stackId="a" fill="#22c55e">
+              {barData.map((_, i) => <Cell key={i} />)}
+            </Bar>
+            <Bar dataKey="Termin" stackId="a" fill="#3b82f6" />
+            <Bar dataKey="Offen" stackId="a" fill="#9ca3af" />
+            <Bar dataKey="Abgelehnt" stackId="a" fill="#ef4444"
+              label={{
+                position: "right",
+                formatter: (_v: number, _n: string, props: { payload?: { pct?: number } }) =>
+                  `${props?.payload?.pct ?? 0}%`,
+                fontSize: 11,
+                fill: "#111",
+              }} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 8 }}>
+          Erledigungen der letzten 14 Tage
+        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={lineData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <XAxis dataKey="label" fontSize={11} />
+            <YAxis fontSize={11} allowDecimals={false} />
+            <Tooltip />
+            <Line type="monotone" dataKey="kumuliert" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </>
+  );
+}
