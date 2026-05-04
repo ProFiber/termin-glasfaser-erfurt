@@ -150,6 +150,82 @@ export default function DokuTab({ contacts, callStates }: Props) {
 
   const flashIcon = flash === "saving" ? "⏳" : flash === "saved" ? "☁️" : flash === "error" ? "⚠️" : "";
 
+  function shareWhatsApp() {
+    // Group eligible contacts (erledigt or termin) by NVT
+    const eligible = contacts.filter((c) => {
+      const st = callStates[c.bid]?.status;
+      return st === "erledigt" || st === "termin";
+    });
+    const groups = new Map<string, Contact[]>();
+    eligible.forEach((c) => {
+      const key = `${c.nvt || "—"} · ${c.ort || ""}`.trim();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+
+    type Row = {
+      label: string;
+      total: number;
+      complete: number;
+      foto: number;
+      protokoll: number;
+      sharepoint: number;
+      pct: number;
+    };
+    const rows: Row[] = [];
+    groups.forEach((list, label) => {
+      let complete = 0, foto = 0, protokoll = 0, sharepoint = 0;
+      list.forEach((c) => {
+        const d = dokuStates[c.bid];
+        if (d?.foto) foto++;
+        if (d?.protokoll) protokoll++;
+        if (d?.sharepoint) sharepoint++;
+        if (score(d) === 3) complete++;
+      });
+      const total = list.length;
+      const pct = total === 0 ? 0 : Math.round((complete / total) * 100);
+      rows.push({ label, total, complete, foto, protokoll, sharepoint, pct });
+    });
+    rows.sort((a, b) => b.pct - a.pct);
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const stamp = `${dd}.${mm}.${yyyy} · ${hh}:${mi} Uhr`;
+
+    const totalAll = eligible.length;
+    const completeAll = eligible.filter((c) => score(dokuStates[c.bid]) === 3).length;
+    const offen = totalAll - completeAll;
+
+    function bar(pct: number) {
+      const filled = Math.round((pct / 100) * 10);
+      return "▓".repeat(filled) + "░".repeat(10 - filled);
+    }
+
+    const lines: string[] = [];
+    lines.push("📋 *Doku-Status · An der Schmücke*");
+    lines.push(`_Stand: ${stamp}_`);
+    lines.push("");
+    lines.push(`✅ *${completeAll} / ${totalAll} vollständig dokumentiert*`);
+    lines.push("");
+    lines.push("📊 *Fortschritt pro NVT:*");
+    rows.forEach((r) => {
+      lines.push(
+        `${r.label} ${bar(r.pct)} ${r.pct}%  ✅${r.complete} 📷${r.foto} 📄${r.protokoll} ☁️${r.sharepoint}`,
+      );
+    });
+    lines.push("");
+    lines.push(`❌ *Noch nicht dokumentiert: ${offen} Objekte*`);
+    lines.push("");
+    lines.push("_Störmer Bau · Pro-Fiber_");
+
+    const text = lines.join("\n");
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+  }
+
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", padding: 12 }}>
       {/* Header */}
