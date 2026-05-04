@@ -337,6 +337,44 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         </div>
       )}
 
+      {/* My location button */}
+      <button
+        onClick={handleLocate}
+        aria-label="Mein Standort"
+        style={{
+          position: "absolute", top: 56, right: 8, zIndex: 1001,
+          width: 40, height: 40, borderRadius: 10, border: "none",
+          background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+          cursor: "pointer", fontSize: 18, display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {locating ? (
+          <span
+            style={{
+              width: 16, height: 16, borderRadius: "50%",
+              border: "2px solid #e5e7eb", borderTopColor: "#1d8bf8",
+              animation: "userLocSpin 0.8s linear infinite",
+              display: "inline-block",
+            }}
+          />
+        ) : "📍"}
+        <style>{`@keyframes userLocSpin { to { transform: rotate(360deg); } }`}</style>
+      </button>
+
+      {locError && (
+        <div
+          style={{
+            position: "absolute", top: 104, right: 8, zIndex: 1001,
+            background: "#fee2e2", color: "#991b1b", padding: "6px 10px",
+            borderRadius: 8, fontSize: 12, fontWeight: 600,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+          }}
+        >
+          ⚠️ {locError}
+        </div>
+      )}
+
       {/* Legend top-right */}
       <div
         style={{
