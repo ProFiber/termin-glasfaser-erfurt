@@ -100,6 +100,9 @@ export default function NvtTab({
         </button>
       </div>
 
+      <ChartsSection rows={rows} states={states} totalPct={totalPct} />
+
+
       {rows.map((r) => {
         const pct = Math.round(r.pct);
         return (
