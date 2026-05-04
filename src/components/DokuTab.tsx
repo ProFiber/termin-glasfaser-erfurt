@@ -242,7 +242,24 @@ export default function DokuTab({ contacts, callStates }: Props) {
           <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
             {done} / {total} vollständig dokumentiert
           </div>
-          <div style={{ fontSize: 14 }}>{flashIcon}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 14 }}>{flashIcon}</div>
+            <button
+              onClick={shareWhatsApp}
+              style={{
+                background: "#25D366",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              💬 Status teilen
+            </button>
+          </div>
         </div>
         <div style={{ height: 10, background: "#e5e7eb", borderRadius: 6, overflow: "hidden" }}>
           <div
