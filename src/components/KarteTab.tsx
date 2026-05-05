@@ -119,16 +119,17 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
           70% { transform: scale(2.6); opacity: 0; }
           100% { transform: scale(2.6); opacity: 0; }
         }
-        .user-loc-wrap { position: relative; width: 18px; height: 18px; }
+        .user-loc-wrap { position: relative; width: 28px; height: 28px; }
         .user-loc-pulse {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8; opacity: 0.5;
+          background: #1d8bf8; opacity: 0.55;
           animation: userLocPulse 1.8s ease-out infinite;
         }
         .user-loc-dot {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8; border: 2px solid white;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          background: #1d8bf8;
+          border: 4px solid white;
+          box-shadow: 0 0 0 2px #1d8bf8, 0 2px 8px rgba(0,0,0,0.5);
         }
       `;
       document.head.appendChild(style);
