@@ -1,0 +1,1 @@
+UPDATE public.contacts SET email='' WHERE bid='1000004320784';
