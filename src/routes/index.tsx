@@ -538,7 +538,7 @@ function Index() {
   }, [contacts, states]);
 
   return (
-    <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
+    <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
       <div ref={headerRef} style={{ background: "#e20074", color: "white", padding: "12px 16px", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ fontSize: 11, opacity: 0.75, letterSpacing: 0.3 }}>An der Schmücke · Glasfaser · Störmer Bau · ☁️ Cloud-Sync</div>
@@ -556,7 +556,7 @@ function Index() {
       </div>
 
       {activeTab === "karte" && (
-        <div style={{ position: "relative", height: `calc(100dvh - ${headerHeight}px - 76px - env(safe-area-inset-bottom, 0px))`, minHeight: 240 }}>
+        <div style={{ position: "relative", height: `calc(100dvh - ${headerHeight}px - 56px - env(safe-area-inset-bottom, 0px))`, minHeight: 240 }}>
           <KarteTab
             contacts={contacts}
             states={states}
@@ -855,8 +855,8 @@ function Index() {
         <div
           onClick={() => setLongPressContact(null)}
           style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
-            zIndex: 60, display: "flex", justifyContent: "center", alignItems: "flex-end",
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 56, background: "rgba(0,0,0,0.5)",
+            zIndex: 500, display: "flex", justifyContent: "center", alignItems: "flex-end",
           }}
         >
           <div
@@ -910,8 +910,8 @@ function Index() {
         <div
           onClick={() => setShowPlan(false)}
           style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
-            zIndex: 50, display: "flex", justifyContent: "center", alignItems: "flex-end",
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 56, background: "rgba(0,0,0,0.55)",
+            zIndex: 500, display: "flex", justifyContent: "center", alignItems: "flex-end",
           }}
         >
           <div
@@ -1072,7 +1072,7 @@ function Index() {
           position: "fixed", bottom: 56, left: "50%", transform: "translateX(-50%)",
           width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
           padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
-          zIndex: 25,
+          zIndex: 900,
         }}>
           <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
             {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
@@ -1114,9 +1114,10 @@ function Index() {
       {/* TAB NAV */}
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-        width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        display: "flex", zIndex: 5000, height: "calc(76px + env(safe-area-inset-bottom, 0px))",
-        paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box",
+        width: "100%", maxWidth: 480,
+        background: "white", borderTop: "1px solid #e5e7eb",
+        display: "flex", zIndex: 9999, height: "calc(56px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)", boxSizing: "border-box",
       }}>
         {([
           ["call", "📞", "Call"],
