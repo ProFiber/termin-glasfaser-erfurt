@@ -589,20 +589,28 @@ function Index() {
             style={sortBtn()}
           >{nvtSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
+            onClick={() => setPriorityOnly((v) => !v)}
+            title="Nur Priorität-NVTs"
+            style={chip(priorityOnly, "#ef4444")}
+          >🔥 Priorität</button>
+          <button
             onClick={() => setNvtSel(new Set())}
-            style={chip(nvtSel.size === 0, "#0891b2")}
+            style={chip(nvtSel.size === 0 && !priorityOnly, "#0891b2")}
           >Alle NVTs</button>
-          {nvts.map(([n, count]) => (
-            <button
-              key={n}
-              onClick={() => setNvtSel((prev) => {
-                const next = new Set(prev);
-                if (next.has(n)) next.delete(n); else next.add(n);
-                return next;
-              })}
-              style={chip(nvtSel.has(n), "#0891b2")}
-            >{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
-          ))}
+          {nvts.map(([n, count]) => {
+            const prio = isPriorityNvt(n);
+            return (
+              <button
+                key={n}
+                onClick={() => setNvtSel((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(n)) next.delete(n); else next.add(n);
+                  return next;
+                })}
+                style={chip(nvtSel.has(n), prio ? "#ef4444" : "#0891b2")}
+              >{prio ? "🔥 " : ""}{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
+            );
+          })}
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           <button
