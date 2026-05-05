@@ -334,6 +334,16 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
         }}
       >
+        <button
+          onClick={() => setPriorityOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${priorityOnly ? "#ef4444" : "#e5e7eb"}`,
+            background: priorityOnly ? "#ef4444" : "white",
+            color: priorityOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >🔥 Nur Priorität</button>
         {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
           const active = filter === k;
           const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];
