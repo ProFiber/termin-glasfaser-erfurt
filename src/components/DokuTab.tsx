@@ -132,8 +132,16 @@ export default function DokuTab({ contacts, callStates }: Props) {
 
   const visible = useMemo(() => {
     const list = contacts.filter((c) => {
-      const st = callStates[c.bid]?.status;
-      return st === "erledigt" || st === "termin";
+      const cs = callStates[c.bid];
+      const st = cs?.status;
+      if (st !== "erledigt" && st !== "termin") return false;
+      if (onlyToday) {
+        const d = dokuStates[c.bid];
+        const doneToday = d?.durchfuehrt_am ? d.durchfuehrt_am.slice(0, 10) === todayISO : false;
+        const terminToday = cs?.termin_datum === todayISO;
+        if (!doneToday && !terminToday) return false;
+      }
+      return true;
     });
     return list.sort((a, b) => {
       const sa = score(dokuStates[a.bid]);
@@ -145,7 +153,7 @@ export default function DokuTab({ contacts, callStates }: Props) {
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO]);
 
   const total = visible.length;
   const done = visible.filter((c) => score(dokuStates[c.bid]) === 3).length;
