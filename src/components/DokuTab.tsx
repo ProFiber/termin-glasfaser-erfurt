@@ -282,6 +282,40 @@ export default function DokuTab({ contacts, callStates }: Props) {
             }}
           />
         </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button
+            onClick={() => setOnlyToday(false)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${!onlyToday ? MAGENTA : "#e5e7eb"}`,
+              background: !onlyToday ? MAGENTA : "white",
+              color: !onlyToday ? "white" : "#475569",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Alle
+          </button>
+          <button
+            onClick={() => setOnlyToday(true)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${onlyToday ? MAGENTA : "#e5e7eb"}`,
+              background: onlyToday ? MAGENTA : "white",
+              color: onlyToday ? "white" : "#475569",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            📅 Nur heute
+          </button>
+        </div>
       </div>
 
       {/* Cards */}
