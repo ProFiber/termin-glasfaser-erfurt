@@ -556,7 +556,7 @@ function Index() {
       </div>
 
       {activeTab === "karte" && (
-        <div style={{ position: "relative", height: `calc(100dvh - ${headerHeight}px - 76px - env(safe-area-inset-bottom, 0px))`, minHeight: 240 }}>
+        <div style={{ position: "relative", height: `calc(100dvh - ${headerHeight}px - 56px - env(safe-area-inset-bottom, 0px))`, minHeight: 240 }}>
           <KarteTab
             contacts={contacts}
             states={states}
