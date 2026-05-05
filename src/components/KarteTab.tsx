@@ -29,6 +29,7 @@ const STATUS_LABEL: Record<CallStatus, string> = {
 
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+const LEAFLET_ROTATE_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet-rotate/0.2.8/leaflet-rotate.min.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare global { interface Window { L?: any } }
@@ -54,7 +55,19 @@ function loadLeaflet(): Promise<unknown> {
     const script = document.createElement("script");
     script.src = LEAFLET_JS;
     script.async = true;
-    script.onload = () => resolve(window.L);
+    script.onload = () => {
+      // Load rotate plugin after Leaflet
+      if (!document.querySelector(`script[src="${LEAFLET_ROTATE_JS}"]`)) {
+        const rot = document.createElement("script");
+        rot.src = LEAFLET_ROTATE_JS;
+        rot.async = true;
+        rot.onload = () => resolve(window.L);
+        rot.onerror = () => resolve(window.L); // fallback even if rotate fails
+        document.head.appendChild(rot);
+      } else {
+        resolve(window.L);
+      }
+    };
     script.onerror = reject;
     document.head.appendChild(script);
   });
@@ -115,21 +128,21 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       style.id = "user-loc-pulse-style";
       style.textContent = `
         @keyframes userLocPulse {
-          0% { transform: scale(1); opacity: 0.6; }
-          70% { transform: scale(2.6); opacity: 0; }
-          100% { transform: scale(2.6); opacity: 0; }
+          0% { transform: scale(1); opacity: 0.7; }
+          70% { transform: scale(2.8); opacity: 0; }
+          100% { transform: scale(2.8); opacity: 0; }
         }
-        .user-loc-wrap { position: relative; width: 28px; height: 28px; }
+        .user-loc-wrap { position: relative; width: 20px; height: 20px; }
         .user-loc-pulse {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8; opacity: 0.55;
-          animation: userLocPulse 1.8s ease-out infinite;
+          background: #e20074; opacity: 0.6;
+          animation: userLocPulse 1.6s ease-out infinite;
         }
         .user-loc-dot {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8;
-          border: 4px solid white;
-          box-shadow: 0 0 0 2px #1d8bf8, 0 2px 8px rgba(0,0,0,0.5);
+          background: #e20074;
+          border: 3px solid white;
+          box-shadow: 0 0 0 1.5px #e20074, 0 2px 8px rgba(0,0,0,0.5);
         }
       `;
       document.head.appendChild(style);
@@ -143,7 +156,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
     const onPos = (pos: GeolocationPosition) => {
       const { latitude, longitude } = pos.coords;
       const html = `<div class="user-loc-wrap"><div class="user-loc-pulse"></div><div class="user-loc-dot"></div></div>`;
-      const icon = L.divIcon({ html, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
+      const icon = L.divIcon({ html, className: "", iconSize: [20, 20], iconAnchor: [10, 10] });
       if (userMarkerRef.current) {
         userMarkerRef.current.setLatLng([latitude, longitude]);
         userMarkerRef.current.setIcon(icon);
@@ -151,7 +164,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         userMarkerRef.current = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(map);
       }
       if (firstLocFixRef.current) {
-        map.setView([latitude, longitude], 16);
+        map.setView([latitude, longitude], 18);
         firstLocFixRef.current = false;
         setLocating(false);
       }
@@ -191,7 +204,15 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         const stored = sessionStorage.getItem("karte_view");
         if (stored) view = JSON.parse(stored);
       } catch { /* ignore */ }
-      const map = Lmod.map(mapEl.current).setView([view.lat, view.lng], view.zoom);
+      const map = Lmod.map(mapEl.current, {
+        rotate: true,
+        touchRotate: true,
+        bearing: 0,
+        touchZoom: true,
+        scrollWheelZoom: true,
+      }).setView([view.lat, view.lng], view.zoom);
+      map.options.touchZoom = true;
+      map.options.scrollWheelZoom = true;
       Lmod.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
@@ -363,6 +384,24 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         <style>{`@keyframes userLocSpin { to { transform: rotate(360deg); } }`}</style>
       </button>
 
+      {/* Compass / reset rotation */}
+      <button
+        onClick={() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const m = mapRef.current as any;
+          if (m && typeof m.setBearing === "function") m.setBearing(0);
+        }}
+        aria-label="Norden"
+        title="Nach Norden ausrichten"
+        style={{
+          position: "absolute", top: 104, right: 8, zIndex: 1001,
+          width: 40, height: 40, borderRadius: 10, border: "none",
+          background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+          cursor: "pointer", fontSize: 18, display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}
+      >🧭</button>
+
       {locError && (
         <div
           style={{
@@ -379,7 +418,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       {/* Legend top-right */}
       <div
         style={{
-          position: "absolute", top: 104, right: 8, zIndex: 1000,
+          position: "absolute", top: 152, right: 8, zIndex: 1000,
           background: "rgba(255,255,255,0.95)", borderRadius: 8, padding: 8,
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 11,
         }}
