@@ -177,6 +177,27 @@ function Index() {
   const [activeTab, setActiveTab] = useState<TabKey>("call");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+  const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+
+  function startLongPress(c: Contact) {
+    longPressFired.current = false;
+    if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try { navigator.vibrate(50); } catch {}
+      }
+      setLongPressContact(c);
+    }, 500);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [headerHeight, setHeaderHeight] = useState(72);
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -668,8 +689,19 @@ function Index() {
               boxShadow: open ? "0 6px 20px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.07)",
               overflow: "hidden",
             }}>
-              <div onClick={() => setExpanded(open ? null : c.bid)}
-                style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <div
+                onClick={() => {
+                  if (longPressFired.current) { longPressFired.current = false; return; }
+                  setExpanded(open ? null : c.bid);
+                }}
+                onTouchStart={() => startLongPress(c)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onTouchCancel={cancelLongPress}
+                onMouseDown={() => startLongPress(c)}
+                onMouseUp={cancelLongPress}
+                onMouseLeave={cancelLongPress}
+                style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
                 <div style={{ width: 11, height: 11, borderRadius: "50%", flexShrink: 0, background: STATUS_META[st].dot }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>
@@ -817,6 +849,61 @@ function Index() {
         )}
       </div>
       </>)}
+
+      {/* LONG-PRESS ACTION SHEET */}
+      {longPressContact && (
+        <div
+          onClick={() => setLongPressContact(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 60, display: "flex", justifyContent: "center", alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white", width: "100%", maxWidth: 480,
+              borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16,
+              display: "flex", flexDirection: "column", gap: 10,
+              animation: "slideUp 0.2s ease-out",
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+              📍 {longPressContact.strasse} {longPressContact.hnr}{longPressContact.hnr_zusatz} — {longPressContact.name}
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>
+              Was möchtest du anzeigen?
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setStreetSel(new Set([longPressContact.strasse]));
+                setLongPressContact(null);
+              }}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
+            >
+              🏘️ Nur diese Straße: {longPressContact.strasse}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNvtSel(new Set([longPressContact.nvt]));
+                setLongPressContact(null);
+              }}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
+            >
+              📡 Nur dieser NVT: {longPressContact.nvt}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLongPressContact(null)}
+              style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer", marginTop: 4 }}
+            >
+              ❌ Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TERMIN-PLAN OVERLAY */}
       {showPlan && (
