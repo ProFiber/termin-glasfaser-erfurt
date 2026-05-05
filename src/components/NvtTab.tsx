@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import type { Contact, CallState } from "@/lib/types";
+import { isPriorityNvt } from "@/lib/priority";
 
 const MAGENTA = "#e20074";
 
