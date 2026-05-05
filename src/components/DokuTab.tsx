@@ -38,7 +38,10 @@ export default function DokuTab({ contacts, callStates }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
+  const [onlyToday, setOnlyToday] = useState(false);
   const flashTimer = useRef<number | null>(null);
+
+  const todayISO = new Date().toISOString().slice(0, 10);
 
   // Initial load
   useEffect(() => {
@@ -129,8 +132,16 @@ export default function DokuTab({ contacts, callStates }: Props) {
 
   const visible = useMemo(() => {
     const list = contacts.filter((c) => {
-      const st = callStates[c.bid]?.status;
-      return st === "erledigt" || st === "termin";
+      const cs = callStates[c.bid];
+      const st = cs?.status;
+      if (st !== "erledigt" && st !== "termin") return false;
+      if (onlyToday) {
+        const d = dokuStates[c.bid];
+        const doneToday = d?.durchfuehrt_am ? d.durchfuehrt_am.slice(0, 10) === todayISO : false;
+        const terminToday = cs?.termin_datum === todayISO;
+        if (!doneToday && !terminToday) return false;
+      }
+      return true;
     });
     return list.sort((a, b) => {
       const sa = score(dokuStates[a.bid]);
@@ -142,7 +153,7 @@ export default function DokuTab({ contacts, callStates }: Props) {
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO]);
 
   const total = visible.length;
   const done = visible.filter((c) => score(dokuStates[c.bid]) === 3).length;
@@ -270,6 +281,40 @@ export default function DokuTab({ contacts, callStates }: Props) {
               transition: "width 0.3s",
             }}
           />
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button
+            onClick={() => setOnlyToday(false)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${!onlyToday ? MAGENTA : "#e5e7eb"}`,
+              background: !onlyToday ? MAGENTA : "white",
+              color: !onlyToday ? "white" : "#475569",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Alle
+          </button>
+          <button
+            onClick={() => setOnlyToday(true)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${onlyToday ? MAGENTA : "#e5e7eb"}`,
+              background: onlyToday ? MAGENTA : "white",
+              color: onlyToday ? "white" : "#475569",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            📅 Nur heute
+          </button>
         </div>
       </div>
 
