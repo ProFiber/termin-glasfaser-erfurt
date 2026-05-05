@@ -538,7 +538,7 @@ function Index() {
   }, [contacts, states]);
 
   return (
-    <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
+    <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
       <div ref={headerRef} style={{ background: "#e20074", color: "white", padding: "12px 16px", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ fontSize: 11, opacity: 0.75, letterSpacing: 0.3 }}>An der Schmücke · Glasfaser · Störmer Bau · ☁️ Cloud-Sync</div>
