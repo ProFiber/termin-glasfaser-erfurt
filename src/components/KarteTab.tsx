@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
+import { isPriorityNvt } from "@/lib/priority";
 
 type Props = {
   contacts: Contact[];
@@ -90,6 +91,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number }>>({});
   const [geocoding, setGeocoding] = useState(false);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
@@ -271,8 +273,12 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   }, [contacts]);
 
   const visibleContacts = useMemo(
-    () => contacts.filter((c) => filter === "alle" || (states[c.bid]?.status ?? "offen") === filter),
-    [contacts, states, filter],
+    () => contacts.filter((c) => {
+      if (filter !== "alle" && (states[c.bid]?.status ?? "offen") !== filter) return false;
+      if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
+      return true;
+    }),
+    [contacts, states, filter, priorityOnly],
   );
 
   // Render markers
@@ -296,8 +302,11 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       if (!co) return;
       const status = (states[c.bid]?.status ?? "offen") as CallStatus;
       const color = STATUS_COLOR[status];
-      const html = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`;
-      const icon = L.divIcon({ html, className: "", iconSize: [18, 18], iconAnchor: [9, 9] });
+      const prio = isPriorityNvt(c.nvt);
+      const sz = prio ? 22 : 18;
+      const ring = prio ? `box-shadow:0 0 0 2px #ef4444, 0 1px 4px rgba(0,0,0,0.4)` : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
+      const html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
+      const icon = L.divIcon({ html, className: "", iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
       const existing = markersRef.current[c.bid];
       if (existing) {
         existing.setLatLng([co.lat, co.lng]);
@@ -325,6 +334,16 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
         }}
       >
+        <button
+          onClick={() => setPriorityOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${priorityOnly ? "#ef4444" : "#e5e7eb"}`,
+            background: priorityOnly ? "#ef4444" : "white",
+            color: priorityOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >🔥 Nur Priorität</button>
         {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
           const active = filter === k;
           const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];

@@ -6,6 +6,7 @@ import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
+import { isPriorityNvt } from "@/lib/priority";
 
 type TabKey = "call" | "karte" | "kalender" | "doku" | "nvt";
 const TAB_TITLE: Record<TabKey, string> = {
@@ -169,6 +170,7 @@ function Index() {
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
@@ -357,6 +359,7 @@ function Index() {
       if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
+      if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
         const digits = q.replace(/\D/g, "");
@@ -379,7 +382,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search]);
+  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search, priorityOnly]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
@@ -586,20 +589,28 @@ function Index() {
             style={sortBtn()}
           >{nvtSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
+            onClick={() => setPriorityOnly((v) => !v)}
+            title="Nur Priorität-NVTs"
+            style={chip(priorityOnly, "#ef4444")}
+          >🔥 Priorität</button>
+          <button
             onClick={() => setNvtSel(new Set())}
-            style={chip(nvtSel.size === 0, "#0891b2")}
+            style={chip(nvtSel.size === 0 && !priorityOnly, "#0891b2")}
           >Alle NVTs</button>
-          {nvts.map(([n, count]) => (
-            <button
-              key={n}
-              onClick={() => setNvtSel((prev) => {
-                const next = new Set(prev);
-                if (next.has(n)) next.delete(n); else next.add(n);
-                return next;
-              })}
-              style={chip(nvtSel.has(n), "#0891b2")}
-            >{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
-          ))}
+          {nvts.map(([n, count]) => {
+            const prio = isPriorityNvt(n);
+            return (
+              <button
+                key={n}
+                onClick={() => setNvtSel((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(n)) next.delete(n); else next.add(n);
+                  return next;
+                })}
+                style={chip(nvtSel.has(n), prio ? "#ef4444" : "#0891b2")}
+              >{prio ? "🔥 " : ""}{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
+            );
+          })}
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           <button
