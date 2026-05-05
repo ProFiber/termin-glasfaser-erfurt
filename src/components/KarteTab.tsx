@@ -384,6 +384,24 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         <style>{`@keyframes userLocSpin { to { transform: rotate(360deg); } }`}</style>
       </button>
 
+      {/* Compass / reset rotation */}
+      <button
+        onClick={() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const m = mapRef.current as any;
+          if (m && typeof m.setBearing === "function") m.setBearing(0);
+        }}
+        aria-label="Norden"
+        title="Nach Norden ausrichten"
+        style={{
+          position: "absolute", top: 104, right: 8, zIndex: 1001,
+          width: 40, height: 40, borderRadius: 10, border: "none",
+          background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+          cursor: "pointer", fontSize: 18, display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}
+      >🧭</button>
+
       {locError && (
         <div
           style={{
