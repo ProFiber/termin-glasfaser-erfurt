@@ -91,6 +91,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number }>>({});
   const [geocoding, setGeocoding] = useState(false);
   const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
