@@ -273,8 +273,12 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   }, [contacts]);
 
   const visibleContacts = useMemo(
-    () => contacts.filter((c) => filter === "alle" || (states[c.bid]?.status ?? "offen") === filter),
-    [contacts, states, filter],
+    () => contacts.filter((c) => {
+      if (filter !== "alle" && (states[c.bid]?.status ?? "offen") !== filter) return false;
+      if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
+      return true;
+    }),
+    [contacts, states, filter, priorityOnly],
   );
 
   // Render markers
