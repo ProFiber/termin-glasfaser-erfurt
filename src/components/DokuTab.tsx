@@ -458,8 +458,36 @@ export default function DokuTab({ contacts, callStates }: Props) {
               cursor: "pointer",
             }}
           >
-            📅 Nur heute
+            📅 Heute
           </button>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          {([
+            ["az", "A–Z"],
+            ["nvt", "NVT"],
+            ["manual", "Manuell"],
+          ] as const).map(([k, label]) => {
+            const active = sortMode === k;
+            return (
+              <button
+                key={k}
+                onClick={() => setSortMode(k)}
+                style={{
+                  flex: 1,
+                  padding: "6px 8px",
+                  borderRadius: 8,
+                  border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
+                  background: active ? MAGENTA : "white",
+                  color: active ? "white" : "#475569",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
