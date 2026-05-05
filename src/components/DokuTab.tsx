@@ -558,6 +558,20 @@ export default function DokuTab({ contacts, callStates }: Props) {
                   <span>☁️ {d.sharepoint ? "✓" : "—"}</span>
                 </div>
               </div>
+              {sortMode === "manual" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => moveManual(c.bid, -1)}
+                    aria-label="Nach oben"
+                    style={{ width: 28, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+                  >↑</button>
+                  <button
+                    onClick={() => moveManual(c.bid, 1)}
+                    aria-label="Nach unten"
+                    style={{ width: 28, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+                  >↓</button>
+                </div>
+              )}
               <div style={{ color: "#94a3b8", fontSize: 18 }}>{isOpen ? "▾" : "▸"}</div>
             </div>
 
