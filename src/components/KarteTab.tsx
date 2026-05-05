@@ -128,21 +128,21 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       style.id = "user-loc-pulse-style";
       style.textContent = `
         @keyframes userLocPulse {
-          0% { transform: scale(1); opacity: 0.6; }
-          70% { transform: scale(2.6); opacity: 0; }
-          100% { transform: scale(2.6); opacity: 0; }
+          0% { transform: scale(1); opacity: 0.7; }
+          70% { transform: scale(2.8); opacity: 0; }
+          100% { transform: scale(2.8); opacity: 0; }
         }
-        .user-loc-wrap { position: relative; width: 28px; height: 28px; }
+        .user-loc-wrap { position: relative; width: 20px; height: 20px; }
         .user-loc-pulse {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8; opacity: 0.55;
-          animation: userLocPulse 1.8s ease-out infinite;
+          background: #e20074; opacity: 0.6;
+          animation: userLocPulse 1.6s ease-out infinite;
         }
         .user-loc-dot {
           position: absolute; inset: 0; border-radius: 50%;
-          background: #1d8bf8;
-          border: 4px solid white;
-          box-shadow: 0 0 0 2px #1d8bf8, 0 2px 8px rgba(0,0,0,0.5);
+          background: #e20074;
+          border: 3px solid white;
+          box-shadow: 0 0 0 1.5px #e20074, 0 2px 8px rgba(0,0,0,0.5);
         }
       `;
       document.head.appendChild(style);
