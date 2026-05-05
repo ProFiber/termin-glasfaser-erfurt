@@ -362,10 +362,10 @@ export default function DokuTab({ contacts, callStates }: Props) {
           <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
             {done} / {total} vollständig dokumentiert
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
             <div style={{ fontSize: 14 }}>{flashIcon}</div>
             <button
-              onClick={shareWhatsApp}
+              onClick={() => setShareMenu((v) => !v)}
               style={{
                 background: "#25D366",
                 color: "white",
@@ -377,8 +377,44 @@ export default function DokuTab({ contacts, callStates }: Props) {
                 cursor: "pointer",
               }}
             >
-              💬 Status teilen
+              💬 Teilen
             </button>
+            {shareMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: 6,
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                  zIndex: 10,
+                  minWidth: 180,
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={shareWhatsApp}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📊 Status (NVT)
+                </button>
+                <button
+                  onClick={() => shareReport("alle")}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📋 Alle teilen
+                </button>
+                <button
+                  onClick={() => shareReport("heute")}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📅 Nur heute teilen
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ height: 10, background: "#e5e7eb", borderRadius: 6, overflow: "hidden" }}>
