@@ -156,7 +156,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
     const onPos = (pos: GeolocationPosition) => {
       const { latitude, longitude } = pos.coords;
       const html = `<div class="user-loc-wrap"><div class="user-loc-pulse"></div><div class="user-loc-dot"></div></div>`;
-      const icon = L.divIcon({ html, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
+      const icon = L.divIcon({ html, className: "", iconSize: [20, 20], iconAnchor: [10, 10] });
       if (userMarkerRef.current) {
         userMarkerRef.current.setLatLng([latitude, longitude]);
         userMarkerRef.current.setIcon(icon);
@@ -164,7 +164,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         userMarkerRef.current = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(map);
       }
       if (firstLocFixRef.current) {
-        map.setView([latitude, longitude], 16);
+        map.setView([latitude, longitude], 18);
         firstLocFixRef.current = false;
         setLocating(false);
       }
