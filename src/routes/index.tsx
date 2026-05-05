@@ -910,8 +910,8 @@ function Index() {
         <div
           onClick={() => setShowPlan(false)}
           style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
-            zIndex: 50, display: "flex", justifyContent: "center", alignItems: "flex-end",
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 56, background: "rgba(0,0,0,0.55)",
+            zIndex: 500, display: "flex", justifyContent: "center", alignItems: "flex-end",
           }}
         >
           <div
