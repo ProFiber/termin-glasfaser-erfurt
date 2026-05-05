@@ -850,6 +850,61 @@ function Index() {
       </div>
       </>)}
 
+      {/* LONG-PRESS ACTION SHEET */}
+      {longPressContact && (
+        <div
+          onClick={() => setLongPressContact(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 60, display: "flex", justifyContent: "center", alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white", width: "100%", maxWidth: 480,
+              borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16,
+              display: "flex", flexDirection: "column", gap: 10,
+              animation: "slideUp 0.2s ease-out",
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+              📍 {longPressContact.strasse} {longPressContact.hnr}{longPressContact.hnr_zusatz} — {longPressContact.name}
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>
+              Was möchtest du anzeigen?
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setStreetSel(new Set([longPressContact.strasse]));
+                setLongPressContact(null);
+              }}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
+            >
+              🏘️ Nur diese Straße: {longPressContact.strasse}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNvtSel(new Set([longPressContact.nvt]));
+                setLongPressContact(null);
+              }}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
+            >
+              📡 Nur dieser NVT: {longPressContact.nvt}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLongPressContact(null)}
+              style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer", marginTop: 4 }}
+            >
+              ❌ Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* TERMIN-PLAN OVERLAY */}
       {showPlan && (
         <div
