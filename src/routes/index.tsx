@@ -359,6 +359,7 @@ function Index() {
       if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
+      if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
       if (q) {
         const digits = q.replace(/\D/g, "");
