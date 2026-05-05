@@ -34,14 +34,35 @@ function emptyDoku(bid: string): DokuState {
   };
 }
 
+type SortMode = "az" | "nvt" | "manual";
+const MANUAL_KEY = "doku_manual_order";
+
 export default function DokuTab({ contacts, callStates }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [onlyToday, setOnlyToday] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("az");
+  const [manualOrder, setManualOrder] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(MANUAL_KEY);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [shareMenu, setShareMenu] = useState(false);
   const flashTimer = useRef<number | null>(null);
 
   const todayISO = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MANUAL_KEY, JSON.stringify(manualOrder));
+    } catch {
+      /* ignore */
+    }
+  }, [manualOrder]);
 
   // Initial load
   useEffect(() => {
