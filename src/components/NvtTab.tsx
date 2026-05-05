@@ -103,43 +103,81 @@ export default function NvtTab({
 
       <ChartsSection rows={rows} states={states} totalPct={totalPct} />
 
+      {(() => {
+        const prio = rows.filter((r) => isPriorityNvt(r.nvt));
+        const rest = rows.filter((r) => !isPriorityNvt(r.nvt));
+        const prioGesamt = prio.reduce((s, r) => s + r.gesamt, 0);
+        const prioErl = prio.reduce((s, r) => s + r.erledigt, 0);
+        const prioPct = prioGesamt ? Math.round((prioErl / prioGesamt) * 100) : 0;
 
-      {rows.map((r) => {
-        const pct = Math.round(r.pct);
-        return (
-          <div key={r.nvt} style={{
-            background: cardBg(r.pct), border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
-            borderRadius: 12, padding: 12, marginBottom: 10,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#111" }}>{r.nvt}</div>
-                <div style={{ fontSize: 12, color: "#666" }}>{r.ort || "—"} · {r.gesamt} Objekte</div>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: r.pct >= 100 ? "#059669" : r.pct > 50 ? "#16a34a" : "#111" }}>
-                {pct}%
-              </div>
-            </div>
-
-            <div style={{
-              height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginBottom: 8,
+        const renderCard = (r: NvtRow, prioritized: boolean) => {
+          const pct = Math.round(r.pct);
+          return (
+            <div key={r.nvt} style={{
+              background: cardBg(r.pct),
+              border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
+              borderLeft: prioritized ? "3px solid #ef4444" : undefined,
+              borderRadius: 12, padding: 12, marginBottom: 10,
             }}>
-              <div style={{
-                width: `${pct}%`, height: "100%",
-                background: r.pct >= 100 ? "#059669" : "#22c55e",
-                transition: "width 0.3s",
-              }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#111" }}>
+                    {prioritized ? "🔥 " : ""}{r.nvt}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>{r.ort || "—"} · {r.gesamt} Objekte</div>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: r.pct >= 100 ? "#059669" : r.pct > 50 ? "#16a34a" : "#111" }}>
+                  {pct}%
+                </div>
+              </div>
+              <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginBottom: 8 }}>
+                <div style={{
+                  width: `${pct}%`, height: "100%",
+                  background: r.pct >= 100 ? "#059669" : "#22c55e",
+                  transition: "width 0.3s",
+                }} />
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, fontWeight: 600 }}>
+                <span style={{ color: "#16a34a" }}>✅ {r.erledigt} erl.</span>
+                <span style={{ color: "#3b82f6" }}>📅 {r.termin} Termin</span>
+                <span style={{ color: "#6b7280" }}>⚪ {r.offen} offen</span>
+                <span style={{ color: "#ef4444" }}>🔴 {r.abgelehnt} abgel.</span>
+              </div>
             </div>
+          );
+        };
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, fontWeight: 600 }}>
-              <span style={{ color: "#16a34a" }}>✅ {r.erledigt} erl.</span>
-              <span style={{ color: "#3b82f6" }}>📅 {r.termin} Termin</span>
-              <span style={{ color: "#6b7280" }}>⚪ {r.offen} offen</span>
-              <span style={{ color: "#ef4444" }}>🔴 {r.abgelehnt} abgel.</span>
-            </div>
-          </div>
+        return (
+          <>
+            {prio.length > 0 && (
+              <>
+                <div style={{
+                  background: "#fef2f2", border: "1px solid #fecaca",
+                  color: "#991b1b", fontWeight: 800, fontSize: 13,
+                  padding: "10px 12px", borderRadius: 10, marginBottom: 10,
+                }}>
+                  🔥 Priorität – zuerst abarbeiten
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#7f1d1d" }}>
+                    {prioErl} / {prioGesamt} prioritäre Objekte erledigt ({prioPct}%)
+                  </div>
+                </div>
+                {prio.map((r) => renderCard(r, true))}
+              </>
+            )}
+            {rest.length > 0 && (
+              <>
+                <div style={{
+                  background: "#f1f5f9", color: "#334155", fontWeight: 700, fontSize: 13,
+                  padding: "10px 12px", borderRadius: 10, marginTop: 6, marginBottom: 10,
+                }}>
+                  Weitere NVTs
+                </div>
+                {rest.map((r) => renderCard(r, false))}
+              </>
+            )}
+          </>
         );
-      })}
+      })()}
     </div>
   );
 }
