@@ -1113,10 +1113,11 @@ function Index() {
 
       {/* TAB NAV */}
       <div style={{
-        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-        width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
-        display: "flex", zIndex: 5000, height: "calc(76px + env(safe-area-inset-bottom, 0px))",
-        paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box",
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: "white", borderTop: "1px solid #e5e7eb",
+        display: "flex", zIndex: 9999, height: "calc(56px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)", boxSizing: "border-box",
+        maxWidth: 480, marginLeft: "auto", marginRight: "auto",
       }}>
         {([
           ["call", "📞", "Call"],
