@@ -302,8 +302,11 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       if (!co) return;
       const status = (states[c.bid]?.status ?? "offen") as CallStatus;
       const color = STATUS_COLOR[status];
-      const html = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`;
-      const icon = L.divIcon({ html, className: "", iconSize: [18, 18], iconAnchor: [9, 9] });
+      const prio = isPriorityNvt(c.nvt);
+      const sz = prio ? 22 : 18;
+      const ring = prio ? `box-shadow:0 0 0 2px #ef4444, 0 1px 4px rgba(0,0,0,0.4)` : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
+      const html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
+      const icon = L.divIcon({ html, className: "", iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
       const existing = markersRef.current[c.bid];
       if (existing) {
         existing.setLatLng([co.lat, co.lng]);
