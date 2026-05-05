@@ -689,8 +689,19 @@ function Index() {
               boxShadow: open ? "0 6px 20px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.07)",
               overflow: "hidden",
             }}>
-              <div onClick={() => setExpanded(open ? null : c.bid)}
-                style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <div
+                onClick={() => {
+                  if (longPressFired.current) { longPressFired.current = false; return; }
+                  setExpanded(open ? null : c.bid);
+                }}
+                onTouchStart={() => startLongPress(c)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onTouchCancel={cancelLongPress}
+                onMouseDown={() => startLongPress(c)}
+                onMouseUp={cancelLongPress}
+                onMouseLeave={cancelLongPress}
+                style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
                 <div style={{ width: 11, height: 11, borderRadius: "50%", flexShrink: 0, background: STATUS_META[st].dot }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>
