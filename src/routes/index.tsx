@@ -177,6 +177,27 @@ function Index() {
   const [activeTab, setActiveTab] = useState<TabKey>("call");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+  const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+
+  function startLongPress(c: Contact) {
+    longPressFired.current = false;
+    if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try { navigator.vibrate(50); } catch {}
+      }
+      setLongPressContact(c);
+    }, 500);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [headerHeight, setHeaderHeight] = useState(72);
   const headerRef = useRef<HTMLDivElement | null>(null);
