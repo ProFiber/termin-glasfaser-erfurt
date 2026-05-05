@@ -158,23 +158,52 @@ export default function DokuTab({ contacts, callStates }: Props) {
       if (st !== "erledigt" && st !== "termin") return false;
       if (onlyToday) {
         const d = dokuStates[c.bid];
-        const doneToday = d?.durchfuehrt_am ? d.durchfuehrt_am.slice(0, 10) === todayISO : false;
-        const terminToday = cs?.termin_datum === todayISO;
-        if (!doneToday && !terminToday) return false;
+        const updatedToday = d?.updated_at ? d.updated_at.slice(0, 10) === todayISO : false;
+        if (!updatedToday) return false;
       }
       return true;
     });
-    return list.sort((a, b) => {
-      const sa = score(dokuStates[a.bid]);
-      const sb = score(dokuStates[b.bid]);
-      const ca = sa === 3 ? 1 : 0;
-      const cb = sb === 3 ? 1 : 0;
-      if (ca !== cb) return ca - cb;
+    if (sortMode === "manual") {
+      const idx = new Map(manualOrder.map((bid, i) => [bid, i]));
+      return [...list].sort((a, b) => {
+        const ia = idx.has(a.bid) ? (idx.get(a.bid) as number) : Number.MAX_SAFE_INTEGER;
+        const ib = idx.has(b.bid) ? (idx.get(b.bid) as number) : Number.MAX_SAFE_INTEGER;
+        if (ia !== ib) return ia - ib;
+        return a.strasse.localeCompare(b.strasse, "de");
+      });
+    }
+    if (sortMode === "nvt") {
+      return [...list].sort((a, b) => {
+        const na = (a.nvt || "").localeCompare(b.nvt || "", "de");
+        if (na !== 0) return na;
+        const s = a.strasse.localeCompare(b.strasse, "de");
+        if (s !== 0) return s;
+        return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
+      });
+    }
+    // A-Z default
+    return [...list].sort((a, b) => {
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates, onlyToday, todayISO]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder]);
+
+  function moveManual(bid: string, dir: -1 | 1) {
+    setManualOrder((prev) => {
+      const ids = visible.map((c) => c.bid);
+      // ensure all visible present in order list
+      const base = [...prev.filter((b) => ids.includes(b))];
+      ids.forEach((b) => {
+        if (!base.includes(b)) base.push(b);
+      });
+      const i = base.indexOf(bid);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= base.length) return base;
+      [base[i], base[j]] = [base[j], base[i]];
+      return base;
+    });
+  }
 
   const total = visible.length;
   const done = visible.filter((c) => score(dokuStates[c.bid]) === 3).length;
