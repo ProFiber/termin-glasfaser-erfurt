@@ -34,14 +34,35 @@ function emptyDoku(bid: string): DokuState {
   };
 }
 
+type SortMode = "az" | "nvt" | "manual";
+const MANUAL_KEY = "doku_manual_order";
+
 export default function DokuTab({ contacts, callStates }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [onlyToday, setOnlyToday] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("az");
+  const [manualOrder, setManualOrder] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(MANUAL_KEY);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [shareMenu, setShareMenu] = useState(false);
   const flashTimer = useRef<number | null>(null);
 
   const todayISO = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MANUAL_KEY, JSON.stringify(manualOrder));
+    } catch {
+      /* ignore */
+    }
+  }, [manualOrder]);
 
   // Initial load
   useEffect(() => {
@@ -137,23 +158,52 @@ export default function DokuTab({ contacts, callStates }: Props) {
       if (st !== "erledigt" && st !== "termin") return false;
       if (onlyToday) {
         const d = dokuStates[c.bid];
-        const doneToday = d?.durchfuehrt_am ? d.durchfuehrt_am.slice(0, 10) === todayISO : false;
-        const terminToday = cs?.termin_datum === todayISO;
-        if (!doneToday && !terminToday) return false;
+        const updatedToday = d?.updated_at ? d.updated_at.slice(0, 10) === todayISO : false;
+        if (!updatedToday) return false;
       }
       return true;
     });
-    return list.sort((a, b) => {
-      const sa = score(dokuStates[a.bid]);
-      const sb = score(dokuStates[b.bid]);
-      const ca = sa === 3 ? 1 : 0;
-      const cb = sb === 3 ? 1 : 0;
-      if (ca !== cb) return ca - cb;
+    if (sortMode === "manual") {
+      const idx = new Map(manualOrder.map((bid, i) => [bid, i]));
+      return [...list].sort((a, b) => {
+        const ia = idx.has(a.bid) ? (idx.get(a.bid) as number) : Number.MAX_SAFE_INTEGER;
+        const ib = idx.has(b.bid) ? (idx.get(b.bid) as number) : Number.MAX_SAFE_INTEGER;
+        if (ia !== ib) return ia - ib;
+        return a.strasse.localeCompare(b.strasse, "de");
+      });
+    }
+    if (sortMode === "nvt") {
+      return [...list].sort((a, b) => {
+        const na = (a.nvt || "").localeCompare(b.nvt || "", "de");
+        if (na !== 0) return na;
+        const s = a.strasse.localeCompare(b.strasse, "de");
+        if (s !== 0) return s;
+        return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
+      });
+    }
+    // A-Z default
+    return [...list].sort((a, b) => {
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates, onlyToday, todayISO]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder]);
+
+  function moveManual(bid: string, dir: -1 | 1) {
+    setManualOrder((prev) => {
+      const ids = visible.map((c) => c.bid);
+      // ensure all visible present in order list
+      const base = [...prev.filter((b) => ids.includes(b))];
+      ids.forEach((b) => {
+        if (!base.includes(b)) base.push(b);
+      });
+      const i = base.indexOf(bid);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= base.length) return base;
+      [base[i], base[j]] = [base[j], base[i]];
+      return base;
+    });
+  }
 
   const total = visible.length;
   const done = visible.filter((c) => score(dokuStates[c.bid]) === 3).length;
@@ -237,6 +287,65 @@ export default function DokuTab({ contacts, callStates }: Props) {
     window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   }
 
+  function shareReport(scope: "alle" | "heute") {
+    const eligible = contacts.filter((c) => {
+      const st = callStates[c.bid]?.status;
+      if (st !== "erledigt" && st !== "termin") return false;
+      const d = dokuStates[c.bid];
+      const documented = score(d) > 0;
+      if (!documented) return false;
+      if (scope === "heute") {
+        return d?.updated_at ? d.updated_at.slice(0, 10) === todayISO : false;
+      }
+      return true;
+    });
+
+    eligible.sort((a, b) =>
+      a.strasse.localeCompare(b.strasse, "de") ||
+      (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0),
+    );
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const datum = `${dd}.${mm}.${yyyy}`;
+    const uhr = `${hh}:${mi} Uhr`;
+
+    const lines: string[] = [];
+    lines.push("📋 *Doku-Bericht · An der Schmücke*");
+    lines.push(`_${datum} · ${uhr}_`);
+    lines.push("");
+    lines.push(`✅ *${eligible.length} Objekte dokumentiert*`);
+    lines.push("");
+
+    eligible.forEach((c) => {
+      const d = dokuStates[c.bid] ?? emptyDoku(c.bid);
+      lines.push(`*${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+      lines.push(
+        `📷 ${d.foto ? "✓" : "✗"} · 📄 ${d.protokoll ? "✓" : "✗"} · ☁️ ${d.sharepoint ? "✓" : "✗"}`,
+      );
+      const von = d.durchfuehrt_von || "—";
+      let am = "—";
+      if (d.durchfuehrt_am) {
+        const dt = new Date(d.durchfuehrt_am);
+        const dD = String(dt.getDate()).padStart(2, "0");
+        const dM = String(dt.getMonth() + 1).padStart(2, "0");
+        const dH = String(dt.getHours()).padStart(2, "0");
+        const dMi = String(dt.getMinutes()).padStart(2, "0");
+        am = `${dD}.${dM}. ${dH}:${dMi}`;
+      }
+      lines.push(`👤 ${von} · 🕐 ${am}`);
+      lines.push("");
+    });
+
+    lines.push("_Pro-Fiber · Störmer Bau_");
+    window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+    setShareMenu(false);
+  }
+
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", padding: 12 }}>
       {/* Header */}
@@ -253,10 +362,10 @@ export default function DokuTab({ contacts, callStates }: Props) {
           <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
             {done} / {total} vollständig dokumentiert
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
             <div style={{ fontSize: 14 }}>{flashIcon}</div>
             <button
-              onClick={shareWhatsApp}
+              onClick={() => setShareMenu((v) => !v)}
               style={{
                 background: "#25D366",
                 color: "white",
@@ -268,8 +377,44 @@ export default function DokuTab({ contacts, callStates }: Props) {
                 cursor: "pointer",
               }}
             >
-              💬 Status teilen
+              💬 Teilen
             </button>
+            {shareMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: 6,
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                  zIndex: 10,
+                  minWidth: 180,
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={shareWhatsApp}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📊 Status (NVT)
+                </button>
+                <button
+                  onClick={() => shareReport("alle")}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📋 Alle teilen
+                </button>
+                <button
+                  onClick={() => shareReport("heute")}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
+                >
+                  📅 Nur heute teilen
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ height: 10, background: "#e5e7eb", borderRadius: 6, overflow: "hidden" }}>
@@ -313,8 +458,36 @@ export default function DokuTab({ contacts, callStates }: Props) {
               cursor: "pointer",
             }}
           >
-            📅 Nur heute
+            📅 Heute
           </button>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          {([
+            ["az", "A–Z"],
+            ["nvt", "NVT"],
+            ["manual", "Manuell"],
+          ] as const).map(([k, label]) => {
+            const active = sortMode === k;
+            return (
+              <button
+                key={k}
+                onClick={() => setSortMode(k)}
+                style={{
+                  flex: 1,
+                  padding: "6px 8px",
+                  borderRadius: 8,
+                  border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
+                  background: active ? MAGENTA : "white",
+                  color: active ? "white" : "#475569",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -385,6 +558,20 @@ export default function DokuTab({ contacts, callStates }: Props) {
                   <span>☁️ {d.sharepoint ? "✓" : "—"}</span>
                 </div>
               </div>
+              {sortMode === "manual" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => moveManual(c.bid, -1)}
+                    aria-label="Nach oben"
+                    style={{ width: 28, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+                  >↑</button>
+                  <button
+                    onClick={() => moveManual(c.bid, 1)}
+                    aria-label="Nach unten"
+                    style={{ width: 28, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+                  >↓</button>
+                </div>
+              )}
               <div style={{ color: "#94a3b8", fontSize: 18 }}>{isOpen ? "▾" : "▸"}</div>
             </div>
 
