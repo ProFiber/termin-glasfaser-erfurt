@@ -204,7 +204,15 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         const stored = sessionStorage.getItem("karte_view");
         if (stored) view = JSON.parse(stored);
       } catch { /* ignore */ }
-      const map = Lmod.map(mapEl.current).setView([view.lat, view.lng], view.zoom);
+      const map = Lmod.map(mapEl.current, {
+        rotate: true,
+        touchRotate: true,
+        bearing: 0,
+        touchZoom: true,
+        scrollWheelZoom: true,
+      }).setView([view.lat, view.lng], view.zoom);
+      map.options.touchZoom = true;
+      map.options.scrollWheelZoom = true;
       Lmod.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
