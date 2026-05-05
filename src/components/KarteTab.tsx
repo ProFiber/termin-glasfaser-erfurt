@@ -55,7 +55,19 @@ function loadLeaflet(): Promise<unknown> {
     const script = document.createElement("script");
     script.src = LEAFLET_JS;
     script.async = true;
-    script.onload = () => resolve(window.L);
+    script.onload = () => {
+      // Load rotate plugin after Leaflet
+      if (!document.querySelector(`script[src="${LEAFLET_ROTATE_JS}"]`)) {
+        const rot = document.createElement("script");
+        rot.src = LEAFLET_ROTATE_JS;
+        rot.async = true;
+        rot.onload = () => resolve(window.L);
+        rot.onerror = () => resolve(window.L); // fallback even if rotate fails
+        document.head.appendChild(rot);
+      } else {
+        resolve(window.L);
+      }
+    };
     script.onerror = reject;
     document.head.appendChild(script);
   });
