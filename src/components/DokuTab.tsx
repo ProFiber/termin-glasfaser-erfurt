@@ -38,7 +38,10 @@ export default function DokuTab({ contacts, callStates }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
+  const [onlyToday, setOnlyToday] = useState(false);
   const flashTimer = useRef<number | null>(null);
+
+  const todayISO = new Date().toISOString().slice(0, 10);
 
   // Initial load
   useEffect(() => {
