@@ -418,7 +418,7 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       {/* Legend top-right */}
       <div
         style={{
-          position: "absolute", top: 104, right: 8, zIndex: 1000,
+          position: "absolute", top: 152, right: 8, zIndex: 1000,
           background: "rgba(255,255,255,0.95)", borderRadius: 8, padding: 8,
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 11,
         }}
