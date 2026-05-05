@@ -1072,7 +1072,7 @@ function Index() {
           position: "fixed", bottom: 56, left: "50%", transform: "translateX(-50%)",
           width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
           padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
-          zIndex: 25,
+          zIndex: 900,
         }}>
           <div style={{ fontSize: 10, color: "#999", flexShrink: 0 }}>
             {counts.nichtErreicht}n.e · {counts.abgelehnt}abg · {counts.erledigt}erl
