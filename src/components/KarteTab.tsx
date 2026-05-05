@@ -29,6 +29,7 @@ const STATUS_LABEL: Record<CallStatus, string> = {
 
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+const LEAFLET_ROTATE_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet-rotate/0.2.8/leaflet-rotate.min.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare global { interface Window { L?: any } }
