@@ -287,6 +287,65 @@ export default function DokuTab({ contacts, callStates }: Props) {
     window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   }
 
+  function shareReport(scope: "alle" | "heute") {
+    const eligible = contacts.filter((c) => {
+      const st = callStates[c.bid]?.status;
+      if (st !== "erledigt" && st !== "termin") return false;
+      const d = dokuStates[c.bid];
+      const documented = score(d) > 0;
+      if (!documented) return false;
+      if (scope === "heute") {
+        return d?.updated_at ? d.updated_at.slice(0, 10) === todayISO : false;
+      }
+      return true;
+    });
+
+    eligible.sort((a, b) =>
+      a.strasse.localeCompare(b.strasse, "de") ||
+      (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0),
+    );
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const datum = `${dd}.${mm}.${yyyy}`;
+    const uhr = `${hh}:${mi} Uhr`;
+
+    const lines: string[] = [];
+    lines.push("📋 *Doku-Bericht · An der Schmücke*");
+    lines.push(`_${datum} · ${uhr}_`);
+    lines.push("");
+    lines.push(`✅ *${eligible.length} Objekte dokumentiert*`);
+    lines.push("");
+
+    eligible.forEach((c) => {
+      const d = dokuStates[c.bid] ?? emptyDoku(c.bid);
+      lines.push(`*${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+      lines.push(
+        `📷 ${d.foto ? "✓" : "✗"} · 📄 ${d.protokoll ? "✓" : "✗"} · ☁️ ${d.sharepoint ? "✓" : "✗"}`,
+      );
+      const von = d.durchfuehrt_von || "—";
+      let am = "—";
+      if (d.durchfuehrt_am) {
+        const dt = new Date(d.durchfuehrt_am);
+        const dD = String(dt.getDate()).padStart(2, "0");
+        const dM = String(dt.getMonth() + 1).padStart(2, "0");
+        const dH = String(dt.getHours()).padStart(2, "0");
+        const dMi = String(dt.getMinutes()).padStart(2, "0");
+        am = `${dD}.${dM}. ${dH}:${dMi}`;
+      }
+      lines.push(`👤 ${von} · 🕐 ${am}`);
+      lines.push("");
+    });
+
+    lines.push("_Pro-Fiber · Störmer Bau_");
+    window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+    setShareMenu(false);
+  }
+
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", padding: 12 }}>
       {/* Header */}
