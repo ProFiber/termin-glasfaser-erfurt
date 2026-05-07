@@ -300,6 +300,9 @@ function Admin() {
         <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
           3️⃣ An der Schmücke: 203 „erledigt"-Einträge importieren
         </button>
+        <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
+          5️⃣ Grabenlängen importieren (37 Objekte · 04.–06.05.)
+        </button>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
