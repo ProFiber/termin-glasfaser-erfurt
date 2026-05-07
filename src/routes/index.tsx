@@ -175,7 +175,7 @@ function Index() {
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<TabKey>("objekte");
+  const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
