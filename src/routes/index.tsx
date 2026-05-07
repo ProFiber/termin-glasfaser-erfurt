@@ -405,7 +405,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search, priorityOnly]);
+  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
