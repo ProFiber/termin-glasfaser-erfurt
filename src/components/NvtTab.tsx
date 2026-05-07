@@ -253,7 +253,7 @@ export default function NvtTab({
     <div style={{ padding: 12, paddingBottom: 100, background: "#f2f2f7", minHeight: "100%" }}>
       {/* SECTION 1 — Tages-KPIs */}
       <div style={SECTION_TITLE}>📌 Tages-KPIs</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
         <KpiCard
           color="#3b82f6"
           icon="🗓️"
