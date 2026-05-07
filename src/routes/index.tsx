@@ -385,6 +385,9 @@ function Index() {
       const kf = !!states[c.bid]?.klarfall;
       if (filter === "klarfall") {
         if (!kf) return false;
+      } else if (filter === "offen") {
+        // "Ausstehend": everything not done and not cancelled
+        if (st === "erledigt" || st === "abgelehnt" || st === "termin") return false;
       } else if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
