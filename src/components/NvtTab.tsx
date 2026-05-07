@@ -270,90 +270,64 @@ export default function NvtTab({
         />
       </div>
 
-      {/* SECTION 2 — Gesamtfortschritt */}
-      <div style={SECTION_TITLE}>📈 Gesamtfortschritt</div>
+      {/* SECTION 2 — Fortschritts-Karussell */}
+      <div style={SECTION_TITLE}>📈 Fortschritt</div>
+      <ProgressCarousel
+        slides={[
+          {
+            title: "Gesamt",
+            color: "#22c55e",
+            done: totalErledigt,
+            total: totalGesamt,
+            pct: totalPct,
+            footer: `${totalErledigt} von ${totalGesamt} Objekten erledigt`,
+            extra: (
+              <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 6, fontSize: 11, fontWeight: 700 }}>
+                <span style={{ color: "#3b82f6" }}>● {totalTermin} Termin</span>
+                <span style={{ color: "#6b7280" }}>● {totalOffen} Offen</span>
+                <span style={{ color: "#ef4444" }}>● {totalAbgelehnt} Abgel.</span>
+              </div>
+            ),
+          },
+          {
+            title: "Top Prio",
+            color: "#ef4444",
+            done: u.e,
+            total: u.g,
+            pct: u.pct,
+            footer: `${u.e} von ${u.g} · NVT 2V8031–34`,
+            extra: (
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
+                {urgentRows.map((r) => (
+                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
+                ))}
+              </div>
+            ),
+          },
+          {
+            title: "Priorität",
+            color: "#f97316",
+            done: p.e,
+            total: p.g,
+            pct: p.pct,
+            footer: `${p.e} von ${p.g} · ${prioRows.length} NVTs`,
+            extra: (
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
+                {[...prioRows].sort((a, b) => b.pct - a.pct).slice(0, 3).map((r) => (
+                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
+                ))}
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {/* Doku-Fortschritt unter dem Karussell */}
       <div style={CARD}>
-        <div style={{ position: "relative", width: "100%", height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Erledigt", value: totalErledigt, color: "#22c55e" },
-                  { name: "Rest", value: Math.max(totalGesamt - totalErledigt, 0), color: "#e5e7eb" },
-                ]}
-                dataKey="value"
-                cx="50%"
-                cy="50%"
-                innerRadius={62}
-                outerRadius={90}
-                stroke="none"
-                startAngle={90}
-                endAngle={-270}
-              >
-                <Cell fill="#22c55e" />
-                <Cell fill="#e5e7eb" />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{
-            position: "absolute", inset: 0, display: "flex",
-            flexDirection: "column", alignItems: "center", justifyContent: "center",
-            pointerEvents: "none",
-          }}>
-            <div style={{ fontSize: 32, fontWeight: 800, color: "#111" }}>{animPct}%</div>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>erledigt</div>
-          </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+          📋 Doku: {dokuComplete} / {totalGesamt} vollständig dokumentiert ({dokuPct}%)
         </div>
-        <div style={{ textAlign: "center", marginTop: 4, fontSize: 13, color: "#475569", fontWeight: 600 }}>
-          {totalErledigt} von {totalGesamt} Objekten abgeschlossen
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
-            📋 Doku: {dokuComplete} / {totalGesamt} vollständig dokumentiert ({dokuPct}%)
-          </div>
-          <ProgressBar pct={dokuPct} color="#22c55e" />
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
-            🔌 Anschlüsse gesamt
-          </div>
-          <div style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", background: "#f1f5f9" }}>
-            {stackSegs.map((s) => s.val > 0 && (
-              <div key={s.label} style={{ width: `${(s.val / stackTotal) * 100}%`, background: s.color }} />
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, fontWeight: 600 }}>
-            <span style={{ color: "#16a34a" }}>✅ {totalErledigt}</span>
-            <span style={{ color: "#3b82f6" }}>📅 {totalTermin}</span>
-            <span style={{ color: "#6b7280" }}>⚪ {totalOffen}</span>
-            <span style={{ color: "#ef4444" }}>🔴 {totalAbgelehnt}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 3 — Prioritäts-Fortschritt */}
-      <div style={SECTION_TITLE}>🎯 Prioritäts-Fortschritt</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <PrioCard
-          icon="🔴"
-          title="Höchste Priorität"
-          subtitle="2V8031–34"
-          done={u.e}
-          total={u.g}
-          pct={u.pct}
-          color="#dc2626"
-        />
-        <PrioCard
-          icon="🔥"
-          title="Priorität"
-          subtitle="2V8002–16"
-          done={p.e}
-          total={p.g}
-          pct={p.pct}
-          color="#f97316"
-        />
+        <ProgressBar pct={dokuPct} color="#22c55e" />
       </div>
 
       {/* SECTION 4 — Team Performance */}
@@ -603,6 +577,151 @@ function NvtStatusBar({ rows }: { rows: NvtRow[] }) {
           <Bar dataKey="Abgelehnt" stackId="a" fill="#ef4444" />
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+type CarouselSlide = {
+  title: string;
+  color: string;
+  done: number;
+  total: number;
+  pct: number;
+  footer: string;
+  extra?: React.ReactNode;
+};
+
+function ProgressCarousel({ slides }: { slides: CarouselSlide[] }) {
+  const [idx, setIdx] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const startX = useRef<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const widthRef = useRef(0);
+
+  useEffect(() => {
+    const update = () => { widthRef.current = wrapRef.current?.offsetWidth ?? 0; };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; setDrag(0); };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null) return;
+    setDrag(e.touches[0].clientX - startX.current);
+  };
+  const onTouchEnd = () => {
+    if (startX.current === null) return;
+    if (drag < -50 && idx < slides.length - 1) setIdx(idx + 1);
+    else if (drag > 50 && idx > 0) setIdx(idx - 1);
+    setDrag(0);
+    startX.current = null;
+  };
+
+  const w = widthRef.current || 1;
+  const offset = -idx * w + drag;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        ref={wrapRef}
+        style={{ position: "relative", overflow: "hidden", borderRadius: 12, height: 220, background: "white", border: "1px solid #e5e7eb" }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div style={{
+          display: "flex", height: "100%",
+          transform: `translateX(${offset}px)`,
+          transition: startX.current === null ? "transform 0.3s ease" : "none",
+        }}>
+          {slides.map((s, i) => (
+            <div key={i} style={{ flex: "0 0 100%", height: "100%" }}>
+              <CarouselSlideView slide={s} active={i === idx} />
+            </div>
+          ))}
+        </div>
+
+        {idx > 0 && (
+          <button onClick={() => setIdx(idx - 1)}
+            style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%)",
+              border: "none", background: "rgba(255,255,255,0.8)", borderRadius: "50%",
+              width: 28, height: 28, fontSize: 18, cursor: "pointer", color: "#475569" }}>‹</button>
+        )}
+        {idx < slides.length - 1 && (
+          <button onClick={() => setIdx(idx + 1)}
+            style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+              border: "none", background: "rgba(255,255,255,0.8)", borderRadius: "50%",
+              width: 28, height: 28, fontSize: 18, cursor: "pointer", color: "#475569" }}>›</button>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 8 }}>
+        {slides.map((_, i) => (
+          <button key={i} onClick={() => setIdx(i)}
+            aria-label={`Slide ${i + 1}`}
+            style={{
+              width: 8, height: 8, borderRadius: "50%", border: "none", padding: 0,
+              background: i === idx ? "#e20074" : "#d1d5db", cursor: "pointer",
+            }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselSlideView({ slide, active }: { slide: CarouselSlide; active: boolean }) {
+  const [animPct, setAnimPct] = useState(0);
+  useEffect(() => {
+    if (!active) { setAnimPct(0); return; }
+    const start = performance.now();
+    let raf = 0;
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / 600);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setAnimPct(slide.pct * eased);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [active, slide.pct]);
+
+  const display = Math.round(animPct);
+  const ringValue = animPct;
+
+  return (
+    <div style={{ width: "100%", height: "100%", padding: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "relative", width: 140, height: 140 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={[
+                { name: "v", value: ringValue },
+                { name: "r", value: Math.max(0, 100 - ringValue) },
+              ]}
+              dataKey="value"
+              cx="50%" cy="50%"
+              innerRadius={48} outerRadius={66}
+              stroke="none"
+              startAngle={90} endAngle={-270}
+              isAnimationActive={false}
+            >
+              <Cell fill={slide.color} />
+              <Cell fill="#e5e7eb" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{
+          position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", pointerEvents: "none",
+        }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#111", lineHeight: 1 }}>{display}%</div>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{slide.title}</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: "#475569", fontWeight: 600, marginTop: 4, textAlign: "center" }}>
+        {slide.footer}
+      </div>
+      {slide.extra}
     </div>
   );
 }
