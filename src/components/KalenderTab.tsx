@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Contact, CallState } from "@/lib/types";
 
 function toIsoDate(d: Date): string {
@@ -33,10 +33,20 @@ function getWeekSlots(weekStart: Date) {
   });
 }
 
+const TIME_OPTIONS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    out.push(`${String(h).padStart(2, "0")}:00`);
+    if (h < 20) out.push(`${String(h).padStart(2, "0")}:30`);
+  }
+  return out;
+})();
+
 type Props = {
   contacts: Contact[];
   states: Record<string, CallState>;
   onOpenContact: (bid: string) => void;
+  onPatchTime?: (bid: string, time: string) => void;
 };
 
 const navBtn: CSSProperties = {
@@ -50,9 +60,41 @@ const navBtn: CSSProperties = {
   color: "#475569",
 };
 
-export function KalenderTab({ contacts, states, onOpenContact }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
+
+  const [reschedule, setReschedule] = useState<{ contact: Contact; time: string } | null>(null);
+
+  // Long-press
+  const pressRef = useState<{ timer: number | null }>({ timer: null })[0];
+  const longPressedRef = useState<{ v: boolean }>({ v: false })[0];
+
+  const startPress = (c: Contact) => {
+    longPressedRef.v = false;
+    if (pressRef.timer) window.clearTimeout(pressRef.timer);
+    pressRef.timer = window.setTimeout(() => {
+      longPressedRef.v = true;
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(50);
+      const cs = states[c.bid];
+      setReschedule({ contact: c, time: cs?.termin_zeit || "09:00" });
+    }, 500);
+  };
+  const cancelPress = () => {
+    if (pressRef.timer) {
+      window.clearTimeout(pressRef.timer);
+      pressRef.timer = null;
+    }
+  };
+
+  // Auto-scroll to today
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const el = document.getElementById("kalender-today");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const weekRangeLabel = useMemo(() => {
     const end = new Date(weekStart);
@@ -69,6 +111,17 @@ export function KalenderTab({ contacts, states, onOpenContact }: Props) {
       if (cs?.status !== "termin" || !cs.termin_slot || !cs.termin_datum) return;
       const key = `${cs.termin_datum}|${cs.termin_slot}`;
       (map[key] = map[key] || []).push(c);
+    });
+    // sort by termin_zeit asc, empty last
+    Object.keys(map).forEach((k) => {
+      map[k].sort((a, b) => {
+        const ta = states[a.bid]?.termin_zeit || "";
+        const tb = states[b.bid]?.termin_zeit || "";
+        if (!ta && !tb) return 0;
+        if (!ta) return 1;
+        if (!tb) return -1;
+        return ta.localeCompare(tb);
+      });
     });
     return map;
   }, [contacts, states]);
@@ -161,12 +214,14 @@ export function KalenderTab({ contacts, states, onOpenContact }: Props) {
           return (
             <div
               key={date}
+              id={isToday ? "kalender-today" : undefined}
               style={{
                 background: "#fff",
                 borderRadius: 10,
                 padding: 10,
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 borderLeft: isToday ? "4px solid #e20074" : "4px solid transparent",
+                scrollMarginTop: 60,
               }}
             >
               <div
@@ -228,7 +283,21 @@ export function KalenderTab({ contacts, states, onOpenContact }: Props) {
                         return (
                           <div
                             key={c.bid}
-                            onClick={() => onOpenContact(c.bid)}
+                            onClick={() => {
+                              if (longPressedRef.v) {
+                                longPressedRef.v = false;
+                                return;
+                              }
+                              onOpenContact(c.bid);
+                            }}
+                            onTouchStart={() => startPress(c)}
+                            onTouchEnd={cancelPress}
+                            onTouchCancel={cancelPress}
+                            onTouchMove={cancelPress}
+                            onMouseDown={() => startPress(c)}
+                            onMouseUp={cancelPress}
+                            onMouseLeave={cancelPress}
+                            onContextMenu={(e) => e.preventDefault()}
                             style={{
                               background: "#f0fff6",
                               borderRadius: 7,
@@ -236,13 +305,19 @@ export function KalenderTab({ contacts, states, onOpenContact }: Props) {
                               marginBottom: 4,
                               cursor: "pointer",
                               borderLeft: "3px solid #22c55e",
+                              userSelect: "none",
                             }}
                           >
                             <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
                               {c.strasse} {c.hnr}
                               {c.hnr_zusatz}
                             </div>
-                            <div style={{ fontSize: 11, color: "#334155" }}>{c.name}</div>
+                            <div style={{ fontSize: 11, color: "#334155" }}>
+                              {c.name}
+                              {c.nvt && (
+                                <span style={{ color: "#94a3b8", fontWeight: 400 }}> · {c.nvt}</span>
+                              )}
+                            </div>
                             <div style={{ fontSize: 10, color: "#64748b" }}>
                               {c.typ}
                               {c.we ? ` · ${c.we} WE` : ""}
@@ -279,6 +354,99 @@ export function KalenderTab({ contacts, states, onOpenContact }: Props) {
           );
         })}
       </div>
+
+      {reschedule && (
+        <>
+          <div
+            onClick={() => setReschedule(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 499,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              bottom: 56,
+              left: 0,
+              right: 0,
+              background: "#fff",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              padding: 16,
+              zIndex: 500,
+              boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+              ⏰ Termin verschieben
+            </div>
+            <div style={{ fontSize: 13, color: "#475569", marginBottom: 12 }}>
+              {reschedule.contact.name} · {reschedule.contact.strasse} {reschedule.contact.hnr}
+              {reschedule.contact.hnr_zusatz}
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Neue Uhrzeit wählen:</div>
+            <select
+              value={reschedule.time}
+              onChange={(e) => setReschedule((r) => (r ? { ...r, time: e.target.value } : r))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: 16,
+                borderRadius: 8,
+                border: "1px solid #cbd5e1",
+                marginBottom: 14,
+                background: "#fff",
+              }}
+            >
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => {
+                  if (onPatchTime) onPatchTime(reschedule.contact.bid, reschedule.time);
+                  setReschedule(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  background: "#22c55e",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ✓ Speichern
+              </button>
+              <button
+                onClick={() => setReschedule(null)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  background: "#f1f5f9",
+                  color: "#475569",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ✗ Abbrechen
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
