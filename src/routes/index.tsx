@@ -603,6 +603,7 @@ function Index() {
           contacts={contacts}
           states={states}
           onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
+          onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
         />
       )}
 
