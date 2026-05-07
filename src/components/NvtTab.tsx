@@ -274,6 +274,13 @@ export default function NvtTab({
           value={animKlar}
           onClick={klarfallCount > 0 ? onOpenKlarfaelle : undefined}
         />
+        <KpiCard
+          color="#a16207"
+          icon="⛏️"
+          label="Grabenlänge"
+          value={animGraben >= 1000 ? `${(animGraben / 1000).toFixed(1)} km` : `${animGraben} m`}
+          sub="Gesamt"
+        />
       </div>
 
       {/* SECTION 2 — Fortschritts-Karussell */}
