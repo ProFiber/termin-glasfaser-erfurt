@@ -17,6 +17,8 @@ export type Database = {
       call_states: {
         Row: {
           bid: string
+          klarfall: boolean
+          klarfall_notiz: string
           notiz: string
           status: Database["public"]["Enums"]["call_status"]
           termin_datum: string | null
@@ -26,6 +28,8 @@ export type Database = {
         }
         Insert: {
           bid: string
+          klarfall?: boolean
+          klarfall_notiz?: string
           notiz?: string
           status?: Database["public"]["Enums"]["call_status"]
           termin_datum?: string | null
@@ -35,6 +39,8 @@ export type Database = {
         }
         Update: {
           bid?: string
+          klarfall?: boolean
+          klarfall_notiz?: string
           notiz?: string
           status?: Database["public"]["Enums"]["call_status"]
           termin_datum?: string | null
