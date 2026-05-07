@@ -57,13 +57,12 @@ function loadLeaflet(): Promise<unknown> {
     script.src = LEAFLET_JS;
     script.async = true;
     script.onload = () => {
-      // Load rotate plugin after Leaflet
       if (!document.querySelector(`script[src="${LEAFLET_ROTATE_JS}"]`)) {
         const rot = document.createElement("script");
         rot.src = LEAFLET_ROTATE_JS;
         rot.async = true;
         rot.onload = () => resolve(window.L);
-        rot.onerror = () => resolve(window.L); // fallback even if rotate fails
+        rot.onerror = () => resolve(window.L);
         document.head.appendChild(rot);
       } else {
         resolve(window.L);
@@ -81,6 +80,45 @@ function addressOf(c: Contact): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+function injectStyles() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("user-loc-pulse-style")) return;
+  const style = document.createElement("style");
+  style.id = "user-loc-pulse-style";
+  style.textContent = `
+    @keyframes userLocPulse {
+      0% { transform: scale(1); opacity: 0.7; }
+      70% { transform: scale(2.8); opacity: 0; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+    @keyframes userLocSpin { to { transform: rotate(360deg); } }
+    .user-loc-wrap { position: relative; width: 28px; height: 28px; }
+    .user-loc-pulse {
+      position: absolute; inset: 4px; border-radius: 50%;
+      background: ${MAGENTA}; opacity: 0.5;
+      animation: userLocPulse 1.6s ease-out infinite;
+    }
+    .user-loc-dot {
+      position: absolute; inset: 4px; border-radius: 50%;
+      background: ${MAGENTA};
+      border: 3px solid white;
+      box-shadow: 0 0 0 1.5px ${MAGENTA}, 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .user-loc-arrow-wrap {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s ease-out;
+    }
+    .user-loc-arrow {
+      width: 0; height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 16px solid ${MAGENTA};
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,10 +133,89 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
+  const [follow, setFollow] = useState(false);
+  const [headingUp, setHeadingUp] = useState(false);
+  const [bearing, setBearing] = useState(0);
+  const [hasHeading, setHasHeading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userMarkerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const accuracyCircleRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const firstLocFixRef = useRef(true);
+  const followRef = useRef(false);
+  const headingUpRef = useRef(false);
+  const lastPosRef = useRef<{ lat: number; lng: number; heading: number | null } | null>(null);
+  const programmaticPanRef = useRef(false);
+  const headingRef = useRef<number | null>(null);
+  const orientationListenerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
+
+  useEffect(() => { followRef.current = follow; }, [follow]);
+  useEffect(() => { headingUpRef.current = headingUp; }, [headingUp]);
+
+  function showLocError(msg: string, ms = 3500) {
+    setLocError(msg);
+    window.setTimeout(() => setLocError(null), ms);
+  }
+
+  function applyBearing(b: number) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = mapRef.current as any;
+    if (!m) return;
+    if (typeof m.setBearing === "function") {
+      m.setBearing(b);
+    }
+    setBearing(b);
+  }
+
+  function renderUserIcon() {
+    if (!window.L) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = window.L as any;
+    const h = headingRef.current;
+    if (h != null && hasHeading) {
+      // Arrow rotated by heading; if heading-up active, the map itself rotates
+      // so the arrow on screen always points up.
+      const rot = headingUpRef.current ? 0 : h;
+      const html = `
+        <div class="user-loc-wrap">
+          <div class="user-loc-pulse"></div>
+          <div class="user-loc-arrow-wrap" style="transform: rotate(${rot}deg)">
+            <div class="user-loc-arrow"></div>
+          </div>
+        </div>`;
+      return L.divIcon({ html, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
+    }
+    const html = `<div class="user-loc-wrap"><div class="user-loc-pulse"></div><div class="user-loc-dot"></div></div>`;
+    return L.divIcon({ html, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
+  }
+
+  function updateUserMarker(lat: number, lng: number, accuracy: number | null) {
+    if (!mapRef.current || !window.L) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = window.L as any;
+    const map = mapRef.current;
+    const icon = renderUserIcon();
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([lat, lng]);
+      if (icon) userMarkerRef.current.setIcon(icon);
+    } else if (icon) {
+      userMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000, interactive: false }).addTo(map);
+    }
+    if (accuracy != null && accuracy > 0) {
+      if (accuracyCircleRef.current) {
+        accuracyCircleRef.current.setLatLng([lat, lng]);
+        accuracyCircleRef.current.setRadius(accuracy);
+      } else {
+        accuracyCircleRef.current = L.circle([lat, lng], {
+          radius: accuracy,
+          color: MAGENTA, weight: 1, opacity: 0.5,
+          fillColor: MAGENTA, fillOpacity: 0.12,
+          interactive: false,
+        }).addTo(map);
+      }
+    }
+  }
 
   const stopWatching = () => {
     if (watchIdRef.current != null && navigator.geolocation) {
@@ -107,71 +224,31 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      stopWatching();
-    };
-  }, []);
-
-  const handleLocate = () => {
-    if (!mapRef.current || !window.L) return;
+  function startWatching() {
     if (!navigator.geolocation) {
-      setLocError("Geolocation nicht unterstützt");
-      setTimeout(() => setLocError(null), 3000);
+      showLocError("Geolocation nicht unterstützt");
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const L = window.L as any;
-    const map = mapRef.current;
-
-    // Inject pulse CSS once
-    if (!document.getElementById("user-loc-pulse-style")) {
-      const style = document.createElement("style");
-      style.id = "user-loc-pulse-style";
-      style.textContent = `
-        @keyframes userLocPulse {
-          0% { transform: scale(1); opacity: 0.7; }
-          70% { transform: scale(2.8); opacity: 0; }
-          100% { transform: scale(2.8); opacity: 0; }
-        }
-        .user-loc-wrap { position: relative; width: 20px; height: 20px; }
-        .user-loc-pulse {
-          position: absolute; inset: 0; border-radius: 50%;
-          background: #e20074; opacity: 0.6;
-          animation: userLocPulse 1.6s ease-out infinite;
-        }
-        .user-loc-dot {
-          position: absolute; inset: 0; border-radius: 50%;
-          background: #e20074;
-          border: 3px solid white;
-          box-shadow: 0 0 0 1.5px #e20074, 0 2px 8px rgba(0,0,0,0.5);
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    setLocError(null);
-    setLocating(true);
-    firstLocFixRef.current = true;
-    stopWatching();
-
+    if (watchIdRef.current != null) return;
     const onPos = (pos: GeolocationPosition) => {
-      const { latitude, longitude } = pos.coords;
-      const html = `<div class="user-loc-wrap"><div class="user-loc-pulse"></div><div class="user-loc-dot"></div></div>`;
-      const icon = L.divIcon({ html, className: "", iconSize: [20, 20], iconAnchor: [10, 10] });
-      if (userMarkerRef.current) {
-        userMarkerRef.current.setLatLng([latitude, longitude]);
-        userMarkerRef.current.setIcon(icon);
-      } else {
-        userMarkerRef.current = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(map);
+      const { latitude, longitude, accuracy } = pos.coords;
+      const gpsHeading = pos.coords.heading;
+      if (gpsHeading != null && !Number.isNaN(gpsHeading)) {
+        headingRef.current = gpsHeading;
+        setHasHeading(true);
       }
+      lastPosRef.current = { lat: latitude, lng: longitude, heading: gpsHeading ?? null };
+      updateUserMarker(latitude, longitude, accuracy ?? null);
       if (firstLocFixRef.current) {
-        map.setView([latitude, longitude], 18);
+        programmaticPanRef.current = true;
+        mapRef.current?.setView([latitude, longitude], 18);
         firstLocFixRef.current = false;
         setLocating(false);
+      } else if (followRef.current) {
+        programmaticPanRef.current = true;
+        mapRef.current?.panTo([latitude, longitude], { animate: true });
       }
     };
-
     const onErr = (err: GeolocationPositionError) => {
       setLocating(false);
       const msg = err.code === err.PERMISSION_DENIED
@@ -179,20 +256,116 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         : err.code === err.POSITION_UNAVAILABLE
         ? "Standort nicht verfügbar"
         : "Standort-Fehler";
-      setLocError(msg);
-      setTimeout(() => setLocError(null), 3500);
+      showLocError(msg);
     };
-
     navigator.geolocation.getCurrentPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+      enableHighAccuracy: true, timeout: 10000, maximumAge: 0,
     });
     watchIdRef.current = navigator.geolocation.watchPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
+      enableHighAccuracy: true, maximumAge: 1000, timeout: 5000,
+    });
+  }
+
+  const handleLocate = () => {
+    injectStyles();
+    if (!mapRef.current || !window.L) return;
+    setLocError(null);
+    setLocating(true);
+    firstLocFixRef.current = true;
+    startWatching();
+    if (lastPosRef.current) {
+      programmaticPanRef.current = true;
+      mapRef.current.setView([lastPosRef.current.lat, lastPosRef.current.lng], 18);
+      setLocating(false);
+    }
+  };
+
+  const toggleFollow = () => {
+    injectStyles();
+    setFollow((v) => {
+      const next = !v;
+      if (next) {
+        startWatching();
+        if (lastPosRef.current) {
+          programmaticPanRef.current = true;
+          mapRef.current?.panTo([lastPosRef.current.lat, lastPosRef.current.lng], { animate: true });
+        }
+      }
+      return next;
     });
   };
+
+  function attachOrientation() {
+    if (orientationListenerRef.current) return;
+    const handler = (e: DeviceOrientationEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ev = e as any;
+      let h: number | null = null;
+      if (typeof ev.webkitCompassHeading === "number") {
+        h = ev.webkitCompassHeading; // already 0=N, clockwise
+      } else if (typeof e.alpha === "number") {
+        h = 360 - e.alpha;
+      }
+      if (h == null || Number.isNaN(h)) return;
+      headingRef.current = h;
+      setHasHeading(true);
+      if (headingUpRef.current) {
+        applyBearing(-h);
+      }
+      // refresh marker icon to reflect heading
+      if (userMarkerRef.current) {
+        const icon = renderUserIcon();
+        if (icon) userMarkerRef.current.setIcon(icon);
+      }
+    };
+    orientationListenerRef.current = handler;
+    window.addEventListener("deviceorientationabsolute", handler as EventListener);
+    window.addEventListener("deviceorientation", handler as EventListener);
+  }
+
+  function detachOrientation() {
+    if (!orientationListenerRef.current) return;
+    window.removeEventListener("deviceorientationabsolute", orientationListenerRef.current as EventListener);
+    window.removeEventListener("deviceorientation", orientationListenerRef.current as EventListener);
+    orientationListenerRef.current = null;
+  }
+
+  const toggleHeadingUp = async () => {
+    injectStyles();
+    if (headingUp) {
+      setHeadingUp(false);
+      detachOrientation();
+      applyBearing(0);
+      return;
+    }
+    // iOS 13+ permission
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const DOE = (window as any).DeviceOrientationEvent;
+    if (DOE && typeof DOE.requestPermission === "function") {
+      try {
+        const res = await DOE.requestPermission();
+        if (res !== "granted") {
+          showLocError("Kompass-Zugriff in Safari-Einstellungen aktivieren", 5000);
+          return;
+        }
+      } catch {
+        showLocError("Kompass-Zugriff in Safari-Einstellungen aktivieren", 5000);
+        return;
+      }
+    }
+    setHeadingUp(true);
+    attachOrientation();
+    startWatching();
+  };
+
+  const resetNorth = () => applyBearing(0);
+
+  useEffect(() => {
+    return () => {
+      stopWatching();
+      detachOrientation();
+    };
+  }, []);
 
   // Initialize map
   useEffect(() => {
@@ -213,8 +386,6 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         touchZoom: true,
         scrollWheelZoom: true,
       }).setView([view.lat, view.lng], view.zoom);
-      map.options.touchZoom = true;
-      map.options.scrollWheelZoom = true;
       Lmod.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
@@ -224,6 +395,21 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         try {
           sessionStorage.setItem("karte_view", JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
         } catch { /* ignore */ }
+      });
+      // Disable follow when user manually pans
+      map.on("dragstart", () => {
+        if (programmaticPanRef.current) return;
+        if (followRef.current) setFollow(false);
+      });
+      map.on("movestart", () => {
+        // reset programmatic flag after the move begins
+        if (programmaticPanRef.current) {
+          programmaticPanRef.current = false;
+        }
+      });
+      // Keep bearing state in sync when user rotates with two fingers
+      map.on("rotate", () => {
+        if (typeof map.getBearing === "function") setBearing(map.getBearing());
       });
       mapRef.current = map;
       setReady(true);
@@ -289,7 +475,6 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
     const map = mapRef.current;
     const visibleIds = new Set(visibleContacts.map((c) => c.bid));
 
-    // Remove markers no longer visible
     Object.keys(markersRef.current).forEach((bid) => {
       if (!visibleIds.has(bid) || !coords[bid]) {
         map.removeLayer(markersRef.current[bid]);
@@ -327,6 +512,12 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
   const selectedContact = selected ? contacts.find((c) => c.bid === selected) : null;
   const selectedStatus = (selectedContact && (states[selectedContact.bid]?.status ?? "offen")) as CallStatus | undefined;
   const selectedState = selectedContact ? states[selectedContact.bid] : undefined;
+
+  const btnBase: React.CSSProperties = {
+    width: 40, height: 40, borderRadius: 10, border: "none",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.2)", cursor: "pointer",
+    fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center",
+  };
 
   return (
     <div style={{ position: "relative", height: "100%", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -383,56 +574,89 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
         </div>
       )}
 
-      {/* My location button */}
-      <button
-        onClick={handleLocate}
-        aria-label="Mein Standort"
+      {/* Action buttons (stacked top-right) */}
+      <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: "flex", flexDirection: "column", gap: 8 }}>
+        <button
+          onClick={handleLocate}
+          aria-label="Mein Standort"
+          title="Mein Standort"
+          style={{ ...btnBase, background: "white" }}
+        >
+          {locating ? (
+            <span
+              style={{
+                width: 16, height: 16, borderRadius: "50%",
+                border: "2px solid #e5e7eb", borderTopColor: "#1d8bf8",
+                animation: "userLocSpin 0.8s linear infinite",
+                display: "inline-block",
+              }}
+            />
+          ) : "📍"}
+        </button>
+        <button
+          onClick={toggleFollow}
+          aria-label="Folgen"
+          title={follow ? "Auto-Folgen deaktivieren" : "Auto-Folgen aktivieren"}
+          style={{
+            ...btnBase,
+            background: follow ? MAGENTA : "white",
+            color: follow ? "white" : "inherit",
+          }}
+        >🔄</button>
+        <button
+          onClick={toggleHeadingUp}
+          aria-label="Heading-Up"
+          title={headingUp ? "Heading-Up deaktivieren" : "Heading-Up aktivieren"}
+          style={{
+            ...btnBase,
+            background: headingUp ? MAGENTA : "white",
+            color: headingUp ? "white" : "inherit",
+          }}
+        >🧭</button>
+        {Math.abs(bearing) > 0.5 && (
+          <button
+            onClick={resetNorth}
+            aria-label="Nach Norden"
+            title="Nach Norden ausrichten"
+            style={{ ...btnBase, background: "white" }}
+          >🔝</button>
+        )}
+      </div>
+
+      {/* Compass rose top-right of map (always shows true north) */}
+      <div
         style={{
-          position: "absolute", top: 56, right: 8, zIndex: 1001,
-          width: 40, height: 40, borderRadius: 10, border: "none",
-          background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-          cursor: "pointer", fontSize: 18, display: "flex",
+          position: "absolute", top: 56, right: 56, zIndex: 1000,
+          width: 36, height: 36, borderRadius: "50%",
+          background: "rgba(255,255,255,0.9)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+          display: Math.abs(bearing) > 0.5 ? "flex" : "none",
           alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
         }}
       >
-        {locating ? (
-          <span
-            style={{
-              width: 16, height: 16, borderRadius: "50%",
-              border: "2px solid #e5e7eb", borderTopColor: "#1d8bf8",
-              animation: "userLocSpin 0.8s linear infinite",
-              display: "inline-block",
-            }}
-          />
-        ) : "📍"}
-        <style>{`@keyframes userLocSpin { to { transform: rotate(360deg); } }`}</style>
-      </button>
-
-      {/* Compass / reset rotation */}
-      <button
-        onClick={() => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const m = mapRef.current as any;
-          if (m && typeof m.setBearing === "function") m.setBearing(0);
-        }}
-        aria-label="Norden"
-        title="Nach Norden ausrichten"
-        style={{
-          position: "absolute", top: 104, right: 8, zIndex: 1001,
-          width: 40, height: 40, borderRadius: 10, border: "none",
-          background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-          cursor: "pointer", fontSize: 18, display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}
-      >🧭</button>
+        <div
+          style={{
+            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            transform: `rotate(${bearing}deg)`,
+            transition: "transform 0.2s ease-out",
+          }}
+        >
+          <svg width="28" height="28" viewBox="0 0 28 28">
+            <polygon points="14,3 18,15 14,12 10,15" fill="#dc2626" />
+            <polygon points="14,25 10,13 14,16 18,13" fill="#475569" />
+            <text x="14" y="2.5" textAnchor="middle" fontSize="6" fontWeight="700" fill="#dc2626">N</text>
+          </svg>
+        </div>
+      </div>
 
       {locError && (
         <div
           style={{
-            position: "absolute", top: 56, right: 56, zIndex: 1001,
-            background: "#fee2e2", color: "#991b1b", padding: "6px 10px",
+            position: "absolute", top: 8, left: 8, right: 8, zIndex: 1100,
+            background: "#fee2e2", color: "#991b1b", padding: "8px 12px",
             borderRadius: 8, fontSize: 12, fontWeight: 600,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.15)", textAlign: "center",
           }}
         >
           ⚠️ {locError}
@@ -442,7 +666,9 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       {/* Legend top-right */}
       <div
         style={{
-          position: "absolute", top: 152, right: 8, zIndex: 1000,
+          position: "absolute",
+          top: Math.abs(bearing) > 0.5 ? 248 : 200,
+          right: 8, zIndex: 1000,
           background: "rgba(255,255,255,0.95)", borderRadius: 8, padding: 8,
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 11,
         }}
