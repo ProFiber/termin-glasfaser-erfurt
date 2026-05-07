@@ -589,6 +589,8 @@ function Index() {
           states={states}
           onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
+          patch={patch}
+          onSwitchToDoku={(bid) => { setActiveTab("doku"); setExpanded(bid); }}
         />
       )}
 
