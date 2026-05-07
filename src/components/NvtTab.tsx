@@ -104,25 +104,32 @@ export default function NvtTab({
       <ChartsSection rows={rows} states={states} totalPct={totalPct} />
 
       {(() => {
-        const prio = rows.filter((r) => isPriorityNvt(r.nvt));
+        const urgent = rows.filter((r) => isUrgentNvt(r.nvt));
+        const prio = rows.filter((r) => isPriorityNvt(r.nvt) && !isUrgentNvt(r.nvt));
         const rest = rows.filter((r) => !isPriorityNvt(r.nvt));
-        const prioGesamt = prio.reduce((s, r) => s + r.gesamt, 0);
-        const prioErl = prio.reduce((s, r) => s + r.erledigt, 0);
-        const prioPct = prioGesamt ? Math.round((prioErl / prioGesamt) * 100) : 0;
+        const sumPct = (list: NvtRow[]) => {
+          const g = list.reduce((s, r) => s + r.gesamt, 0);
+          const e = list.reduce((s, r) => s + r.erledigt, 0);
+          return { g, e, pct: g ? Math.round((e / g) * 100) : 0 };
+        };
+        const u = sumPct(urgent);
+        const p = sumPct(prio);
 
-        const renderCard = (r: NvtRow, prioritized: boolean) => {
+        const renderCard = (r: NvtRow, kind: "urgent" | "prio" | "normal") => {
           const pct = Math.round(r.pct);
+          const accent = kind === "urgent" ? "#dc2626" : kind === "prio" ? "#f97316" : null;
+          const emoji = kind === "urgent" ? "🔴 " : kind === "prio" ? "🔥 " : "";
           return (
             <div key={r.nvt} style={{
               background: cardBg(r.pct),
               border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
-              borderLeft: prioritized ? "3px solid #ef4444" : undefined,
+              borderLeft: accent ? `4px solid ${accent}` : undefined,
               borderRadius: 12, padding: 12, marginBottom: 10,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#111" }}>
-                    {prioritized ? "🔥 " : ""}{r.nvt}
+                    {emoji}{r.nvt}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>{r.ort || "—"} · {r.gesamt} Objekte</div>
                 </div>
@@ -149,19 +156,34 @@ export default function NvtTab({
 
         return (
           <>
+            {urgent.length > 0 && (
+              <>
+                <div style={{
+                  background: "#fee2e2", border: "1px solid #fca5a5",
+                  color: "#7f1d1d", fontWeight: 800, fontSize: 13,
+                  padding: "10px 12px", borderRadius: 10, marginBottom: 10,
+                }}>
+                  🔴 Höchste Priorität – sofort abarbeiten
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#7f1d1d" }}>
+                    {u.e} / {u.g} dringende Objekte erledigt ({u.pct}%)
+                  </div>
+                </div>
+                {urgent.map((r) => renderCard(r, "urgent"))}
+              </>
+            )}
             {prio.length > 0 && (
               <>
                 <div style={{
-                  background: "#fef2f2", border: "1px solid #fecaca",
-                  color: "#991b1b", fontWeight: 800, fontSize: 13,
+                  background: "#fff7ed", border: "1px solid #fed7aa",
+                  color: "#9a3412", fontWeight: 800, fontSize: 13,
                   padding: "10px 12px", borderRadius: 10, marginBottom: 10,
                 }}>
                   🔥 Priorität – zuerst abarbeiten
-                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#7f1d1d" }}>
-                    {prioErl} / {prioGesamt} prioritäre Objekte erledigt ({prioPct}%)
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#9a3412" }}>
+                    {p.e} / {p.g} prioritäre Objekte erledigt ({p.pct}%)
                   </div>
                 </div>
-                {prio.map((r) => renderCard(r, true))}
+                {prio.map((r) => renderCard(r, "prio"))}
               </>
             )}
             {rest.length > 0 && (
@@ -172,7 +194,7 @@ export default function NvtTab({
                 }}>
                   Weitere NVTs
                 </div>
-                {rest.map((r) => renderCard(r, false))}
+                {rest.map((r) => renderCard(r, "normal"))}
               </>
             )}
           </>
