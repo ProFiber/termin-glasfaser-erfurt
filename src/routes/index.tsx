@@ -1207,6 +1207,12 @@ const pill = (active: boolean): React.CSSProperties => ({
   background: active ? "#222" : "white", color: active ? "white" : "#555",
 });
 
+const klarfallPill = (active: boolean): React.CSSProperties => ({
+  padding: "3px 10px", borderRadius: 14, border: `1px solid ${active ? "#f59e0b" : "#fcd34d"}`,
+  fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontWeight: 700,
+  background: active ? "#f59e0b" : "#fffbeb", color: active ? "white" : "#92400e",
+});
+
 const statusBtn = (active: boolean): React.CSSProperties => ({
   padding: "7px 4px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, cursor: "pointer",
   background: active ? "#374151" : "white", color: active ? "white" : "#555", fontWeight: active ? 700 : 400,
