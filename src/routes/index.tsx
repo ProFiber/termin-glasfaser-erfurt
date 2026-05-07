@@ -613,15 +613,21 @@ function Index() {
             style={sortBtn()}
           >{nvtSort === "az" ? "A–Z" : "▦ Anzahl"}</button>
           <button
-            onClick={() => setPriorityOnly((v) => !v)}
-            title="Nur Priorität-NVTs"
-            style={chip(priorityOnly, "#ef4444")}
+            onClick={() => { setUrgentOnly((v) => !v); if (!urgentOnly) setPriorityOnly(false); }}
+            title="Nur höchste Priorität (2V8031–2V8034)"
+            style={chip(urgentOnly, "#dc2626")}
+          >🔴 Höchste Prio</button>
+          <button
+            onClick={() => { setPriorityOnly((v) => !v); if (!priorityOnly) setUrgentOnly(false); }}
+            title="Alle Priorität-NVTs"
+            style={chip(priorityOnly, "#f97316")}
           >🔥 Priorität</button>
           <button
-            onClick={() => setNvtSel(new Set())}
-            style={chip(nvtSel.size === 0 && !priorityOnly, "#0891b2")}
+            onClick={() => { setNvtSel(new Set()); setPriorityOnly(false); setUrgentOnly(false); }}
+            style={chip(nvtSel.size === 0 && !priorityOnly && !urgentOnly, "#0891b2")}
           >Alle NVTs</button>
           {nvts.map(([n, count]) => {
+            const urgent = isUrgentNvt(n);
             const prio = isPriorityNvt(n);
             return (
               <button
