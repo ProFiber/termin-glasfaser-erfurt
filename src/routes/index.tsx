@@ -385,6 +385,10 @@ function Index() {
       const kf = !!states[c.bid]?.klarfall;
       if (filter === "klarfall") {
         if (!kf) return false;
+      } else if (filter === "offen") {
+        // "Ausstehend": pending work — not done, not cancelled, not scheduled
+        const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
+        if (!isPending && !kf) return false;
       } else if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
@@ -683,7 +687,7 @@ function Index() {
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
           {(["alle", "klarfall", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)} style={f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f)}>
-              {f === "alle" ? "Alle" : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})` : STATUS_META[f as CallStatus].label}
+              {f === "alle" ? "Alle" : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})` : f === "offen" ? "Ausstehend" : STATUS_META[f as CallStatus].label}
             </button>
           ))}
         </div>
