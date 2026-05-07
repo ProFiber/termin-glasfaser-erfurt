@@ -171,6 +171,7 @@ function Index() {
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [urgentOnly, setUrgentOnly] = useState(false);
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
