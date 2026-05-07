@@ -270,90 +270,64 @@ export default function NvtTab({
         />
       </div>
 
-      {/* SECTION 2 — Gesamtfortschritt */}
-      <div style={SECTION_TITLE}>📈 Gesamtfortschritt</div>
+      {/* SECTION 2 — Fortschritts-Karussell */}
+      <div style={SECTION_TITLE}>📈 Fortschritt</div>
+      <ProgressCarousel
+        slides={[
+          {
+            title: "Gesamt",
+            color: "#22c55e",
+            done: totalErledigt,
+            total: totalGesamt,
+            pct: totalPct,
+            footer: `${totalErledigt} von ${totalGesamt} Objekten erledigt`,
+            extra: (
+              <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 6, fontSize: 11, fontWeight: 700 }}>
+                <span style={{ color: "#3b82f6" }}>● {totalTermin} Termin</span>
+                <span style={{ color: "#6b7280" }}>● {totalOffen} Offen</span>
+                <span style={{ color: "#ef4444" }}>● {totalAbgelehnt} Abgel.</span>
+              </div>
+            ),
+          },
+          {
+            title: "Top Prio",
+            color: "#ef4444",
+            done: u.e,
+            total: u.g,
+            pct: u.pct,
+            footer: `${u.e} von ${u.g} · NVT 2V8031–34`,
+            extra: (
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
+                {urgentRows.map((r) => (
+                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
+                ))}
+              </div>
+            ),
+          },
+          {
+            title: "Priorität",
+            color: "#f97316",
+            done: p.e,
+            total: p.g,
+            pct: p.pct,
+            footer: `${p.e} von ${p.g} · ${prioRows.length} NVTs`,
+            extra: (
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
+                {[...prioRows].sort((a, b) => b.pct - a.pct).slice(0, 3).map((r) => (
+                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
+                ))}
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {/* Doku-Fortschritt unter dem Karussell */}
       <div style={CARD}>
-        <div style={{ position: "relative", width: "100%", height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Erledigt", value: totalErledigt, color: "#22c55e" },
-                  { name: "Rest", value: Math.max(totalGesamt - totalErledigt, 0), color: "#e5e7eb" },
-                ]}
-                dataKey="value"
-                cx="50%"
-                cy="50%"
-                innerRadius={62}
-                outerRadius={90}
-                stroke="none"
-                startAngle={90}
-                endAngle={-270}
-              >
-                <Cell fill="#22c55e" />
-                <Cell fill="#e5e7eb" />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{
-            position: "absolute", inset: 0, display: "flex",
-            flexDirection: "column", alignItems: "center", justifyContent: "center",
-            pointerEvents: "none",
-          }}>
-            <div style={{ fontSize: 32, fontWeight: 800, color: "#111" }}>{animPct}%</div>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>erledigt</div>
-          </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+          📋 Doku: {dokuComplete} / {totalGesamt} vollständig dokumentiert ({dokuPct}%)
         </div>
-        <div style={{ textAlign: "center", marginTop: 4, fontSize: 13, color: "#475569", fontWeight: 600 }}>
-          {totalErledigt} von {totalGesamt} Objekten abgeschlossen
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
-            📋 Doku: {dokuComplete} / {totalGesamt} vollständig dokumentiert ({dokuPct}%)
-          </div>
-          <ProgressBar pct={dokuPct} color="#22c55e" />
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
-            🔌 Anschlüsse gesamt
-          </div>
-          <div style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", background: "#f1f5f9" }}>
-            {stackSegs.map((s) => s.val > 0 && (
-              <div key={s.label} style={{ width: `${(s.val / stackTotal) * 100}%`, background: s.color }} />
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, fontWeight: 600 }}>
-            <span style={{ color: "#16a34a" }}>✅ {totalErledigt}</span>
-            <span style={{ color: "#3b82f6" }}>📅 {totalTermin}</span>
-            <span style={{ color: "#6b7280" }}>⚪ {totalOffen}</span>
-            <span style={{ color: "#ef4444" }}>🔴 {totalAbgelehnt}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 3 — Prioritäts-Fortschritt */}
-      <div style={SECTION_TITLE}>🎯 Prioritäts-Fortschritt</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <PrioCard
-          icon="🔴"
-          title="Höchste Priorität"
-          subtitle="2V8031–34"
-          done={u.e}
-          total={u.g}
-          pct={u.pct}
-          color="#dc2626"
-        />
-        <PrioCard
-          icon="🔥"
-          title="Priorität"
-          subtitle="2V8002–16"
-          done={p.e}
-          total={p.g}
-          pct={p.pct}
-          color="#f97316"
-        />
+        <ProgressBar pct={dokuPct} color="#22c55e" />
       </div>
 
       {/* SECTION 4 — Team Performance */}
