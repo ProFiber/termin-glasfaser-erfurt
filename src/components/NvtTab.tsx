@@ -87,6 +87,23 @@ export default function NvtTab({
 
   return (
     <div style={{ padding: 12, paddingBottom: 100, background: "#f8fafc", minHeight: "100%" }}>
+      {klarfallCount > 0 && (
+        <button
+          type="button"
+          onClick={() => onOpenKlarfaelle?.()}
+          style={{
+            width: "100%", textAlign: "left", cursor: "pointer",
+            background: "#fef3c7", border: "2px solid #f59e0b", borderRadius: 12,
+            padding: "12px 14px", marginBottom: 12, color: "#7c2d12",
+            fontSize: 14, fontWeight: 800,
+          }}
+        >
+          ⚠️ {klarfallCount} Klärfall{klarfallCount === 1 ? "" : "e"} offen
+          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#92400e" }}>
+            Tippen, um zur Call-Liste zu wechseln
+          </div>
+        </button>
+      )}
       <div style={{
         background: "white", borderRadius: 12, padding: 14, marginBottom: 12,
         border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 10,
