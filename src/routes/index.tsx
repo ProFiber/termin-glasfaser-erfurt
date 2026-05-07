@@ -166,7 +166,7 @@ function Index() {
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
+  const [filter, setFilter] = useState<"alle" | "klarfall" | CallStatus>("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
@@ -275,7 +275,7 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz">>) {
     const prev = states[bid];
     const optimistic: CallState = {
       bid,
@@ -284,6 +284,8 @@ function Index() {
       termin_datum: changes.termin_datum !== undefined ? changes.termin_datum : (prev?.termin_datum ?? null),
       termin_zeit: changes.termin_zeit !== undefined ? changes.termin_zeit : (prev?.termin_zeit ?? ""),
       notiz: changes.notiz ?? prev?.notiz ?? "",
+      klarfall: changes.klarfall !== undefined ? changes.klarfall : (prev?.klarfall ?? false),
+      klarfall_notiz: changes.klarfall_notiz !== undefined ? changes.klarfall_notiz : (prev?.klarfall_notiz ?? ""),
       updated_at: new Date().toISOString(),
     };
     setStates((s) => ({ ...s, [bid]: optimistic }));
@@ -298,6 +300,8 @@ function Index() {
           termin_datum: optimistic.termin_datum,
           termin_zeit: optimistic.termin_zeit,
           notiz: optimistic.notiz,
+          klarfall: optimistic.klarfall,
+          klarfall_notiz: optimistic.klarfall_notiz,
         },
         { onConflict: "bid" }
       );
@@ -378,7 +382,10 @@ function Index() {
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
-      if (filter !== "alle" && st !== filter) return false;
+      const kf = !!states[c.bid]?.klarfall;
+      if (filter === "klarfall") {
+        if (!kf) return false;
+      } else if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
@@ -539,6 +546,11 @@ function Index() {
     return c;
   }, [contacts, states]);
 
+  const klarfallCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
+    [contacts, states],
+  );
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
@@ -581,7 +593,11 @@ function Index() {
       )}
 
       {activeTab === "nvt" && (
-        <NvtTab contacts={contacts} states={states} />
+        <NvtTab
+          contacts={contacts}
+          states={states}
+          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("call"); }}
+        />
       )}
 
       {activeTab === "call" && (<>
@@ -665,9 +681,9 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={pill(filter === f)}>
-              {f === "alle" ? "Alle" : STATUS_META[f as CallStatus].label}
+          {(["alle", "klarfall", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} style={f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f)}>
+              {f === "alle" ? "Alle" : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})` : STATUS_META[f as CallStatus].label}
             </button>
           ))}
         </div>
@@ -689,15 +705,18 @@ function Index() {
           const apptDate = cs?.termin_datum ?? null;
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
+          const kf = !!cs?.klarfall;
           return (
             <div key={c.bid} id={`card-${c.bid}`} style={{
-              background: cardBg(st),
+              background: kf ? "#fffbeb" : cardBg(st),
               borderRadius: 11,
               marginBottom: 8,
-              border: `2px solid ${cardBorder(st)}`,
+              border: kf ? "2px solid #f59e0b" : `2px solid ${cardBorder(st)}`,
               boxShadow: open ? "0 6px 20px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.07)",
               overflow: "hidden",
+              position: "relative",
             }}>
+              {kf && (<div style={{ position: "absolute", top: 4, right: 22, fontSize: 14, zIndex: 1 }} title="Klärfall">⚠️</div>)}
               <div
                 onClick={() => {
                   if (longPressFired.current) { longPressFired.current = false; return; }
@@ -765,6 +784,30 @@ function Index() {
                       <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) })}
                         style={statusBtn(st === s)}>{STATUS_META[s].label}</button>
                     ))}
+                  </div>
+
+                  <div style={{ marginBottom: 12, padding: "8px 10px", background: kf ? "#fef3c7" : "#fffbeb", border: `1px solid ${kf ? "#f59e0b" : "#fde68a"}`, borderRadius: 9 }}>
+                    <button
+                      type="button"
+                      onClick={() => patch(c.bid, { klarfall: !kf })}
+                      style={{
+                        width: "100%", padding: "8px 10px", borderRadius: 7,
+                        border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+                        background: kf ? "#f59e0b" : "white",
+                        color: kf ? "white" : "#92400e",
+                        marginBottom: kf ? 8 : 0,
+                      }}
+                    >
+                      ⚠️ Klärfall {kf ? "aktiv" : "markieren"}
+                    </button>
+                    {kf && (
+                      <textarea
+                        value={cs?.klarfall_notiz ?? ""}
+                        onChange={(e) => patch(c.bid, { klarfall_notiz: e.target.value })}
+                        placeholder="Klärfall-Notiz: Was ist zu klären?"
+                        style={{ width: "100%", borderRadius: 7, border: "1px solid #f59e0b", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit", background: "white" }}
+                      />
+                    )}
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
@@ -1193,6 +1236,12 @@ const sortBtn = (): React.CSSProperties => ({
 const pill = (active: boolean): React.CSSProperties => ({
   padding: "3px 10px", borderRadius: 14, border: "1px solid #ddd", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
   background: active ? "#222" : "white", color: active ? "white" : "#555",
+});
+
+const klarfallPill = (active: boolean): React.CSSProperties => ({
+  padding: "3px 10px", borderRadius: 14, border: `1px solid ${active ? "#f59e0b" : "#fcd34d"}`,
+  fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontWeight: 700,
+  background: active ? "#f59e0b" : "#fffbeb", color: active ? "white" : "#92400e",
 });
 
 const statusBtn = (active: boolean): React.CSSProperties => ({

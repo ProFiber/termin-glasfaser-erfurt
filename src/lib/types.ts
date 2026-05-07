@@ -35,6 +35,8 @@ export type CallState = {
   termin_datum: string | null;
   termin_zeit: string;
   notiz: string;
+  klarfall: boolean;
+  klarfall_notiz: string;
   updated_at: string;
 };
 
