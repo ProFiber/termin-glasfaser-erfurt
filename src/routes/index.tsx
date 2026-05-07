@@ -275,7 +275,7 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge">>) {
     const prev = states[bid];
     const optimistic: CallState = {
       bid,
@@ -286,6 +286,7 @@ function Index() {
       notiz: changes.notiz ?? prev?.notiz ?? "",
       klarfall: changes.klarfall !== undefined ? changes.klarfall : (prev?.klarfall ?? false),
       klarfall_notiz: changes.klarfall_notiz !== undefined ? changes.klarfall_notiz : (prev?.klarfall_notiz ?? ""),
+      grabenlaenge: changes.grabenlaenge !== undefined ? changes.grabenlaenge : (prev?.grabenlaenge ?? 0),
       updated_at: new Date().toISOString(),
     };
     setStates((s) => ({ ...s, [bid]: optimistic }));
@@ -302,6 +303,7 @@ function Index() {
           notiz: optimistic.notiz,
           klarfall: optimistic.klarfall,
           klarfall_notiz: optimistic.klarfall_notiz,
+          grabenlaenge: optimistic.grabenlaenge,
         },
         { onConflict: "bid" }
       );
