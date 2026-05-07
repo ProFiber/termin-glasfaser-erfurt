@@ -499,7 +499,7 @@ export default function NvtTab({
 function KpiCard({
   color, icon, label, value, sub, onClick,
 }: {
-  color: string; icon: string; label: string; value: number; sub?: string; onClick?: () => void;
+  color: string; icon: string; label: string; value: number | string; sub?: string; onClick?: () => void;
 }) {
   return (
     <button
@@ -522,7 +522,6 @@ function KpiCard({
     </button>
   );
 }
-
 function PrioCard({
   icon, title, subtitle, done, total, pct, color,
 }: {
