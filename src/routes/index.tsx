@@ -6,7 +6,7 @@ import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
-import { isPriorityNvt } from "@/lib/priority";
+import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "call" | "karte" | "kalender" | "doku" | "nvt";
 const TAB_TITLE: Record<TabKey, string> = {
