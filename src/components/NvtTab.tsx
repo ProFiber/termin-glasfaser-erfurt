@@ -22,10 +22,16 @@ type NvtRow = {
 export default function NvtTab({
   contacts,
   states,
+  onOpenKlarfaelle,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
+  onOpenKlarfaelle?: () => void;
 }) {
+  const klarfallCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
+    [contacts, states],
+  );
   const rows = useMemo<NvtRow[]>(() => {
     const map = new Map<string, NvtRow>();
     for (const c of contacts) {
