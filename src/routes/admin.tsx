@@ -155,6 +155,124 @@ function Admin() {
     }
   }
 
+  async function importGrabenlaengen() {
+    setBusy(true);
+    setLog([]);
+    type Row = { strasse: string; hnr: string; grabenlaenge: number; datum: string };
+    const data: Row[] = [
+      // 06.05.2026
+      { strasse: "Weimarer Str.", hnr: "23", grabenlaenge: 8, datum: "2026-05-06" },
+      { strasse: "Esperstedter Str.", hnr: "2", grabenlaenge: 1, datum: "2026-05-06" },
+      { strasse: "Esperstedter Str.", hnr: "5", grabenlaenge: 1, datum: "2026-05-06" },
+      { strasse: "Karl-Marx-Str.", hnr: "11", grabenlaenge: 1, datum: "2026-05-06" },
+      { strasse: "Karl-Marx-Str.", hnr: "14", grabenlaenge: 1, datum: "2026-05-06" },
+      { strasse: "Frankenhäuser Str.", hnr: "7", grabenlaenge: 2, datum: "2026-05-06" },
+      { strasse: "Frankenhäuser Str.", hnr: "17", grabenlaenge: 4, datum: "2026-05-06" },
+      { strasse: "Weimarer Str.", hnr: "10", grabenlaenge: 1, datum: "2026-05-06" },
+      { strasse: "Lange Str.", hnr: "47", grabenlaenge: 1, datum: "2026-05-06" },
+      // 05.05.2026
+      { strasse: "Steinstr.", hnr: "11", grabenlaenge: 1, datum: "2026-05-05" },
+      { strasse: "Mühlstr.", hnr: "9", grabenlaenge: 1, datum: "2026-05-05" },
+      { strasse: "Am Wässerchen", hnr: "4", grabenlaenge: 3, datum: "2026-05-05" },
+      { strasse: "Am Wässerchen", hnr: "5", grabenlaenge: 5, datum: "2026-05-05" },
+      { strasse: "Am Wässerchen", hnr: "8", grabenlaenge: 3, datum: "2026-05-05" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "8", grabenlaenge: 13, datum: "2026-05-05" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "9", grabenlaenge: 15, datum: "2026-05-05" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "10", grabenlaenge: 10, datum: "2026-05-05" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "11", grabenlaenge: 7, datum: "2026-05-05" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "19", grabenlaenge: 6, datum: "2026-05-05" },
+      { strasse: "Goethestr.", hnr: "6", grabenlaenge: 15, datum: "2026-05-05" },
+      { strasse: "Goethestr.", hnr: "8", grabenlaenge: 9, datum: "2026-05-05" },
+      { strasse: "Goethestr.", hnr: "30", grabenlaenge: 1, datum: "2026-05-05" },
+      { strasse: "Steinstr.", hnr: "15", grabenlaenge: 2, datum: "2026-05-05" },
+      // 04.05.2026
+      { strasse: "Arternsches Tor", hnr: "9", grabenlaenge: 3, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "4", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "27", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "10", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "12", grabenlaenge: 12, datum: "2026-05-04" },
+      { strasse: "Thomas-Müntzer-Str.", hnr: "23", grabenlaenge: 11, datum: "2026-05-04" },
+      { strasse: "Arternsches Tor", hnr: "19", grabenlaenge: 23, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "11", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "2", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "18", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Hauptstr.", hnr: "65", grabenlaenge: 1, datum: "2026-05-04" },
+      { strasse: "Mühlstr.", hnr: "25", grabenlaenge: 1, datum: "2026-05-04" },
+    ];
+
+    try {
+      const { data: contacts, error } = await supabase
+        .from("contacts")
+        .select("bid,strasse,hnr")
+        .range(0, 9999);
+      if (error) { append(`❌ ${error.message}`); setBusy(false); return; }
+
+      const norm = (s: string) => s.trim().toLowerCase();
+      const map = new Map<string, string>();
+      for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string }[]) {
+        map.set(`${norm(c.strasse)}|${norm(c.hnr)}`, c.bid);
+      }
+
+      let ok = 0, miss = 0;
+      for (const r of data) {
+        const bid = map.get(`${norm(r.strasse)}|${norm(r.hnr)}`);
+        if (!bid) {
+          append(`  ⚠ nicht gefunden: ${r.strasse} ${r.hnr}`);
+          miss++;
+          continue;
+        }
+        // load existing call_state to preserve fields
+        const { data: existing } = await supabase
+          .from("call_states")
+          .select("*")
+          .eq("bid", bid)
+          .maybeSingle();
+        const { error: upErr } = await supabase
+          .from("call_states")
+          .upsert(
+            {
+              bid,
+              status: "erledigt" as const,
+              termin_slot: existing?.termin_slot ?? "",
+              termin_datum: existing?.termin_datum ?? null,
+              termin_zeit: existing?.termin_zeit ?? "",
+              notiz: existing?.notiz ?? "",
+              klarfall: existing?.klarfall ?? false,
+              klarfall_notiz: existing?.klarfall_notiz ?? "",
+              grabenlaenge: r.grabenlaenge,
+            },
+            { onConflict: "bid" },
+          );
+        if (upErr) { append(`  ⚠ ${r.strasse} ${r.hnr}: ${upErr.message}`); continue; }
+
+        // Set doku durchfuehrt_am date
+        const { data: dExisting } = await supabase
+          .from("doku_states")
+          .select("*")
+          .eq("bid", bid)
+          .maybeSingle();
+        await supabase.from("doku_states").upsert(
+          {
+            bid,
+            foto: dExisting?.foto ?? false,
+            protokoll: dExisting?.protokoll ?? false,
+            sharepoint: dExisting?.sharepoint ?? false,
+            durchfuehrt_von: dExisting?.durchfuehrt_von ?? "",
+            durchfuehrt_am: `${r.datum}T08:00:00.000Z`,
+            notiz: dExisting?.notiz ?? "",
+          },
+          { onConflict: "bid" },
+        );
+        ok++;
+        append(`  ✓ ${r.strasse} ${r.hnr} → ${r.grabenlaenge} m (${r.datum})`);
+      }
+      append(`✅ Fertig: ${ok} aktualisiert, ${miss} ohne Match`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+
   async function counts() {
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
       supabase.from("contacts").select("*", { count: "exact", head: true }),
