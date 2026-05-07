@@ -272,6 +272,7 @@ function Admin() {
     } finally {
       setBusy(false);
     }
+  }
 
   async function counts() {
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
