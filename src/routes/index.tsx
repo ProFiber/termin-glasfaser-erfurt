@@ -887,6 +887,11 @@ function Index() {
                     placeholder="Notiz…"
                     style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
 
+                  <GrabenStepper
+                    value={cs?.grabenlaenge ?? 0}
+                    onChange={(v) => patch(c.bid, { grabenlaenge: v })}
+                  />
+
                   {st === "termin" && appt && (
                     <div style={{ marginTop: 10 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1, marginBottom: 6 }}>TERMIN TEILEN</div>
