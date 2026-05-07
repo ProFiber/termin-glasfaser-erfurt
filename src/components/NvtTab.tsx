@@ -201,10 +201,16 @@ export default function NvtTab({
   );
   const lowPrioNvts = [...urgentRows, ...prioRows].filter((r) => r.pct < 50);
 
+  const grabenTotal = useMemo(
+    () => Object.values(states).reduce((s, x) => s + (x.grabenlaenge ?? 0), 0),
+    [states],
+  );
+
   const animTermine = useCounter(termineHeute.total);
   const animErledigt = useCounter(erledigtHeute);
   const animKlar = useCounter(klarfallCount);
   const animPct = useCounter(totalPct);
+  const animGraben = useCounter(grabenTotal);
 
   function shareWhatsApp() {
     const date = new Date().toLocaleDateString("de-DE");
