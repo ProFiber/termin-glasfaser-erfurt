@@ -95,6 +95,7 @@ export default function NvtTab({
           <div style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>📊 NVT-Übersicht</div>
           <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
             {totalErledigt} von {totalGesamt} Objekten erledigt · <b style={{ color: MAGENTA }}>{totalPct}%</b> Fortschritt
+            {klarfallCount > 0 && <> · <b style={{ color: "#f59e0b" }}>⚠️ {klarfallCount} Klärfall{klarfallCount === 1 ? "" : "e"}</b></>}
           </div>
         </div>
         <button onClick={shareWhatsApp}
