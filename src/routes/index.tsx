@@ -6,6 +6,7 @@ import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
+import GrabenStepper from "@/components/GrabenStepper";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
