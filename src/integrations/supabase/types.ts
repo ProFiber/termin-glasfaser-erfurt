@@ -17,6 +17,7 @@ export type Database = {
       call_states: {
         Row: {
           bid: string
+          grabenlaenge: number
           klarfall: boolean
           klarfall_notiz: string
           notiz: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           bid: string
+          grabenlaenge?: number
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           bid?: string
+          grabenlaenge?: number
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string

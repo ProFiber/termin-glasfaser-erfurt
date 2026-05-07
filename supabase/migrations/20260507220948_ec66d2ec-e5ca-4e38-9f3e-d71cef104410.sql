@@ -1,0 +1,1 @@
+ALTER TABLE call_states ADD COLUMN IF NOT EXISTS grabenlaenge integer NOT NULL DEFAULT 0;
