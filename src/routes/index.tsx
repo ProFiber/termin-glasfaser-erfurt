@@ -782,7 +782,30 @@ function Index() {
                     ))}
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                  <div style={{ marginBottom: 12, padding: "8px 10px", background: kf ? "#fef3c7" : "#fffbeb", border: `1px solid ${kf ? "#f59e0b" : "#fde68a"}`, borderRadius: 9 }}>
+                    <button
+                      type="button"
+                      onClick={() => patch(c.bid, { klarfall: !kf })}
+                      style={{
+                        width: "100%", padding: "8px 10px", borderRadius: 7,
+                        border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+                        background: kf ? "#f59e0b" : "white",
+                        color: kf ? "white" : "#92400e",
+                        marginBottom: kf ? 8 : 0,
+                      }}
+                    >
+                      ⚠️ Klärfall {kf ? "aktiv" : "markieren"}
+                    </button>
+                    {kf && (
+                      <textarea
+                        value={cs?.klarfall_notiz ?? ""}
+                        onChange={(e) => patch(c.bid, { klarfall_notiz: e.target.value })}
+                        placeholder="Klärfall-Notiz: Was ist zu klären?"
+                        style={{ width: "100%", borderRadius: 7, border: "1px solid #f59e0b", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit", background: "white" }}
+                      />
+                    )}
+                  </div>
+
                     <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1 }}>TERMIN</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() - 7); return x; }); }}
