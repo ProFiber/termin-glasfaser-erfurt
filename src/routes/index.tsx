@@ -175,7 +175,7 @@ function Index() {
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<TabKey>("call");
+  const [activeTab, setActiveTab] = useState<TabKey>("objekte");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
@@ -578,7 +578,7 @@ function Index() {
           <KarteTab
             contacts={contacts}
             states={states}
-            onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+            onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
           />
         </div>
       )}
@@ -587,7 +587,7 @@ function Index() {
         <KalenderTab
           contacts={contacts}
           states={states}
-          onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+          onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
           onSwitchToDoku={(bid) => { setActiveTab("doku"); setExpanded(bid); }}
@@ -598,15 +598,15 @@ function Index() {
         <DokuTab contacts={contacts} callStates={states} />
       )}
 
-      {activeTab === "nvt" && (
+      {activeTab === "dashboard" && (
         <NvtTab
           contacts={contacts}
           states={states}
-          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("call"); }}
+          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
         />
       )}
 
-      {activeTab === "call" && (<>
+      {activeTab === "objekte" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
         <input
@@ -1137,7 +1137,7 @@ function Index() {
       )}
 
       {/* BOTTOM BAR (only on call tab) */}
-      {activeTab === "call" && (
+      {activeTab === "objekte" && (
         <div style={{
           position: "fixed", bottom: 56, left: "50%", transform: "translateX(-50%)",
           width: "100%", maxWidth: 480, background: "white", borderTop: "1px solid #e5e7eb",
@@ -1220,7 +1220,7 @@ function Index() {
         })}
       </div>
       <button
-        onClick={() => setActiveTab("call")}
+        onClick={() => setActiveTab("objekte")}
         aria-label="Call"
         style={{
           position: "fixed",
