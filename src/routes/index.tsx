@@ -637,8 +637,8 @@ function Index() {
                   if (next.has(n)) next.delete(n); else next.add(n);
                   return next;
                 })}
-                style={chip(nvtSel.has(n), prio ? "#ef4444" : "#0891b2")}
-              >{prio ? "🔥 " : ""}{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
+                style={chip(nvtSel.has(n), urgent ? "#dc2626" : prio ? "#f97316" : "#0891b2")}
+              >{urgent ? "🔴 " : prio ? "🔥 " : ""}{n} <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span></button>
             );
           })}
         </div>
