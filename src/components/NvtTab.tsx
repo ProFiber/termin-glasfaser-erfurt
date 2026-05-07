@@ -201,10 +201,16 @@ export default function NvtTab({
   );
   const lowPrioNvts = [...urgentRows, ...prioRows].filter((r) => r.pct < 50);
 
+  const grabenTotal = useMemo(
+    () => Object.values(states).reduce((s, x) => s + (x.grabenlaenge ?? 0), 0),
+    [states],
+  );
+
   const animTermine = useCounter(termineHeute.total);
   const animErledigt = useCounter(erledigtHeute);
   const animKlar = useCounter(klarfallCount);
   const animPct = useCounter(totalPct);
+  const animGraben = useCounter(grabenTotal);
 
   function shareWhatsApp() {
     const date = new Date().toLocaleDateString("de-DE");
@@ -247,7 +253,7 @@ export default function NvtTab({
     <div style={{ padding: 12, paddingBottom: 100, background: "#f2f2f7", minHeight: "100%" }}>
       {/* SECTION 1 — Tages-KPIs */}
       <div style={SECTION_TITLE}>📌 Tages-KPIs</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
         <KpiCard
           color="#3b82f6"
           icon="🗓️"
@@ -267,6 +273,13 @@ export default function NvtTab({
           label="Klärfälle"
           value={animKlar}
           onClick={klarfallCount > 0 ? onOpenKlarfaelle : undefined}
+        />
+        <KpiCard
+          color="#a16207"
+          icon="⛏️"
+          label="Grabenlänge"
+          value={animGraben >= 1000 ? `${(animGraben / 1000).toFixed(1)} km` : `${animGraben} m`}
+          sub="Gesamt"
         />
       </div>
 
@@ -493,7 +506,7 @@ export default function NvtTab({
 function KpiCard({
   color, icon, label, value, sub, onClick,
 }: {
-  color: string; icon: string; label: string; value: number; sub?: string; onClick?: () => void;
+  color: string; icon: string; label: string; value: number | string; sub?: string; onClick?: () => void;
 }) {
   return (
     <button
@@ -516,7 +529,6 @@ function KpiCard({
     </button>
   );
 }
-
 function PrioCard({
   icon, title, subtitle, done, total, pct, color,
 }: {

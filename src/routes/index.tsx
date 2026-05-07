@@ -6,6 +6,7 @@ import { KalenderTab } from "@/components/KalenderTab";
 import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
+import GrabenStepper from "@/components/GrabenStepper";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
@@ -885,6 +886,11 @@ function Index() {
                   <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
                     placeholder="Notiz…"
                     style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
+
+                  <GrabenStepper
+                    value={cs?.grabenlaenge ?? 0}
+                    onChange={(v) => patch(c.bid, { grabenlaenge: v })}
+                  />
 
                   {st === "termin" && appt && (
                     <div style={{ marginTop: 10 }}>

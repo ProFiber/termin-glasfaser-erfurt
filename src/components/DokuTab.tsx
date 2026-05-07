@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState } from "@/lib/types";
+import GrabenStepper from "@/components/GrabenStepper";
 
 type Props = {
   contacts: Contact[];
@@ -704,6 +705,27 @@ export default function DokuTab({ contacts, callStates }: Props) {
                         fontSize: 14,
                         fontFamily: "inherit",
                         resize: "vertical",
+                      }}
+                    />
+
+                    <GrabenStepper
+                      value={callStates[c.bid]?.grabenlaenge ?? 0}
+                      onChange={async (v) => {
+                        const cs = callStates[c.bid];
+                        await supabase.from("call_states").upsert(
+                          {
+                            bid: c.bid,
+                            status: cs?.status ?? "erledigt",
+                            termin_slot: cs?.termin_slot ?? "",
+                            termin_datum: cs?.termin_datum ?? null,
+                            termin_zeit: cs?.termin_zeit ?? "",
+                            notiz: cs?.notiz ?? "",
+                            klarfall: cs?.klarfall ?? false,
+                            klarfall_notiz: cs?.klarfall_notiz ?? "",
+                            grabenlaenge: v,
+                          },
+                          { onConflict: "bid" },
+                        );
                       }}
                     />
                   </>
