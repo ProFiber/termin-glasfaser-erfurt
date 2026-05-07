@@ -382,7 +382,10 @@ function Index() {
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
-      if (filter !== "alle" && st !== filter) return false;
+      const kf = !!states[c.bid]?.klarfall;
+      if (filter === "klarfall") {
+        if (!kf) return false;
+      } else if (filter !== "alle" && st !== filter) return false;
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
