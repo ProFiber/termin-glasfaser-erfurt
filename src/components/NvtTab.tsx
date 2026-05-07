@@ -580,3 +580,148 @@ function NvtStatusBar({ rows }: { rows: NvtRow[] }) {
     </div>
   );
 }
+
+type CarouselSlide = {
+  title: string;
+  color: string;
+  done: number;
+  total: number;
+  pct: number;
+  footer: string;
+  extra?: React.ReactNode;
+};
+
+function ProgressCarousel({ slides }: { slides: CarouselSlide[] }) {
+  const [idx, setIdx] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const startX = useRef<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const widthRef = useRef(0);
+
+  useEffect(() => {
+    const update = () => { widthRef.current = wrapRef.current?.offsetWidth ?? 0; };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; setDrag(0); };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null) return;
+    setDrag(e.touches[0].clientX - startX.current);
+  };
+  const onTouchEnd = () => {
+    if (startX.current === null) return;
+    if (drag < -50 && idx < slides.length - 1) setIdx(idx + 1);
+    else if (drag > 50 && idx > 0) setIdx(idx - 1);
+    setDrag(0);
+    startX.current = null;
+  };
+
+  const w = widthRef.current || 1;
+  const offset = -idx * w + drag;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        ref={wrapRef}
+        style={{ position: "relative", overflow: "hidden", borderRadius: 12, height: 220, background: "white", border: "1px solid #e5e7eb" }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div style={{
+          display: "flex", height: "100%",
+          transform: `translateX(${offset}px)`,
+          transition: startX.current === null ? "transform 0.3s ease" : "none",
+        }}>
+          {slides.map((s, i) => (
+            <div key={i} style={{ flex: "0 0 100%", height: "100%" }}>
+              <CarouselSlideView slide={s} active={i === idx} />
+            </div>
+          ))}
+        </div>
+
+        {idx > 0 && (
+          <button onClick={() => setIdx(idx - 1)}
+            style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%)",
+              border: "none", background: "rgba(255,255,255,0.8)", borderRadius: "50%",
+              width: 28, height: 28, fontSize: 18, cursor: "pointer", color: "#475569" }}>‹</button>
+        )}
+        {idx < slides.length - 1 && (
+          <button onClick={() => setIdx(idx + 1)}
+            style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+              border: "none", background: "rgba(255,255,255,0.8)", borderRadius: "50%",
+              width: 28, height: 28, fontSize: 18, cursor: "pointer", color: "#475569" }}>›</button>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 8 }}>
+        {slides.map((_, i) => (
+          <button key={i} onClick={() => setIdx(i)}
+            aria-label={`Slide ${i + 1}`}
+            style={{
+              width: 8, height: 8, borderRadius: "50%", border: "none", padding: 0,
+              background: i === idx ? "#e20074" : "#d1d5db", cursor: "pointer",
+            }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselSlideView({ slide, active }: { slide: CarouselSlide; active: boolean }) {
+  const [animPct, setAnimPct] = useState(0);
+  useEffect(() => {
+    if (!active) { setAnimPct(0); return; }
+    const start = performance.now();
+    let raf = 0;
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / 600);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setAnimPct(slide.pct * eased);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [active, slide.pct]);
+
+  const display = Math.round(animPct);
+  const ringValue = animPct;
+
+  return (
+    <div style={{ width: "100%", height: "100%", padding: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "relative", width: 140, height: 140 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={[
+                { name: "v", value: ringValue },
+                { name: "r", value: Math.max(0, 100 - ringValue) },
+              ]}
+              dataKey="value"
+              cx="50%" cy="50%"
+              innerRadius={48} outerRadius={66}
+              stroke="none"
+              startAngle={90} endAngle={-270}
+              isAnimationActive={false}
+            >
+              <Cell fill={slide.color} />
+              <Cell fill="#e5e7eb" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{
+          position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", pointerEvents: "none",
+        }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#111", lineHeight: 1 }}>{display}%</div>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginTop: 2 }}>{slide.title}</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: "#475569", fontWeight: 600, marginTop: 4, textAlign: "center" }}>
+        {slide.footer}
+      </div>
+      {slide.extra}
+    </div>
+  );
+}
