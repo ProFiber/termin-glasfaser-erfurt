@@ -701,15 +701,18 @@ function Index() {
           const apptDate = cs?.termin_datum ?? null;
           const note = cs?.notiz ?? "";
           const open = expanded === c.bid;
+          const kf = !!cs?.klarfall;
           return (
             <div key={c.bid} id={`card-${c.bid}`} style={{
-              background: cardBg(st),
+              background: kf ? "#fffbeb" : cardBg(st),
               borderRadius: 11,
               marginBottom: 8,
-              border: `2px solid ${cardBorder(st)}`,
+              border: kf ? "2px solid #f59e0b" : `2px solid ${cardBorder(st)}`,
               boxShadow: open ? "0 6px 20px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.07)",
               overflow: "hidden",
+              position: "relative",
             }}>
+              {kf && (<div style={{ position: "absolute", top: 4, right: 22, fontSize: 14, zIndex: 1 }} title="Klärfall">⚠️</div>)}
               <div
                 onClick={() => {
                   if (longPressFired.current) { longPressFired.current = false; return; }
