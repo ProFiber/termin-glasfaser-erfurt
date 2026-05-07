@@ -570,6 +570,7 @@ function Index() {
           contacts={contacts}
           states={states}
           onOpenContact={(bid) => { setActiveTab("call"); setExpanded(bid); }}
+          onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
         />
       )}
 
