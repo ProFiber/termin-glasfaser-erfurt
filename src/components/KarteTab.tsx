@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
-import { isPriorityNvt } from "@/lib/priority";
+import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type Props = {
   contacts: Contact[];
