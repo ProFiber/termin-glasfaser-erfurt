@@ -8,13 +8,13 @@ import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
-type TabKey = "call" | "karte" | "kalender" | "doku" | "nvt";
+type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
 const TAB_TITLE: Record<TabKey, string> = {
-  call: "📞 Call-Liste",
+  objekte: "🗂️ Objekte",
   karte: "🗺️ Karte",
   kalender: "📅 Kalender",
   doku: "📋 Dokumentation",
-  nvt: "📊 NVT-Übersicht",
+  dashboard: "🎯 Dashboard",
 };
 
 export const Route = createFileRoute("/")({
