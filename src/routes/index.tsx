@@ -1190,13 +1190,13 @@ function Index() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)", boxSizing: "border-box",
       }}>
         {([
-          ["nvt", "📊", "Dashboard"],
-          ["kalender", "📅", "Kalender"],
-          ["__call__", "", ""],
-          ["karte", "🗺️", "Karte"],
+          ["objekte", "🗂️", "Objekte"],
           ["doku", "📋", "Doku"],
+          ["__center__", "", ""],
+          ["kalender", "📅", "Kalender"],
+          ["karte", "🗺️", "Karte"],
         ] as const).map(([key, icon, label]) => {
-          if (key === "__call__") {
+          if (key === "__center__") {
             return <div key="spacer" style={{ flex: 1 }} />;
           }
           const active = activeTab === key;
@@ -1209,33 +1209,31 @@ function Index() {
                 borderTop: `3px solid ${active ? "#e20074" : "transparent"}`,
                 padding: "6px 4px 8px", cursor: "pointer",
                 color: active ? "#e20074" : "#9ca3af",
-                fontWeight: active ? 700 : 500, fontSize: 11,
+                fontWeight: active ? 700 : 500, fontSize: 10,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
               }}
             >
-              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span style={{ fontSize: 22 }}>{icon}</span>
               <span>{label}</span>
             </button>
           );
         })}
       </div>
       <button
-        onClick={() => setActiveTab("objekte")}
-        aria-label="Call"
+        onClick={() => setActiveTab("dashboard")}
+        aria-label="Dashboard"
         style={{
           position: "fixed",
-          bottom: "calc(56px - 10px + env(safe-area-inset-bottom, 0px) - 28px)",
+          bottom: "calc(56px + env(safe-area-inset-bottom, 0px) - 30px + 12px)",
           left: "50%", transform: "translateX(-50%)",
-          width: 56, height: 56, borderRadius: "50%",
+          width: 60, height: 60, borderRadius: "50%",
           background: "#22c55e", border: "none", cursor: "pointer",
-          boxShadow: "0 4px 12px rgba(34,197,94,0.5)",
+          boxShadow: "0 4px 16px rgba(34,197,94,0.5)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 9999, color: "white",
+          zIndex: 10000, color: "white", fontSize: 28, lineHeight: 1,
         }}
       >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
-        </svg>
+        🎯
       </button>
     </div>
   );
