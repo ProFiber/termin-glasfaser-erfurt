@@ -1120,22 +1120,25 @@ function Index() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)", boxSizing: "border-box",
       }}>
         {([
-          ["call", "📞", "Call"],
-          ["karte", "🗺️", "Karte"],
+          ["nvt", "📊", "Dashboard"],
           ["kalender", "📅", "Kalender"],
+          ["__call__", "", ""],
+          ["karte", "🗺️", "Karte"],
           ["doku", "📋", "Doku"],
-          ["nvt", "📊", "NVT"],
         ] as const).map(([key, icon, label]) => {
+          if (key === "__call__") {
+            return <div key="spacer" style={{ flex: 1 }} />;
+          }
           const active = activeTab === key;
           return (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              onClick={() => setActiveTab(key as TabKey)}
               style={{
                 flex: 1, background: "white", border: "none",
                 borderTop: `3px solid ${active ? "#e20074" : "transparent"}`,
                 padding: "6px 4px 8px", cursor: "pointer",
-                color: active ? "#e20074" : "#94a3b8",
+                color: active ? "#e20074" : "#9ca3af",
                 fontWeight: active ? 700 : 500, fontSize: 11,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
               }}
@@ -1146,6 +1149,24 @@ function Index() {
           );
         })}
       </div>
+      <button
+        onClick={() => setActiveTab("call")}
+        aria-label="Call"
+        style={{
+          position: "fixed",
+          bottom: "calc(56px - 10px + env(safe-area-inset-bottom, 0px) - 28px)",
+          left: "50%", transform: "translateX(-50%)",
+          width: 56, height: 56, borderRadius: "50%",
+          background: "#22c55e", border: "none", cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(34,197,94,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, color: "white",
+        }}
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </button>
     </div>
   );
 }
