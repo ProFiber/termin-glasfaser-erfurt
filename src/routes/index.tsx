@@ -685,11 +685,23 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "klarfall", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f)}>
-              {f === "alle" ? "Alle" : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})` : f === "offen" ? "Ausstehend" : STATUS_META[f as CallStatus].label}
-            </button>
-          ))}
+          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "angerufen", "nichtErreicht"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "angerufen" || f === "nichtErreicht";
+            const baseStyle = f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f);
+            const style = secondary
+              ? { ...baseStyle, fontSize: 11, borderColor: filter === f ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
+              : baseStyle;
+            const label =
+              f === "alle" ? "Alle"
+              : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
+              : f === "offen" ? "Ausstehend"
+              : f === "termin" ? `✅ ${STATUS_META.termin.label}`
+              : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
+              : STATUS_META[f as CallStatus].label;
+            return (
+              <button key={f} onClick={() => setFilter(f)} style={style}>{label}</button>
+            );
+          })}
         </div>
       </div>
 
