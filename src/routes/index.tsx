@@ -593,7 +593,11 @@ function Index() {
       )}
 
       {activeTab === "nvt" && (
-        <NvtTab contacts={contacts} states={states} />
+        <NvtTab
+          contacts={contacts}
+          states={states}
+          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("call"); }}
+        />
       )}
 
       {activeTab === "call" && (<>
