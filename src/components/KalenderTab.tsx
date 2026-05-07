@@ -47,6 +47,8 @@ type Props = {
   states: Record<string, CallState>;
   onOpenContact: (bid: string) => void;
   onPatchTime?: (bid: string, time: string) => void;
+  patch?: (bid: string, partial: Partial<CallState>) => void;
+  onSwitchToDoku?: (bid: string) => void;
 };
 
 const navBtn: CSSProperties = {
@@ -60,11 +62,37 @@ const navBtn: CSSProperties = {
   color: "#475569",
 };
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Props) {
+const menuRow: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 14,
+  width: "100%",
+  height: 52,
+  padding: "14px 20px",
+  background: "#fff",
+  border: "none",
+  borderBottom: "1px solid #f1f5f9",
+  fontSize: 15,
+  color: "#1e293b",
+  textAlign: "left",
+  cursor: "pointer",
+  textDecoration: "none",
+};
+
+const iconStyle: CSSProperties = {
+  fontSize: 20,
+  color: "#e20074",
+  width: 24,
+  textAlign: "center",
+  flexShrink: 0,
+};
+
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
-  const [reschedule, setReschedule] = useState<{ contact: Contact; time: string } | null>(null);
+  const [menuFor, setMenuFor] = useState<Contact | null>(null);
+  const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
 
   // Long-press
   const pressRef = useState<{ timer: number | null }>({ timer: null })[0];
@@ -76,8 +104,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Pr
     pressRef.timer = window.setTimeout(() => {
       longPressedRef.v = true;
       if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(50);
-      const cs = states[c.bid];
-      setReschedule({ contact: c, time: cs?.termin_zeit || "09:00" });
+      setMenuFor(c);
     }, 500);
   };
   const cancelPress = () => {
@@ -112,7 +139,6 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Pr
       const key = `${cs.termin_datum}|${cs.termin_slot}`;
       (map[key] = map[key] || []).push(c);
     });
-    // sort by termin_zeit asc, empty last
     Object.keys(map).forEach((k) => {
       map[k].sort((a, b) => {
         const ta = states[a.bid]?.termin_zeit || "";
@@ -133,6 +159,26 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Pr
       );
     }, 0);
   }, [slotDays, bySlot]);
+
+  const closeAll = () => {
+    setMenuFor(null);
+    setReschedule(null);
+  };
+
+  const addrQuery = (c: Contact) =>
+    encodeURIComponent(`${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}`);
+
+  const doPatch = (c: Contact, partial: Partial<CallState>) => {
+    if (patch) patch(c.bid, partial);
+    closeAll();
+  };
+
+  const openReschedule = (c: Contact) => {
+    const cs = states[c.bid];
+    const currentSlot = (cs?.termin_slot?.endsWith("-nm") ? "nm" : "vm") as "vm" | "nm";
+    setReschedule({ contact: c, time: cs?.termin_zeit || "09:00", slot: currentSlot });
+    setMenuFor(null);
+  };
 
   return (
     <div style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -355,17 +401,30 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Pr
         })}
       </div>
 
-      {reschedule && (
-        <>
-          <div
-            onClick={() => setReschedule(null)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 499,
-            }}
-          />
+      {(menuFor || reschedule) && (
+        <div
+          onClick={closeAll}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 499,
+          }}
+        />
+      )}
+
+      {menuFor && !reschedule && (() => {
+        const c = menuFor;
+        const phone = c.mobil || c.festnetz;
+        const cs = states[c.bid];
+        const slotLbl = cs?.termin_slot?.endsWith("-nm") ? "Nachmittag" : "Vormittag";
+        const dateLbl = cs?.termin_datum
+          ? new Date(cs.termin_datum).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })
+          : "";
+        const waMsg = encodeURIComponent(
+          `Hallo ${c.name}, hiermit bestätige ich Ihren Termin für die Glasfaser-Auskundung am ${dateLbl} (${slotLbl}${cs?.termin_zeit ? `, ab ${cs.termin_zeit} Uhr` : ""}). Adresse: ${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}. Vielen Dank!`
+        );
+        return (
           <div
             style={{
               position: "fixed",
@@ -375,77 +434,219 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime }: Pr
               background: "#fff",
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
-              padding: 16,
               zIndex: 500,
               boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+              maxHeight: "70vh",
+              overflowY: "auto",
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
-              ⏰ Termin verschieben
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                🏠 {c.strasse} {c.hnr}{c.hnr_zusatz} — {c.name}
+              </div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                📡 {c.nvt || "—"} · {c.ort} · {c.typ}{c.we ? ` · ${c.we} WE` : ""}
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: "#475569", marginBottom: 12 }}>
-              {reschedule.contact.name} · {reschedule.contact.strasse} {reschedule.contact.hnr}
-              {reschedule.contact.hnr_zusatz}
-            </div>
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Neue Uhrzeit wählen:</div>
-            <select
-              value={reschedule.time}
-              onChange={(e) => setReschedule((r) => (r ? { ...r, time: e.target.value } : r))}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: 16,
-                borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                marginBottom: 14,
-                background: "#fff",
+
+            <button style={menuRow} onClick={() => openReschedule(c)}>
+              <span style={iconStyle}>⏰</span>
+              <span>Termin verschieben</span>
+            </button>
+
+            <a
+              style={menuRow}
+              href={`https://www.google.com/maps/dir/?api=1&destination=${addrQuery(c)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setTimeout(closeAll, 0)}
+            >
+              <span style={iconStyle}>🗺️</span>
+              <span>Google Maps Navigation</span>
+            </a>
+
+            <a
+              style={menuRow}
+              href={`https://www.google.com/maps?q=${addrQuery(c)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setTimeout(closeAll, 0)}
+            >
+              <span style={iconStyle}>📸</span>
+              <span>Streetview anzeigen</span>
+            </a>
+
+            {phone && (
+              <a style={menuRow} href={`tel:${phone}`} onClick={() => setTimeout(closeAll, 0)}>
+                <span style={iconStyle}>📞</span>
+                <span>Anrufen ({phone})</span>
+              </a>
+            )}
+
+            {c.mobil && (
+              <a
+                style={menuRow}
+                href={`https://wa.me/${c.mobil.replace(/[^\d]/g, "")}?text=${waMsg}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setTimeout(closeAll, 0)}
+              >
+                <span style={iconStyle}>💬</span>
+                <span>Terminbestätigung senden</span>
+              </a>
+            )}
+
+            <button style={menuRow} onClick={() => doPatch(c, { status: "erledigt" })}>
+              <span style={{ ...iconStyle, color: "#22c55e" }}>✅</span>
+              <span>Als erledigt markieren</span>
+            </button>
+
+            <button style={menuRow} onClick={() => doPatch(c, { klarfall: true })}>
+              <span style={iconStyle}>⚠️</span>
+              <span>Als Klärfall markieren</span>
+            </button>
+
+            <button
+              style={menuRow}
+              onClick={() => {
+                if (onSwitchToDoku) onSwitchToDoku(c.bid);
+                closeAll();
               }}
             >
-              {TIME_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => {
-                  if (onPatchTime) onPatchTime(reschedule.contact.bid, reschedule.time);
-                  setReschedule(null);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  background: "#22c55e",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                ✓ Speichern
-              </button>
-              <button
-                onClick={() => setReschedule(null)}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  background: "#f1f5f9",
-                  color: "#475569",
-                  border: "none",
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                ✗ Abbrechen
-              </button>
-            </div>
+              <span style={iconStyle}>📋</span>
+              <span>Zur Dokumentation</span>
+            </button>
+
+            <button
+              style={{
+                ...menuRow,
+                justifyContent: "center",
+                color: "#94a3b8",
+                fontWeight: 600,
+                borderBottom: "none",
+              }}
+              onClick={closeAll}
+            >
+              Abbrechen
+            </button>
           </div>
-        </>
+        );
+      })()}
+
+      {reschedule && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 56,
+            left: 0,
+            right: 0,
+            background: "#fff",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            padding: 16,
+            zIndex: 500,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+            ⏰ Termin verschieben
+          </div>
+          <div style={{ fontSize: 13, color: "#475569", marginBottom: 12 }}>
+            {reschedule.contact.name} · {reschedule.contact.strasse} {reschedule.contact.hnr}
+            {reschedule.contact.hnr_zusatz}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {([
+              { k: "vm", lbl: "☀️ Vormittag" },
+              { k: "nm", lbl: "🌤 Nachmittag" },
+            ] as const).map(({ k, lbl }) => (
+              <button
+                key={k}
+                onClick={() => setReschedule((r) => (r ? { ...r, slot: k } : r))}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  background: reschedule.slot === k ? "#e20074" : "#f1f5f9",
+                  color: reschedule.slot === k ? "#fff" : "#475569",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Neue Uhrzeit wählen:</div>
+          <select
+            value={reschedule.time}
+            onChange={(e) => setReschedule((r) => (r ? { ...r, time: e.target.value } : r))}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              fontSize: 16,
+              borderRadius: 8,
+              border: "1px solid #cbd5e1",
+              marginBottom: 14,
+              background: "#fff",
+            }}
+          >
+            {TIME_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => {
+                const c = reschedule.contact;
+                const cs = states[c.bid];
+                const dayCode = cs?.termin_slot?.split("-")[0] || "mo";
+                const newSlot = `${dayCode}-${reschedule.slot}`;
+                if (patch) {
+                  patch(c.bid, { termin_zeit: reschedule.time, termin_slot: newSlot });
+                } else if (onPatchTime) {
+                  onPatchTime(c.bid, reschedule.time);
+                }
+                closeAll();
+              }}
+              style={{
+                flex: 1,
+                padding: "12px",
+                background: "#22c55e",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ✓ Speichern
+            </button>
+            <button
+              onClick={closeAll}
+              style={{
+                flex: 1,
+                padding: "12px",
+                background: "#f1f5f9",
+                color: "#475569",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ✗ Abbrechen
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
