@@ -672,9 +672,9 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={pill(filter === f)}>
-              {f === "alle" ? "Alle" : STATUS_META[f as CallStatus].label}
+          {(["alle", "klarfall", "offen", "angerufen", "nichtErreicht", "termin", "erledigt", "abgelehnt"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} style={f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f)}>
+              {f === "alle" ? "Alle" : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})` : STATUS_META[f as CallStatus].label}
             </button>
           ))}
         </div>
