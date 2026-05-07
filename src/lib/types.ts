@@ -37,6 +37,7 @@ export type CallState = {
   notiz: string;
   klarfall: boolean;
   klarfall_notiz: string;
+  grabenlaenge: number;
   updated_at: string;
 };
 
