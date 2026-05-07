@@ -806,6 +806,7 @@ function Index() {
                     )}
                   </div>
 
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1 }}>TERMIN</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() - 7); return x; }); }}
