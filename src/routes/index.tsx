@@ -804,7 +804,10 @@ function Index() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
-                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) })}
+                      <button key={s} onClick={() => {
+                        patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) });
+                        if (s === "erledigt") setGrabenPromptFor(c);
+                      }}
                         style={statusBtn(st === s)}>{STATUS_META[s].label}</button>
                     ))}
                   </div>
