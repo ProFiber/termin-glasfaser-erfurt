@@ -934,6 +934,19 @@ function Index() {
       </div>
       </>)}
 
+      {grabenPromptFor && (
+        <GrabenPromptSheet
+          title={`${grabenPromptFor.strasse} ${grabenPromptFor.hnr}${grabenPromptFor.hnr_zusatz}`}
+          subtitle={grabenPromptFor.name}
+          initial={states[grabenPromptFor.bid]?.grabenlaenge ?? 0}
+          onSave={(v) => {
+            patch(grabenPromptFor.bid, { grabenlaenge: v });
+            setGrabenPromptFor(null);
+          }}
+          onSkip={() => setGrabenPromptFor(null)}
+        />
+      )}
+
       {/* LONG-PRESS ACTION SHEET */}
       {longPressContact && (
         <div
