@@ -675,6 +675,19 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           </div>
         </div>
       )}
+
+      {grabenFor && (
+        <GrabenPromptSheet
+          title={`${grabenFor.strasse} ${grabenFor.hnr}${grabenFor.hnr_zusatz}`}
+          subtitle={grabenFor.name}
+          initial={states[grabenFor.bid]?.grabenlaenge ?? 0}
+          onSave={(v) => {
+            if (patch) patch(grabenFor.bid, { grabenlaenge: v });
+            setGrabenFor(null);
+          }}
+          onSkip={() => setGrabenFor(null)}
+        />
+      )}
     </div>
   );
 }
