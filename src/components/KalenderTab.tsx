@@ -516,7 +516,14 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </a>
             )}
 
-            <button style={menuRow} onClick={() => doPatch(c, { status: "erledigt" })}>
+            <button
+              style={menuRow}
+              onClick={() => {
+                if (patch) patch(c.bid, { status: "erledigt" });
+                setMenuFor(null);
+                setGrabenFor(c);
+              }}
+            >
               <span style={{ ...iconStyle, color: "#22c55e" }}>✅</span>
               <span>Als erledigt markieren</span>
             </button>
