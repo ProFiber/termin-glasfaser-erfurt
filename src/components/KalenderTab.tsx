@@ -137,7 +137,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     const map: Record<string, Contact[]> = {};
     contacts.forEach((c) => {
       const cs = states[c.bid];
-      if (cs?.status !== "termin" || !cs.termin_slot || !cs.termin_datum) return;
+      if (!cs || !cs.termin_slot || !cs.termin_datum) return;
+      if (cs.status !== "termin" && cs.status !== "erledigt") return;
       const key = `${cs.termin_datum}|${cs.termin_slot}`;
       (map[key] = map[key] || []).push(c);
     });
