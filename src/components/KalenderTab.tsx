@@ -329,6 +329,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                     ) : (
                       appts.map((c) => {
                         const cs = states[c.bid];
+                        const done = cs?.status === "erledigt";
                         return (
                           <div
                             key={c.bid}
@@ -348,16 +349,31 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onMouseLeave={cancelPress}
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
-                              background: "#f0fff6",
+                              position: "relative",
+                              background: done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: "3px solid #22c55e",
+                              borderLeft: done ? "3px solid #22c55e" : "3px solid #3b82f6",
                               userSelect: "none",
                             }}
                           >
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                            {done && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 12,
+                                  lineHeight: 1,
+                                }}
+                                aria-label="erledigt"
+                              >
+                                ✅
+                              </span>
+                            )}
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: done ? 16 : 0 }}>
                               {c.strasse} {c.hnr}
                               {c.hnr_zusatz}
                             </div>
@@ -370,6 +386,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             <div style={{ fontSize: 10, color: "#64748b" }}>
                               {c.typ}
                               {c.we ? ` · ${c.we} WE` : ""}
+                              {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
                             {cs?.termin_zeit && (
                               <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
