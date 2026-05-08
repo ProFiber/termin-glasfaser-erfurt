@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Contact, CallState } from "@/lib/types";
+import GrabenPromptSheet from "./GrabenPromptSheet";
 
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -93,6 +94,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
+  const [grabenFor, setGrabenFor] = useState<Contact | null>(null);
 
   // Long-press
   const pressRef = useState<{ timer: number | null }>({ timer: null })[0];
@@ -135,7 +137,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     const map: Record<string, Contact[]> = {};
     contacts.forEach((c) => {
       const cs = states[c.bid];
-      if (cs?.status !== "termin" || !cs.termin_slot || !cs.termin_datum) return;
+      if (!cs || !cs.termin_slot || !cs.termin_datum) return;
+      if (cs.status !== "termin" && cs.status !== "erledigt") return;
       const key = `${cs.termin_datum}|${cs.termin_slot}`;
       (map[key] = map[key] || []).push(c);
     });
@@ -326,6 +329,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                     ) : (
                       appts.map((c) => {
                         const cs = states[c.bid];
+                        const done = cs?.status === "erledigt";
                         return (
                           <div
                             key={c.bid}
@@ -345,16 +349,31 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onMouseLeave={cancelPress}
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
-                              background: "#f0fff6",
+                              position: "relative",
+                              background: done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: "3px solid #22c55e",
+                              borderLeft: done ? "3px solid #22c55e" : "3px solid #3b82f6",
                               userSelect: "none",
                             }}
                           >
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                            {done && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 12,
+                                  lineHeight: 1,
+                                }}
+                                aria-label="erledigt"
+                              >
+                                ✅
+                              </span>
+                            )}
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: done ? 16 : 0 }}>
                               {c.strasse} {c.hnr}
                               {c.hnr_zusatz}
                             </div>
@@ -367,6 +386,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             <div style={{ fontSize: 10, color: "#64748b" }}>
                               {c.typ}
                               {c.we ? ` · ${c.we} WE` : ""}
+                              {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
                             {cs?.termin_zeit && (
                               <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
@@ -496,7 +516,14 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </a>
             )}
 
-            <button style={menuRow} onClick={() => doPatch(c, { status: "erledigt" })}>
+            <button
+              style={menuRow}
+              onClick={() => {
+                if (patch) patch(c.bid, { status: "erledigt" });
+                setMenuFor(null);
+                setGrabenFor(c);
+              }}
+            >
               <span style={{ ...iconStyle, color: "#22c55e" }}>✅</span>
               <span>Als erledigt markieren</span>
             </button>
@@ -647,6 +674,19 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             </button>
           </div>
         </div>
+      )}
+
+      {grabenFor && (
+        <GrabenPromptSheet
+          title={`${grabenFor.strasse} ${grabenFor.hnr}${grabenFor.hnr_zusatz}`}
+          subtitle={grabenFor.name}
+          initial={states[grabenFor.bid]?.grabenlaenge ?? 0}
+          onSave={(v) => {
+            if (patch) patch(grabenFor.bid, { grabenlaenge: v });
+            setGrabenFor(null);
+          }}
+          onSkip={() => setGrabenFor(null)}
+        />
       )}
     </div>
   );

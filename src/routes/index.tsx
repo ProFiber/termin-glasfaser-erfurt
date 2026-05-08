@@ -7,6 +7,7 @@ import DokuTab from "@/components/DokuTab";
 import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
 import GrabenStepper from "@/components/GrabenStepper";
+import GrabenPromptSheet from "@/components/GrabenPromptSheet";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
@@ -180,6 +181,7 @@ function Index() {
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
+  const [grabenPromptFor, setGrabenPromptFor] = useState<Contact | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
 
@@ -803,7 +805,10 @@ function Index() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
-                      <button key={s} onClick={() => patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) })}
+                      <button key={s} onClick={() => {
+                        patch(c.bid, { status: s, ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}) });
+                        if (s === "erledigt") setGrabenPromptFor(c);
+                      }}
                         style={statusBtn(st === s)}>{STATUS_META[s].label}</button>
                     ))}
                   </div>
@@ -928,6 +933,19 @@ function Index() {
         )}
       </div>
       </>)}
+
+      {grabenPromptFor && (
+        <GrabenPromptSheet
+          title={`${grabenPromptFor.strasse} ${grabenPromptFor.hnr}${grabenPromptFor.hnr_zusatz}`}
+          subtitle={grabenPromptFor.name}
+          initial={states[grabenPromptFor.bid]?.grabenlaenge ?? 0}
+          onSave={(v) => {
+            patch(grabenPromptFor.bid, { grabenlaenge: v });
+            setGrabenPromptFor(null);
+          }}
+          onSkip={() => setGrabenPromptFor(null)}
+        />
+      )}
 
       {/* LONG-PRESS ACTION SHEET */}
       {longPressContact && (
