@@ -180,6 +180,7 @@ function Index() {
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
+  const [grabenPromptFor, setGrabenPromptFor] = useState<Contact | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
 
