@@ -116,6 +116,19 @@ function injectStyles() {
       border-bottom: 16px solid ${MAGENTA};
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
     }
+    @keyframes teamPulse {
+      0% { transform: scale(1); opacity: 0.7; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .team-wrap { position: relative; width: 24px; height: 24px; }
+    .team-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      animation: teamPulse 1.5s ease-out infinite;
+    }
+    .team-pin {
+      position: absolute; inset: 3px; border-radius: 50%;
+      border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
   `;
   document.head.appendChild(style);
 }
