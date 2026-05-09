@@ -6,9 +6,10 @@ type Props = {
   initial?: number;
   onSave: (value: number) => void;
   onSkip: () => void;
+  onUndo?: () => void;
 };
 
-export default function GrabenPromptSheet({ title, subtitle, initial = 0, onSave, onSkip }: Props) {
+export default function GrabenPromptSheet({ title, subtitle, initial = 0, onSave, onSkip, onUndo }: Props) {
   const [value, setValue] = useState<number>(initial);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(initial));
