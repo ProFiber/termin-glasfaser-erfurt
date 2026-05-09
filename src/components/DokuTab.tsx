@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState } from "@/lib/types";
 import GrabenStepper from "@/components/GrabenStepper";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
+import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
   contacts: Contact[];
