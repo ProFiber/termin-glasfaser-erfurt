@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState } from "@/lib/types";
 import GrabenStepper from "@/components/GrabenStepper";
+import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 
 type Props = {
   contacts: Contact[];
