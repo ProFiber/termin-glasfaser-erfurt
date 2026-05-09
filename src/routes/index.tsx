@@ -892,9 +892,12 @@ function Index() {
                     </div>
                   )}
 
-                  <textarea value={note} onChange={(e) => patch(c.bid, { notiz: e.target.value })}
+                  <LocalNotizTextarea
+                    value={note}
+                    onSave={(v) => patch(c.bid, { notiz: v })}
+                    resyncKey={`note:${c.bid}`}
                     placeholder="Notiz…"
-                    style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit" }} />
+                  />
 
                   <GrabenStepper
                     value={cs?.grabenlaenge ?? 0}
