@@ -7,6 +7,8 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 type Props = {
   contacts: Contact[];
   callStates: Record<string, CallState>;
+  focusBid?: string | null;
+  onClearFocus?: () => void;
 };
 
 const PERSONEN = ["FF", "FH", "Brahim", "Sezai", "Halil"];
