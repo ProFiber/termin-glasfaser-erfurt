@@ -632,12 +632,50 @@ function Index() {
       {activeTab === "objekte" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Name, Straße, Hausnr., NVT, Telefon…"
-          style={{ width: "100%", borderRadius: 8, border: "1px solid #ddd", padding: "7px 10px", fontSize: 13, boxSizing: "border-box" }}
-        />
+        <div style={{ position: "relative", width: "100%" }}>
+          <input
+            ref={searchInputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 Mind. 3 Zeichen suchen…"
+            style={{
+              fontSize: "16px", // prevents iOS zoom - DO NOT change this
+              width: "100%",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              padding: "8px 36px 8px 10px",
+              boxSizing: "border-box",
+            }}
+          />
+          {search && (
+            <button
+              type="button"
+              aria-label="Suche löschen"
+              onClick={() => {
+                setSearch("");
+                searchInputRef.current?.blur();
+              }}
+              style={{
+                position: "absolute",
+                top: "50%",
+                right: 6,
+                transform: "translateY(-50%)",
+                width: 26,
+                height: 26,
+                borderRadius: 999,
+                border: "none",
+                background: "#e5e7eb",
+                color: "#475569",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
             const active = ortSel === o;
