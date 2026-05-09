@@ -8,6 +8,7 @@ import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
 import GrabenStepper from "@/components/GrabenStepper";
 import GrabenPromptSheet from "@/components/GrabenPromptSheet";
+import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
