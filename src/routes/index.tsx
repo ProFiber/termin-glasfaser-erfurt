@@ -424,6 +424,14 @@ function Index() {
         const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
         if (!isPending && !kf) return false;
       } else if (filter !== "alle" && st !== filter) return false;
+      if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
+      if (teamFilter === "team2" && states[c.bid]?.team !== "team2") return false;
+      if (teamFilter === "dokuOffen") {
+        const cs2 = states[c.bid];
+        const fertig2 = cs2?.team_status === "fertig";
+        const offen2 = !cs2?.fotos_erhalten || !cs2?.protokoll_erhalten;
+        if (!(fertig2 && offen2)) return false;
+      }
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
