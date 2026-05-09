@@ -171,7 +171,7 @@ function Index() {
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"alle" | "klarfall" | CallStatus>("alle");
+  const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | CallStatus>("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
