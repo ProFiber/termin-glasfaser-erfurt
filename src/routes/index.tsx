@@ -821,6 +821,12 @@ function Index() {
                 onMouseLeave={cancelLongPress}
                 style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
                 <div style={{ width: 11, height: 11, borderRadius: "50%", flexShrink: 0, background: STATUS_META[st].dot }} />
+                {cs?.team && (
+                  <div style={{
+                    flexShrink: 0, padding: "2px 6px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "white",
+                    background: cs.team === "team1" ? "#3b82f6" : cs.team === "team2" ? "#7c3aed" : "#94a3b8",
+                  }}>{cs.team === "team1" ? "T1" : cs.team === "team2" ? "T2" : "T"}</div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>
                     {c.strasse} {c.hnr}{c.hnr_zusatz}
@@ -832,6 +838,11 @@ function Index() {
                     {c.name}
                     {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}</span>}
                   </div>
+                  {cs?.team && cs?.team_status && (
+                    <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>
+                      👷 {cs.team === "team1" ? "Team 1" : "Team 2"} · {cs.team_status === "zugewiesen" ? "Zugewiesen" : cs.team_status === "in_arbeit" ? "In Arbeit" : "Fertig"}
+                    </div>
+                  )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
                     const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
