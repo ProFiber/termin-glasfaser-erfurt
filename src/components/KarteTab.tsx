@@ -711,6 +711,17 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
             {selectedContact.nvt ? ` · NVT ${selectedContact.nvt}` : ""}
           </div>
 
+          <div style={{ marginTop: 10 }}>
+            <StreetViewImage
+              strasse={selectedContact.strasse}
+              hnr={selectedContact.hnr}
+              hnr_zusatz={selectedContact.hnr_zusatz}
+              plz={selectedContact.plz}
+              ort={selectedContact.ort}
+              height={160}
+            />
+          </div>
+
           {selectedStatus && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLOR[selectedStatus], display: "inline-block" }} />
