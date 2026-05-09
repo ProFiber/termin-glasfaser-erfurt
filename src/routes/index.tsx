@@ -183,6 +183,17 @@ function Index() {
   const [showPlan, setShowPlan] = useState(false);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
+  const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
+
+  function openContactInDoku(bid: string) {
+    setDokuFocusBid(bid);
+    setActiveTab("doku");
+    setExpanded(bid);
+    window.setTimeout(() => {
+      const el = document.getElementById(`doku-card-${bid}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
 
@@ -593,15 +604,20 @@ function Index() {
         <KalenderTab
           contacts={contacts}
           states={states}
-          onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
+          onOpenContact={openContactInDoku}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
-          onSwitchToDoku={(bid) => { setActiveTab("doku"); setExpanded(bid); }}
+          onSwitchToDoku={openContactInDoku}
         />
       )}
 
       {activeTab === "doku" && (
-        <DokuTab contacts={contacts} callStates={states} />
+        <DokuTab
+          contacts={contacts}
+          callStates={states}
+          focusBid={dokuFocusBid}
+          onClearFocus={() => setDokuFocusBid(null)}
+        />
       )}
 
       {activeTab === "dashboard" && (

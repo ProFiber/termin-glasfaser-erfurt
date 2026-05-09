@@ -7,6 +7,8 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 type Props = {
   contacts: Contact[];
   callStates: Record<string, CallState>;
+  focusBid?: string | null;
+  onClearFocus?: () => void;
 };
 
 const PERSONEN = ["FF", "FH", "Brahim", "Sezai", "Halil"];
@@ -39,7 +41,7 @@ function emptyDoku(bid: string): DokuState {
 type SortMode = "az" | "nvt" | "manual";
 const MANUAL_KEY = "doku_manual_order";
 
-export default function DokuTab({ contacts, callStates }: Props) {
+export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
@@ -153,7 +155,15 @@ export default function DokuTab({ contacts, callStates }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (focusBid) setExpanded(focusBid);
+  }, [focusBid]);
+
   const visible = useMemo(() => {
+    if (focusBid) {
+      const c = contacts.find((x) => x.bid === focusBid);
+      return c ? [c] : [];
+    }
     const list = contacts.filter((c) => {
       const cs = callStates[c.bid];
       const st = cs?.status;
@@ -189,7 +199,7 @@ export default function DokuTab({ contacts, callStates }: Props) {
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder, focusBid]);
 
   function moveManual(bid: string, dir: -1 | 1) {
     setManualOrder((prev) => {
@@ -493,6 +503,30 @@ export default function DokuTab({ contacts, callStates }: Props) {
         </div>
       </div>
 
+      {focusBid && onClearFocus && (
+        <button
+          type="button"
+          onClick={onClearFocus}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            padding: "10px 12px",
+            marginBottom: 10,
+            background: "#fef3c7",
+            color: "#92400e",
+            border: "1px solid #fcd34d",
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          ← Alle Objekte anzeigen
+        </button>
+      )}
+
       {/* Cards */}
       {visible.length === 0 && (
         <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>
@@ -514,6 +548,7 @@ export default function DokuTab({ contacts, callStates }: Props) {
         return (
           <div
             key={c.bid}
+            id={`doku-card-${c.bid}`}
             style={{
               background: "white",
               borderRadius: 11,
