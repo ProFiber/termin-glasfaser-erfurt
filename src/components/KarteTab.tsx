@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
+import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
   contacts: Contact[];
