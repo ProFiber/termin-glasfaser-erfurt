@@ -412,7 +412,7 @@ function Index() {
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       if (streetSel.size > 0 && !streetSel.has(c.strasse)) return false;
-      if (q) {
+      if (q.length >= 3) {
         const digits = q.replace(/\D/g, "");
         const phones = `${c.mobil} ${c.festnetz}`;
         const phoneDigits = phones.replace(/\D/g, "");
