@@ -792,6 +792,33 @@ function Index() {
             );
           })}
         </div>
+        <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+          {([
+            { k: "alle", label: "Alle Teams", color: "#64748b" },
+            { k: "team1", label: "👷 Team 1", color: "#3b82f6" },
+            { k: "team2", label: "👷 Team 2", color: "#7c3aed" },
+            { k: "dokuOffen", label: "⚠️ Doku ausstehend", color: "#f59e0b" },
+          ] as const).map((tf) => {
+            const active = teamFilter === tf.k;
+            return (
+              <button
+                key={tf.k}
+                onClick={() => setTeamFilter(tf.k)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${active ? tf.color : "#e5e7eb"}`,
+                  background: active ? tf.color : "#fff",
+                  color: active ? "#fff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >{tf.label}</button>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ padding: "6px 14px 2px", fontSize: 11, color: "#aaa", display: "flex", justifyContent: "space-between" }}>
