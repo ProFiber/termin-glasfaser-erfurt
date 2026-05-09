@@ -116,6 +116,19 @@ function injectStyles() {
       border-bottom: 16px solid ${MAGENTA};
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
     }
+    @keyframes teamPulse {
+      0% { transform: scale(1); opacity: 0.7; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .team-wrap { position: relative; width: 24px; height: 24px; }
+    .team-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      animation: teamPulse 1.5s ease-out infinite;
+    }
+    .team-pin {
+      position: absolute; inset: 3px; border-radius: 50%;
+      border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
   `;
   document.head.appendChild(style);
 }
@@ -483,20 +496,39 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
       }
     });
 
+    injectStyles();
     visibleContacts.forEach((c) => {
       const co = coords[c.bid];
       if (!co) return;
-      const status = (states[c.bid]?.status ?? "offen") as CallStatus;
-      const color = STATUS_COLOR[status];
+      const cs = states[c.bid];
+      const status = (cs?.status ?? "offen") as CallStatus;
+      const team = cs?.team ?? "";
+      const teamStatus = cs?.team_status ?? "";
       const urgent = isUrgentNvt(c.nvt);
       const prio = isPriorityNvt(c.nvt);
-      const sz = urgent ? 24 : prio ? 22 : 18;
-      const ring = urgent
-        ? `box-shadow:0 0 0 3px #dc2626, 0 1px 4px rgba(0,0,0,0.4)`
-        : prio
-        ? `box-shadow:0 0 0 2px #f97316, 0 1px 4px rgba(0,0,0,0.4)`
-        : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
-      const html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
+
+      const teamColor = team === "team1" ? "#3b82f6" : team === "team2" ? "#7c3aed" : "";
+      const isInArbeit = team && teamStatus === "in_arbeit";
+      const isFertig = team && teamStatus === "fertig";
+
+      let html: string;
+      let sz: number;
+      if (isInArbeit) {
+        sz = 24;
+        html = `<div class="team-wrap"><div class="team-ring" style="background:${teamColor}"></div><div class="team-pin" style="background:${teamColor}"></div></div>`;
+      } else if (isFertig) {
+        sz = 22;
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:#22c55e;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`;
+      } else {
+        const color = team ? teamColor : STATUS_COLOR[status];
+        sz = urgent ? 24 : prio ? 22 : 18;
+        const ring = urgent
+          ? `box-shadow:0 0 0 3px #dc2626, 0 1px 4px rgba(0,0,0,0.4)`
+          : prio
+          ? `box-shadow:0 0 0 2px #f97316, 0 1px 4px rgba(0,0,0,0.4)`
+          : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
+      }
       const icon = L.divIcon({ html, className: "", iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
       const existing = markersRef.current[c.bid];
       if (existing) {
