@@ -155,7 +155,15 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     }
   }
 
+  useEffect(() => {
+    if (focusBid) setExpanded(focusBid);
+  }, [focusBid]);
+
   const visible = useMemo(() => {
+    if (focusBid) {
+      const c = contacts.find((x) => x.bid === focusBid);
+      return c ? [c] : [];
+    }
     const list = contacts.filter((c) => {
       const cs = callStates[c.bid];
       const st = cs?.status;
