@@ -548,6 +548,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         return (
           <div
             key={c.bid}
+            id={`doku-card-${c.bid}`}
             style={{
               background: "white",
               borderRadius: 11,
