@@ -692,22 +692,15 @@ export default function DokuTab({ contacts, callStates }: Props) {
                     <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: "#475569" }}>
                       Notiz
                     </div>
-                    <textarea
-                      value={d.notiz}
-                      onChange={(e) => patch(c.bid, { notiz: e.target.value })}
-                      placeholder="Besonderheiten, Probleme, Hinweise…"
-                      rows={3}
-                      style={{
-                        marginTop: 4,
-                        width: "100%",
-                        padding: "8px 10px",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 8,
-                        fontSize: 14,
-                        fontFamily: "inherit",
-                        resize: "vertical",
-                      }}
-                    />
+                    <div style={{ marginTop: 4 }}>
+                      <LocalNotizTextarea
+                        value={d.notiz}
+                        onSave={(v) => patch(c.bid, { notiz: v })}
+                        resyncKey={`doku:${c.bid}`}
+                        placeholder="Besonderheiten, Probleme, Hinweise…"
+                        borderColor="#e5e7eb"
+                      />
+                    </div>
 
                     <GrabenStepper
                       value={callStates[c.bid]?.grabenlaenge ?? 0}
