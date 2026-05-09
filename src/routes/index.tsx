@@ -830,11 +830,13 @@ function Index() {
                       ⚠️ Klärfall {kf ? "aktiv" : "markieren"}
                     </button>
                     {kf && (
-                      <textarea
+                      <LocalNotizTextarea
                         value={cs?.klarfall_notiz ?? ""}
-                        onChange={(e) => patch(c.bid, { klarfall_notiz: e.target.value })}
+                        onSave={(v) => patch(c.bid, { klarfall_notiz: v })}
+                        resyncKey={`kf:${c.bid}`}
                         placeholder="Klärfall-Notiz: Was ist zu klären?"
-                        style={{ width: "100%", borderRadius: 7, border: "1px solid #f59e0b", padding: "7px 9px", fontSize: 13, resize: "none", boxSizing: "border-box", height: 54, fontFamily: "inherit", background: "white" }}
+                        borderColor="#f59e0b"
+                        background="white"
                       />
                     )}
                   </div>
