@@ -41,7 +41,6 @@ function emptyDoku(bid: string): DokuState {
 type SortMode = "az" | "nvt" | "manual";
 const MANUAL_KEY = "doku_manual_order";
 
-export default function DokuTab({ contacts, callStates }: Props) {
 export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }: Props) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
