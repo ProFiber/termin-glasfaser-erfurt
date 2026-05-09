@@ -17,11 +17,15 @@ export type Database = {
       call_states: {
         Row: {
           bid: string
+          fotos_erhalten: boolean
           grabenlaenge: number
           klarfall: boolean
           klarfall_notiz: string
           notiz: string
+          protokoll_erhalten: boolean
           status: Database["public"]["Enums"]["call_status"]
+          team: string
+          team_status: string
           termin_datum: string | null
           termin_slot: string
           termin_zeit: string
@@ -29,11 +33,15 @@ export type Database = {
         }
         Insert: {
           bid: string
+          fotos_erhalten?: boolean
           grabenlaenge?: number
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
+          protokoll_erhalten?: boolean
           status?: Database["public"]["Enums"]["call_status"]
+          team?: string
+          team_status?: string
           termin_datum?: string | null
           termin_slot?: string
           termin_zeit?: string
@@ -41,11 +49,15 @@ export type Database = {
         }
         Update: {
           bid?: string
+          fotos_erhalten?: boolean
           grabenlaenge?: number
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
+          protokoll_erhalten?: boolean
           status?: Database["public"]["Enums"]["call_status"]
+          team?: string
+          team_status?: string
           termin_datum?: string | null
           termin_slot?: string
           termin_zeit?: string
