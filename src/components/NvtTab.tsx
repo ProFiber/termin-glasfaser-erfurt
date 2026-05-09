@@ -285,6 +285,14 @@ export default function NvtTab({
         />
       </div>
 
+      {/* SECTION 1.5 — Teams Live */}
+      <TeamsLive
+        contacts={contacts}
+        states={states}
+        today={today}
+        onOpenTeamDokuOffen={onOpenTeamDokuOffen}
+      />
+
       {/* SECTION 2 — Fortschritts-Karussell */}
       <div style={SECTION_TITLE}>📈 Fortschritt</div>
       <ProgressCarousel
