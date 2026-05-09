@@ -413,6 +413,11 @@ function Index() {
       const kf = !!states[c.bid]?.klarfall;
       if (filter === "klarfall") {
         if (!kf) return false;
+      } else if (filter === "dokuOffen") {
+        const cs = states[c.bid];
+        const fertig = cs?.team_status === "fertig";
+        const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
+        if (!(fertig && offen)) return false;
       } else if (filter === "offen") {
         // "Ausstehend": pending work — not done, not cancelled, not scheduled
         const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
