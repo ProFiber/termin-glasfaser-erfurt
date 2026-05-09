@@ -604,15 +604,20 @@ function Index() {
         <KalenderTab
           contacts={contacts}
           states={states}
-          onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
+          onOpenContact={openContactInDoku}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
-          onSwitchToDoku={(bid) => { setActiveTab("doku"); setExpanded(bid); }}
+          onSwitchToDoku={openContactInDoku}
         />
       )}
 
       {activeTab === "doku" && (
-        <DokuTab contacts={contacts} callStates={states} />
+        <DokuTab
+          contacts={contacts}
+          callStates={states}
+          focusBid={dokuFocusBid}
+          onClearFocus={() => setDokuFocusBid(null)}
+        />
       )}
 
       {activeTab === "dashboard" && (
