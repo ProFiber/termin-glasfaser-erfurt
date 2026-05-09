@@ -1,6 +1,4 @@
-import { useState, type CSSProperties } from "react";
-
-const API_KEY = "AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY";
+import { type CSSProperties } from "react";
 
 type Props = {
   strasse: string;
@@ -21,17 +19,9 @@ export default function StreetViewImage({
   height = 180,
   style,
 }: Props) {
-  const [state, setState] = useState<"loading" | "ok" | "error">("loading");
-
   const address = `${strasse} ${hnr}${hnr_zusatz ?? ""}, ${plz} ${ort}, Germany`;
-  const imgUrl =
-    `https://maps.googleapis.com/maps/api/streetview` +
-    `?size=400x${height}` +
-    `&location=${encodeURIComponent(address)}` +
-    `&fov=90&heading=235&pitch=10` +
-    `&return_error_code=true` +
-    `&key=${API_KEY}`;
   const mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&layer=c`;
+  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=17&output=embed`;
 
   const wrap: CSSProperties = {
     width: "100%",
@@ -45,62 +35,41 @@ export default function StreetViewImage({
     ...style,
   };
 
-  if (state === "error") {
-    return (
-      <div
-        style={{
-          ...wrap,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#94a3b8",
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "default",
-        }}
-      >
-        📸 Kein Streetview verfügbar
-      </div>
-    );
-  }
-
   return (
-    <div
+    <a
+      href={mapsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
       style={wrap}
-      onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")}
     >
-      {state === "loading" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#64748b",
-            fontSize: 13,
-            fontWeight: 600,
-            gap: 6,
-          }}
-        >
-          📸 Lade Objektbild…
-        </div>
-      )}
-      <img
-        src={imgUrl}
+      <iframe
+        src={embedUrl}
+        title={`Karte ${address}`}
         loading="lazy"
-        alt={`Streetview ${address}`}
-        onLoad={() => setState("ok")}
-        onError={() => setState("error")}
+        referrerPolicy="no-referrer-when-downgrade"
         style={{
-          display: "block",
           width: "100%",
           height: "100%",
-          objectFit: "cover",
-          opacity: state === "ok" ? 1 : 0,
-          transition: "opacity 200ms",
+          border: 0,
+          pointerEvents: "none",
         }}
       />
-    </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 10,
+          bottom: 10,
+          borderRadius: 999,
+          padding: "6px 10px",
+          background: "rgba(15, 23, 42, 0.82)",
+          color: "white",
+          fontSize: 12,
+          fontWeight: 700,
+          boxShadow: "0 8px 20px rgba(15, 23, 42, 0.18)",
+        }}
+      >
+        📸 Streetview öffnen
+      </div>
+    </a>
   );
 }
