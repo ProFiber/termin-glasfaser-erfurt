@@ -178,6 +178,7 @@ function Index() {
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
