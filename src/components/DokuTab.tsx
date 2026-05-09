@@ -503,6 +503,30 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         </div>
       </div>
 
+      {focusBid && onClearFocus && (
+        <button
+          type="button"
+          onClick={onClearFocus}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            padding: "10px 12px",
+            marginBottom: 10,
+            background: "#fef3c7",
+            color: "#92400e",
+            border: "1px solid #fcd34d",
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          ← Alle Objekte anzeigen
+        </button>
+      )}
+
       {/* Cards */}
       {visible.length === 0 && (
         <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>
