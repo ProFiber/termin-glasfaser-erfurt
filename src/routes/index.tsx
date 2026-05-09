@@ -172,6 +172,7 @@ function Index() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | CallStatus>("alle");
+  const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
@@ -423,6 +424,14 @@ function Index() {
         const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
         if (!isPending && !kf) return false;
       } else if (filter !== "alle" && st !== filter) return false;
+      if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
+      if (teamFilter === "team2" && states[c.bid]?.team !== "team2") return false;
+      if (teamFilter === "dokuOffen") {
+        const cs2 = states[c.bid];
+        const fertig2 = cs2?.team_status === "fertig";
+        const offen2 = !cs2?.fotos_erhalten || !cs2?.protokoll_erhalten;
+        if (!(fertig2 && offen2)) return false;
+      }
       if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
@@ -449,7 +458,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly]);
+  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
@@ -780,6 +789,33 @@ function Index() {
               : STATUS_META[f as CallStatus].label;
             return (
               <button key={f} onClick={() => setFilter(f)} style={style}>{label}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+          {([
+            { k: "alle", label: "Alle Teams", color: "#64748b" },
+            { k: "team1", label: "👷 Team 1", color: "#3b82f6" },
+            { k: "team2", label: "👷 Team 2", color: "#7c3aed" },
+            { k: "dokuOffen", label: "⚠️ Doku ausstehend", color: "#f59e0b" },
+          ] as const).map((tf) => {
+            const active = teamFilter === tf.k;
+            return (
+              <button
+                key={tf.k}
+                onClick={() => setTeamFilter(tf.k)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${active ? tf.color : "#e5e7eb"}`,
+                  background: active ? tf.color : "#fff",
+                  color: active ? "#fff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >{tf.label}</button>
             );
           })}
         </div>
