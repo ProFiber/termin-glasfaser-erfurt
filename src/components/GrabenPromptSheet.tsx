@@ -160,6 +160,27 @@ export default function GrabenPromptSheet({ title, subtitle, initial = 0, onSave
             Überspringen
           </button>
         </div>
+
+        {onUndo && (
+          <button
+            type="button"
+            onClick={onUndo}
+            style={{
+              marginTop: 10,
+              width: "100%",
+              padding: "10px",
+              background: "#fff",
+              color: "#b91c1c",
+              border: "1px solid #fecaca",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            ↩️ Rückgängig — doch nicht erledigt
+          </button>
+        )}
       </div>
     </>
   );
