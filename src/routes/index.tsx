@@ -642,6 +642,7 @@ function Index() {
           states={states}
           onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
+          onOpenTeamDokuOffen={() => { setFilter("dokuOffen"); setActiveTab("objekte"); }}
         />
       )}
 
