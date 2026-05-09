@@ -898,6 +898,8 @@ function Index() {
                     ))}
                   </div>
 
+                  <TeamSection contact={c} cs={cs} onPatch={(changes) => patch(c.bid, changes)} />
+
                   <div style={{ marginBottom: 12, padding: "8px 10px", background: kf ? "#fef3c7" : "#fffbeb", border: `1px solid ${kf ? "#f59e0b" : "#fde68a"}`, borderRadius: 9 }}>
                     <button
                       type="button"
