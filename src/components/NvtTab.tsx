@@ -68,11 +68,13 @@ export default function NvtTab({
   states,
   onOpenKlarfaelle,
   onOpenAuskundungHeute,
+  onOpenTeamDokuOffen,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   onOpenKlarfaelle?: () => void;
   onOpenAuskundungHeute?: () => void;
+  onOpenTeamDokuOffen?: () => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
