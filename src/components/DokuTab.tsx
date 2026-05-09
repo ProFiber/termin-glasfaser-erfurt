@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState } from "@/lib/types";
 import GrabenStepper from "@/components/GrabenStepper";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
+import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
   contacts: Contact[];
@@ -614,6 +615,13 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
 
             {isOpen && (
               <div style={{ marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
+                <StreetViewImage
+                  strasse={c.strasse}
+                  hnr={c.hnr}
+                  hnr_zusatz={c.hnr_zusatz}
+                  plz={c.plz}
+                  ort={c.ort}
+                />
                 {/* 3 large checkbox buttons */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   {([

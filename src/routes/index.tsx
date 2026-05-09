@@ -9,6 +9,7 @@ import NvtTab from "@/components/NvtTab";
 import GrabenStepper from "@/components/GrabenStepper";
 import GrabenPromptSheet from "@/components/GrabenPromptSheet";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
+import StreetViewImage from "@/components/StreetViewImage";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
@@ -837,6 +838,13 @@ function Index() {
 
               {open && (
                 <div style={{ borderTop: "1px solid #eee", padding: "12px 12px 14px" }}>
+                  <StreetViewImage
+                    strasse={c.strasse}
+                    hnr={c.hnr}
+                    hnr_zusatz={c.hnr_zusatz}
+                    plz={c.plz}
+                    ort={c.ort}
+                  />
                   <div style={{ background: "#eef2ff", borderRadius: 9, padding: "9px 12px", marginBottom: 12, fontSize: 13, lineHeight: 1.7, color: "#1e293b" }}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: "#6366f1", letterSpacing: 1.2, marginBottom: 4 }}>LEITFADEN</div>
                     „Guten Tag Herr/Frau <strong>{lastName(c.name)}</strong>, hier ist Störmer Bau im Auftrag der Telekom.<br />

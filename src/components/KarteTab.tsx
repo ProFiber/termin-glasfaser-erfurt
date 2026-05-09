@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
+import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
   contacts: Contact[];
@@ -709,6 +710,17 @@ export default function KarteTab({ contacts, states, onOpenContact }: Props) {
           <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
             {[selectedContact.typ, selectedContact.we ? `${selectedContact.we} WE` : ""].filter(Boolean).join(" · ")}
             {selectedContact.nvt ? ` · NVT ${selectedContact.nvt}` : ""}
+          </div>
+
+          <div style={{ marginTop: 10 }}>
+            <StreetViewImage
+              strasse={selectedContact.strasse}
+              hnr={selectedContact.hnr}
+              hnr_zusatz={selectedContact.hnr_zusatz}
+              plz={selectedContact.plz}
+              ort={selectedContact.ort}
+              height={160}
+            />
           </div>
 
           {selectedStatus && (
