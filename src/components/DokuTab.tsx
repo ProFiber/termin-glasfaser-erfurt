@@ -199,7 +199,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder, focusBid]);
 
   function moveManual(bid: string, dir: -1 | 1) {
     setManualOrder((prev) => {
