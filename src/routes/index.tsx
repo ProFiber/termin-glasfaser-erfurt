@@ -937,14 +937,25 @@ function Index() {
 
       {grabenPromptFor && (
         <GrabenPromptSheet
-          title={`${grabenPromptFor.strasse} ${grabenPromptFor.hnr}${grabenPromptFor.hnr_zusatz}`}
-          subtitle={grabenPromptFor.name}
-          initial={states[grabenPromptFor.bid]?.grabenlaenge ?? 0}
+          title={`${grabenPromptFor.contact.strasse} ${grabenPromptFor.contact.hnr}${grabenPromptFor.contact.hnr_zusatz}`}
+          subtitle={grabenPromptFor.contact.name}
+          initial={states[grabenPromptFor.contact.bid]?.grabenlaenge ?? 0}
           onSave={(v) => {
-            patch(grabenPromptFor.bid, { grabenlaenge: v });
+            patch(grabenPromptFor.contact.bid, { grabenlaenge: v });
             setGrabenPromptFor(null);
           }}
           onSkip={() => setGrabenPromptFor(null)}
+          onUndo={() => {
+            const prev = grabenPromptFor.prev;
+            patch(grabenPromptFor.contact.bid, {
+              status: prev?.status && prev.status !== "erledigt" ? prev.status : "offen",
+              termin_slot: prev?.termin_slot ?? "",
+              termin_datum: prev?.termin_datum ?? null,
+              termin_zeit: prev?.termin_zeit ?? "",
+              grabenlaenge: prev?.grabenlaenge ?? 0,
+            });
+            setGrabenPromptFor(null);
+          }}
         />
       )}
 
