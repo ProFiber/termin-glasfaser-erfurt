@@ -747,3 +747,109 @@ function CarouselSlideView({ slide, active }: { slide: CarouselSlide; active: bo
     </div>
   );
 }
+
+function TeamsLive({
+  contacts,
+  states,
+  today,
+  onOpenTeamDokuOffen,
+}: {
+  contacts: Contact[];
+  states: Record<string, CallState>;
+  today: string;
+  onOpenTeamDokuOffen?: () => void;
+}) {
+  const teams = useMemo(() => {
+    const init = () => ({ inArbeit: [] as Contact[], fertig: [] as Contact[], heute: 0 });
+    const t1 = init();
+    const t2 = init();
+    for (const c of contacts) {
+      const s = states[c.bid];
+      if (!s?.team) continue;
+      const bucket = s.team === "team1" ? t1 : s.team === "team2" ? t2 : null;
+      if (!bucket) continue;
+      if (s.team_status === "in_arbeit") bucket.inArbeit.push(c);
+      if (s.team_status === "fertig") {
+        bucket.fertig.push(c);
+        if (isSameLocalDay(s.updated_at, today)) bucket.heute++;
+      }
+    }
+    return { team1: t1, team2: t2 };
+  }, [contacts, states, today]);
+
+  const totals = useMemo(() => {
+    let fertigHeute = 0, fotosOffen = 0, protOffen = 0;
+    for (const s of Object.values(states)) {
+      if (s.team_status !== "fertig") continue;
+      if (isSameLocalDay(s.updated_at, today)) fertigHeute++;
+      if (!s.fotos_erhalten) fotosOffen++;
+      if (!s.protokoll_erhalten) protOffen++;
+    }
+    return { fertigHeute, fotosOffen, protOffen };
+  }, [states, today]);
+
+  const summaryAlert = totals.fotosOffen > 0 || totals.protOffen > 0;
+
+  return (
+    <>
+      <div style={SECTION_TITLE}>👷 Teams Live</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <TeamCard name="Team 1" color="#3b82f6" data={teams.team1} />
+        <TeamCard name="Team 2" color="#7c3aed" data={teams.team2} />
+      </div>
+      <button
+        type="button"
+        onClick={summaryAlert ? onOpenTeamDokuOffen : undefined}
+        style={{
+          width: "100%", textAlign: "left", marginBottom: 12,
+          padding: "10px 12px", borderRadius: 10,
+          border: `1px solid ${summaryAlert ? "#f59e0b" : "#e5e7eb"}`,
+          background: summaryAlert ? "#fffbeb" : "white",
+          color: summaryAlert ? "#92400e" : "#475569",
+          fontSize: 12, fontWeight: 700, cursor: summaryAlert ? "pointer" : "default",
+          lineHeight: 1.5,
+        }}
+      >
+        {summaryAlert ? "⚠️ " : ""}Gesamt heute: {totals.fertigHeute} Aufträge fertig · {totals.fotosOffen} Fotos ausstehend · {totals.protOffen} Protokolle ausstehend
+      </button>
+    </>
+  );
+}
+
+function TeamCard({
+  name,
+  color,
+  data,
+}: {
+  name: string;
+  color: string;
+  data: { inArbeit: Contact[]; fertig: Contact[]; heute: number };
+}) {
+  const n = data.inArbeit.length;
+  const ampel = n === 0 ? { icon: "🟢", label: "Frei" } : n <= 2 ? { icon: "🟡", label: "Aktiv" } : { icon: "🔴", label: "Voll" };
+  return (
+    <div style={{
+      background: "white", borderRadius: 12, padding: 12,
+      border: `2px solid ${color}`, display: "flex", flexDirection: "column", gap: 4,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: color }} />
+        <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a" }}>{name}</div>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+        {ampel.icon} {ampel.label} · {n} in Arbeit
+      </div>
+      {data.inArbeit.length > 0 && (
+        <ul style={{ listStyle: "none", padding: 0, margin: "2px 0 0", fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
+          {data.inArbeit.slice(0, 3).map((c) => (
+            <li key={c.bid}>• {c.strasse} {c.hnr}{c.hnr_zusatz}</li>
+          ))}
+          {data.inArbeit.length > 3 && <li style={{ color: "#94a3b8" }}>+{data.inArbeit.length - 3} weitere</li>}
+        </ul>
+      )}
+      <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, marginTop: 4 }}>
+        Heute {data.heute} erledigt
+      </div>
+    </div>
+  );
+}
