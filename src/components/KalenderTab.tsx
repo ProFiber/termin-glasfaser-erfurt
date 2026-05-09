@@ -686,6 +686,10 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             setGrabenFor(null);
           }}
           onSkip={() => setGrabenFor(null)}
+          onUndo={() => {
+            if (patch) patch(grabenFor.bid, { status: "termin", grabenlaenge: 0 });
+            setGrabenFor(null);
+          }}
         />
       )}
     </div>
