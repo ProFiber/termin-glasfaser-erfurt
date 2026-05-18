@@ -135,7 +135,7 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-export default function KarteTab({ contacts, states, onOpenContact }: Props) {
+export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
