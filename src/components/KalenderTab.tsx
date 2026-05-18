@@ -486,6 +486,16 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               <span>Google Maps Navigation</span>
             </a>
 
+            {onShowOnMap && (
+              <button
+                style={menuRow}
+                onClick={() => { onShowOnMap(c.bid); closeAll(); }}
+              >
+                <span style={iconStyle}>📍</span>
+                <span>Auf Karte anzeigen</span>
+              </button>
+            )}
+
             <a
               style={menuRow}
               href={`https://www.google.com/maps?q=${addrQuery(c)}`}
