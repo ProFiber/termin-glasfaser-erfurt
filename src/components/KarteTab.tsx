@@ -7,6 +7,8 @@ type Props = {
   contacts: Contact[];
   states: Record<string, CallState>;
   onOpenContact: (bid: string) => void;
+  focusBid?: string | null;
+  onFocusConsumed?: () => void;
 };
 
 const MAGENTA = "#e20074";
