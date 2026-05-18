@@ -795,8 +795,8 @@ function Index() {
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
           {([
             { k: "alle", label: "Alle Teams", color: "#64748b" },
-            { k: "team1", label: "👷 Team 1", color: "#3b82f6" },
-            { k: "team2", label: "👷 Team 2", color: "#7c3aed" },
+            { k: "team1", label: "👷 Team Halil", color: "#3b82f6" },
+            { k: "team2", label: "👷 Team Adil", color: "#7c3aed" },
             { k: "dokuOffen", label: "⚠️ Doku ausstehend", color: "#f59e0b" },
           ] as const).map((tf) => {
             const active = teamFilter === tf.k;
@@ -867,7 +867,7 @@ function Index() {
                   <div style={{
                     flexShrink: 0, padding: "2px 6px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "white",
                     background: cs.team === "team1" ? "#3b82f6" : cs.team === "team2" ? "#7c3aed" : "#94a3b8",
-                  }}>{cs.team === "team1" ? "T1" : cs.team === "team2" ? "T2" : "T"}</div>
+                  }}>{cs.team === "team1" ? "TH" : cs.team === "team2" ? "TA" : "T"}</div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>
@@ -882,7 +882,7 @@ function Index() {
                   </div>
                   {cs?.team && cs?.team_status && (
                     <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>
-                      👷 {cs.team === "team1" ? "Team 1" : "Team 2"} · {cs.team_status === "zugewiesen" ? "Zugewiesen" : cs.team_status === "in_arbeit" ? "In Arbeit" : "Fertig"}
+                      👷 {cs.team === "team1" ? "Team Halil" : "Team Adil"} · {cs.team_status === "zugewiesen" ? "Zugewiesen" : cs.team_status === "in_arbeit" ? "In Arbeit" : "Fertig"}
                     </div>
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}

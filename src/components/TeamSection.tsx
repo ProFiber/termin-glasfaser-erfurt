@@ -9,8 +9,8 @@ type Props = {
 };
 
 const TEAM_COLORS: Record<string, { bg: string; label: string }> = {
-  team1: { bg: "#3b82f6", label: "Team 1" },
-  team2: { bg: "#7c3aed", label: "Team 2" },
+  team1: { bg: "#3b82f6", label: "Team Halil" },
+  team2: { bg: "#7c3aed", label: "Team Adil" },
 };
 
 const STEPS = [
@@ -24,7 +24,7 @@ function buildAddress(c: Contact) {
 }
 
 function buildWaMessage(c: Contact, team: string) {
-  const teamLabel = team === "team1" ? "1" : team === "team2" ? "2" : "?";
+  const teamLabel = team === "team1" ? "Halil" : team === "team2" ? "Adil" : "?";
   const adr = encodeURIComponent(buildAddress(c));
   return `👷 *Neuer Auftrag · Glasfaser*
 _Störmer Bau · Pro-Fiber_
