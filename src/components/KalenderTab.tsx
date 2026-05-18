@@ -50,6 +50,7 @@ type Props = {
   onPatchTime?: (bid: string, time: string) => void;
   patch?: (bid: string, partial: Partial<CallState>) => void;
   onSwitchToDoku?: (bid: string) => void;
+  onShowOnMap?: (bid: string) => void;
 };
 
 const navBtn: CSSProperties = {
