@@ -89,7 +89,7 @@ const iconStyle: CSSProperties = {
   flexShrink: 0,
 };
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
