@@ -656,6 +656,7 @@ function Index() {
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
           onSwitchToDoku={openContactInDoku}
+          onShowOnMap={openContactOnMap}
         />
       )}
 
