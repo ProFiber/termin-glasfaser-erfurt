@@ -91,6 +91,7 @@ const iconStyle: CSSProperties = {
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const [viewMode, setViewMode] = useState<"tageszeit" | "team">("tageszeit");
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
@@ -254,6 +255,34 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             </button>
           </div>
         </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+          {([
+            { k: "tageszeit", lbl: "☀️ Tageszeit" },
+            { k: "team", lbl: "👷 Team" },
+          ] as const).map(({ k, lbl }) => {
+            const active = viewMode === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setViewMode(k)}
+                style={{
+                  flex: 1,
+                  background: active ? "#e20074" : "#f1f5f9",
+                  color: active ? "#fff" : "#475569",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 8px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {lbl}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -261,6 +290,18 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           const vmContacts = bySlot[`${date}|${vm}`] ?? [];
           const nmContacts = bySlot[`${date}|${nm}`] ?? [];
           const total = vmContacts.length + nmContacts.length;
+          const allDayContacts = [...vmContacts, ...nmContacts];
+          const team1Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team1");
+          const team2Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team2");
+          const buckets = viewMode === "tageszeit"
+            ? [
+                { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
+                { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
+              ]
+            : [
+                { key: `${date}-t1`, lbl: "👷 Team Halil", color: "#3b82f6", appts: team1Contacts },
+                { key: `${date}-t2`, lbl: "👷 Team Adil", color: "#7c3aed", appts: team2Contacts },
+              ];
           return (
             <div
               key={date}
@@ -300,10 +341,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[
-                  { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
-                  { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
-                ].map(({ key, lbl, color, appts }) => (
+                {buckets.map(({ key, lbl, color, appts }) => (
                   <div
                     key={key}
                     style={{
@@ -389,6 +427,20 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               {c.we ? ` · ${c.we} WE` : ""}
                               {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
+                            {cs?.team && (
+                              <div style={{
+                                display: "inline-block",
+                                marginTop: 3,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: "#fff",
+                                background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                              }}>
+                                👷 {cs.team === "team1" ? "Team Halil" : "Team Adil"}
+                              </div>
+                            )}
                             {cs?.termin_zeit && (
                               <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
                                 ⏰ ab {cs.termin_zeit} Uhr
