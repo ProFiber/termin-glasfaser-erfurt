@@ -91,6 +91,7 @@ const iconStyle: CSSProperties = {
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const [viewMode, setViewMode] = useState<"tageszeit" | "team">("tageszeit");
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
