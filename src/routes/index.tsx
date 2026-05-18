@@ -642,6 +642,8 @@ function Index() {
             contacts={contacts}
             states={states}
             onOpenContact={openContactInList}
+            focusBid={mapFocusBid}
+            onFocusConsumed={() => setMapFocusBid(null)}
           />
         </div>
       )}
