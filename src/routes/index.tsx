@@ -635,7 +635,7 @@ function Index() {
           <KarteTab
             contacts={contacts}
             states={states}
-            onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
+            onOpenContact={openContactInList}
           />
         </div>
       )}
