@@ -836,6 +836,16 @@ function Index() {
         </div>
       </div>
 
+      {focusBid && (
+        <div style={{ margin: "8px 12px 4px", padding: "8px 12px", background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#78350f", fontWeight: 600 }}>🔍 Nur 1 Objekt angezeigt</span>
+          <button
+            onClick={() => setFocusBid(null)}
+            style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid #f59e0b", background: "#fff", color: "#92400e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          >Filter aufheben</button>
+        </div>
+      )}
+
       <div style={{ padding: "6px 14px 2px", fontSize: 11, color: "#aaa", display: "flex", justifyContent: "space-between" }}>
         <span>{filtered.length} von {contacts.length} Objekten</span>
         {!loading && <span>{counts.angerufen + counts.termin + counts.nichtErreicht + counts.abgelehnt + counts.erledigt} bearbeitet</span>}
