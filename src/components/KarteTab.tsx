@@ -544,6 +544,18 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     });
   }, [ready, visibleContacts, coords, states]);
 
+  // External focus: fly to a contact and select it
+  useEffect(() => {
+    if (!focusBid || !ready || !mapRef.current) return;
+    const co = coords[focusBid];
+    if (!co) return; // wait for coords to load
+    programmaticPanRef.current = true;
+    mapRef.current.setView([co.lat, co.lng], 18, { animate: true });
+    setSelected(focusBid);
+    onFocusConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBid, ready, coords]);
+
   const selectedContact = selected ? contacts.find((c) => c.bid === selected) : null;
   const selectedStatus = (selectedContact && (states[selectedContact.bid]?.status ?? "offen")) as CallStatus | undefined;
   const selectedState = selectedContact ? states[selectedContact.bid] : undefined;
