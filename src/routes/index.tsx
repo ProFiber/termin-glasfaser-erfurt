@@ -644,7 +644,7 @@ function Index() {
         <KalenderTab
           contacts={contacts}
           states={states}
-          onOpenContact={openContactInDoku}
+          onOpenContact={openContactInList}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
           onSwitchToDoku={openContactInDoku}
