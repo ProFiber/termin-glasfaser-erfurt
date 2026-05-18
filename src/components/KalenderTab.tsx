@@ -290,6 +290,18 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           const vmContacts = bySlot[`${date}|${vm}`] ?? [];
           const nmContacts = bySlot[`${date}|${nm}`] ?? [];
           const total = vmContacts.length + nmContacts.length;
+          const allDayContacts = [...vmContacts, ...nmContacts];
+          const team1Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team1");
+          const team2Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team2");
+          const buckets = viewMode === "tageszeit"
+            ? [
+                { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
+                { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
+              ]
+            : [
+                { key: `${date}-t1`, lbl: "👷 Team Halil", color: "#3b82f6", appts: team1Contacts },
+                { key: `${date}-t2`, lbl: "👷 Team Adil", color: "#7c3aed", appts: team2Contacts },
+              ];
           return (
             <div
               key={date}
@@ -329,10 +341,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[
-                  { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
-                  { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
-                ].map(({ key, lbl, color, appts }) => (
+                {buckets.map(({ key, lbl, color, appts }) => (
                   <div
                     key={key}
                     style={{
