@@ -1197,6 +1197,7 @@ function Index() {
               style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
             >
               🗺️ Auf Karte anzeigen
+            </button>
             <button
               type="button"
               onClick={() => setLongPressContact(null)}
