@@ -419,6 +419,10 @@ function Index() {
   }, [streets, streetSel]);
 
   const filtered = useMemo(() => {
+    if (focusBid) {
+      const only = contacts.find((c) => c.bid === focusBid);
+      return only ? [only] : [];
+    }
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
