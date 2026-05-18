@@ -188,6 +188,7 @@ function Index() {
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
+  const [focusBid, setFocusBid] = useState<string | null>(null);
 
   function openContactInDoku(bid: string) {
     setDokuFocusBid(bid);
@@ -195,6 +196,16 @@ function Index() {
     setExpanded(bid);
     window.setTimeout(() => {
       const el = document.getElementById(`doku-card-${bid}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }
+
+  function openContactInList(bid: string) {
+    setFocusBid(bid);
+    setExpanded(bid);
+    setActiveTab("objekte");
+    window.setTimeout(() => {
+      const el = document.getElementById(`card-${bid}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 300);
   }
@@ -408,6 +419,10 @@ function Index() {
   }, [streets, streetSel]);
 
   const filtered = useMemo(() => {
+    if (focusBid) {
+      const only = contacts.find((c) => c.bid === focusBid);
+      return only ? [only] : [];
+    }
     const q = search.trim().toLowerCase();
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
@@ -458,7 +473,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly]);
+  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, focusBid]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
@@ -620,7 +635,7 @@ function Index() {
           <KarteTab
             contacts={contacts}
             states={states}
-            onOpenContact={(bid) => { setActiveTab("objekte"); setExpanded(bid); }}
+            onOpenContact={openContactInList}
           />
         </div>
       )}
@@ -629,7 +644,7 @@ function Index() {
         <KalenderTab
           contacts={contacts}
           states={states}
-          onOpenContact={openContactInDoku}
+          onOpenContact={openContactInList}
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
           onSwitchToDoku={openContactInDoku}
@@ -820,6 +835,16 @@ function Index() {
           })}
         </div>
       </div>
+
+      {focusBid && (
+        <div style={{ margin: "8px 12px 4px", padding: "8px 12px", background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#78350f", fontWeight: 600 }}>🔍 Nur 1 Objekt angezeigt</span>
+          <button
+            onClick={() => setFocusBid(null)}
+            style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid #f59e0b", background: "#fff", color: "#92400e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          >Filter aufheben</button>
+        </div>
+      )}
 
       <div style={{ padding: "6px 14px 2px", fontSize: 11, color: "#aaa", display: "flex", justifyContent: "space-between" }}>
         <span>{filtered.length} von {contacts.length} Objekten</span>
