@@ -189,6 +189,12 @@ function Index() {
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
   const [focusBid, setFocusBid] = useState<string | null>(null);
+  const [mapFocusBid, setMapFocusBid] = useState<string | null>(null);
+
+  function openContactOnMap(bid: string) {
+    setMapFocusBid(bid);
+    setActiveTab("karte");
+  }
 
   function openContactInDoku(bid: string) {
     setDokuFocusBid(bid);
