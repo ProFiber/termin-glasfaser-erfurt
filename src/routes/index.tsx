@@ -188,6 +188,7 @@ function Index() {
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
+  const [focusBid, setFocusBid] = useState<string | null>(null);
 
   function openContactInDoku(bid: string) {
     setDokuFocusBid(bid);
@@ -195,6 +196,16 @@ function Index() {
     setExpanded(bid);
     window.setTimeout(() => {
       const el = document.getElementById(`doku-card-${bid}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }
+
+  function openContactInList(bid: string) {
+    setFocusBid(bid);
+    setExpanded(bid);
+    setActiveTab("objekte");
+    window.setTimeout(() => {
+      const el = document.getElementById(`card-${bid}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 300);
   }
