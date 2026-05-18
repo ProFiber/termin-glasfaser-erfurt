@@ -255,6 +255,34 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             </button>
           </div>
         </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+          {([
+            { k: "tageszeit", lbl: "☀️ Tageszeit" },
+            { k: "team", lbl: "👷 Team" },
+          ] as const).map(({ k, lbl }) => {
+            const active = viewMode === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setViewMode(k)}
+                style={{
+                  flex: 1,
+                  background: active ? "#e20074" : "#f1f5f9",
+                  color: active ? "#fff" : "#475569",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 8px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {lbl}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
