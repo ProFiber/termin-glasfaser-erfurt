@@ -189,6 +189,12 @@ function Index() {
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
   const [focusBid, setFocusBid] = useState<string | null>(null);
+  const [mapFocusBid, setMapFocusBid] = useState<string | null>(null);
+
+  function openContactOnMap(bid: string) {
+    setMapFocusBid(bid);
+    setActiveTab("karte");
+  }
 
   function openContactInDoku(bid: string) {
     setDokuFocusBid(bid);
@@ -636,6 +642,8 @@ function Index() {
             contacts={contacts}
             states={states}
             onOpenContact={openContactInList}
+            focusBid={mapFocusBid}
+            onFocusConsumed={() => setMapFocusBid(null)}
           />
         </div>
       )}
@@ -648,6 +656,7 @@ function Index() {
           onPatchTime={(bid, time) => patch(bid, { termin_zeit: time })}
           patch={patch}
           onSwitchToDoku={openContactInDoku}
+          onShowOnMap={openContactOnMap}
         />
       )}
 
@@ -1178,6 +1187,17 @@ function Index() {
               style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
             >
               📡 Nur dieser NVT: {longPressContact.nvt}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const c = longPressContact;
+                setLongPressContact(null);
+                openContactOnMap(c.bid);
+              }}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
+            >
+              🗺️ Auf Karte anzeigen
             </button>
             <button
               type="button"

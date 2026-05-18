@@ -50,6 +50,7 @@ type Props = {
   onPatchTime?: (bid: string, time: string) => void;
   patch?: (bid: string, partial: Partial<CallState>) => void;
   onSwitchToDoku?: (bid: string) => void;
+  onShowOnMap?: (bid: string) => void;
 };
 
 const navBtn: CSSProperties = {
@@ -88,7 +89,7 @@ const iconStyle: CSSProperties = {
   flexShrink: 0,
 };
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
@@ -484,6 +485,16 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               <span style={iconStyle}>🗺️</span>
               <span>Google Maps Navigation</span>
             </a>
+
+            {onShowOnMap && (
+              <button
+                style={menuRow}
+                onClick={() => { onShowOnMap(c.bid); closeAll(); }}
+              >
+                <span style={iconStyle}>📍</span>
+                <span>Auf Karte anzeigen</span>
+              </button>
+            )}
 
             <a
               style={menuRow}
