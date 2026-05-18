@@ -427,6 +427,20 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               {c.we ? ` · ${c.we} WE` : ""}
                               {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
+                            {cs?.team && (
+                              <div style={{
+                                display: "inline-block",
+                                marginTop: 3,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: "#fff",
+                                background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                              }}>
+                                👷 {cs.team === "team1" ? "Team Halil" : "Team Adil"}
+                              </div>
+                            )}
                             {cs?.termin_zeit && (
                               <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
                                 ⏰ ab {cs.termin_zeit} Uhr
