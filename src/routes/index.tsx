@@ -1144,7 +1144,16 @@ function Index() {
             <button
               type="button"
               onClick={() => {
-                setStreetSel(new Set([longPressContact.strasse]));
+                const c = longPressContact;
+                setFocusBid(null);
+                setFilter("alle");
+                setSearch("");
+                setPriorityOnly(false);
+                setUrgentOnly(false);
+                setNvtSel(new Set());
+                const ort = ortOf(c.nvt);
+                if (ort) setOrtSel(ort);
+                setStreetSel(new Set([c.strasse]));
                 setLongPressContact(null);
               }}
               style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
@@ -1154,7 +1163,16 @@ function Index() {
             <button
               type="button"
               onClick={() => {
-                setNvtSel(new Set([longPressContact.nvt]));
+                const c = longPressContact;
+                setFocusBid(null);
+                setFilter("alle");
+                setSearch("");
+                setPriorityOnly(false);
+                setUrgentOnly(false);
+                setStreetSel(new Set());
+                const ort = ortOf(c.nvt);
+                if (ort) setOrtSel(ort);
+                setNvtSel(new Set([c.nvt]));
                 setLongPressContact(null);
               }}
               style={{ background: "#f1f5f9", border: "none", borderRadius: 10, padding: "14px 12px", fontSize: 15, fontWeight: 600, color: "#0f172a", textAlign: "left", cursor: "pointer" }}
