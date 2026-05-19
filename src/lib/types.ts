@@ -38,10 +38,11 @@ export type CallState = {
   klarfall: boolean;
   klarfall_notiz: string;
   grabenlaenge: number;
-  team: string;           // '' | 'team1' | 'team2'
-  team_status: string;    // '' | 'zugewiesen' | 'in_arbeit' | 'fertig'
+  team: string;
+  team_status: string;
   fotos_erhalten: boolean;
   protokoll_erhalten: boolean;
+  priority_override: number | null;
   updated_at: string;
 };
 
