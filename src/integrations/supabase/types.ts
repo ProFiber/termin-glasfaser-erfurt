@@ -22,6 +22,7 @@ export type Database = {
           klarfall: boolean
           klarfall_notiz: string
           notiz: string
+          priority_override: number | null
           protokoll_erhalten: boolean
           status: Database["public"]["Enums"]["call_status"]
           team: string
@@ -38,6 +39,7 @@ export type Database = {
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
+          priority_override?: number | null
           protokoll_erhalten?: boolean
           status?: Database["public"]["Enums"]["call_status"]
           team?: string
@@ -54,6 +56,7 @@ export type Database = {
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
+          priority_override?: number | null
           protokoll_erhalten?: boolean
           status?: Database["public"]["Enums"]["call_status"]
           team?: string
