@@ -670,9 +670,8 @@ function Index() {
             {flash === "saving" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>⏳ Speichern…</span>}
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
             {flash === "error" && <span style={{ fontSize: 11, background: "#dc2626", borderRadius: 8, padding: "2px 8px" }}>⚠️ Fehler</span>}
-            <span style={{ background: counts.termin >= 4 ? "#16a34a" : "rgba(255,255,255,0.22)", borderRadius: 20, padding: "3px 12px", fontSize: 14, fontWeight: 800 }}>
-              {counts.termin} / 4 ✓
-            </span>
+            <ExportMenu contacts={contacts} />
+
           </div>
         </div>
       </div>
