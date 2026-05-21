@@ -12,6 +12,30 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
+import * as XLSX from "xlsx";
+
+function exportHausanschluesseXlsx(contacts: Contact[], onlyPriority: boolean) {
+  const list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
+  const rows = list.map((c) => {
+    const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
+    const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
+    return {
+      Adresse: adresse,
+      NVT: c.nvt || "",
+      Name: c.name || "",
+      Mobil: c.mobil || "",
+      Festnetz: c.festnetz || "",
+      "Auskundung erforderlich": auskundung,
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [{ wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 22 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
+  const date = new Date().toISOString().slice(0, 10);
+  const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
 const TAB_TITLE: Record<TabKey, string> = {
