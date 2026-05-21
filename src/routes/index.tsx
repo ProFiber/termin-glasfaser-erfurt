@@ -35,6 +35,68 @@ function exportHausanschluesseXlsx(contacts: Contact[], onlyPriority: boolean) {
   const date = new Date().toISOString().slice(0, 10);
   const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}.xlsx`;
   XLSX.writeFile(wb, fname);
+  XLSX.writeFile(wb, fname);
+}
+
+function ExportMenu({ contacts }: { contacts: Contact[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "rgba(255,255,255,0.22)",
+          color: "white",
+          border: "none",
+          borderRadius: 20,
+          padding: "4px 12px",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        ⬇ Export
+      </button>
+      {open && (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 30 }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: "calc(100% + 6px)",
+              background: "white",
+              color: "#111",
+              borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+              minWidth: 220,
+              zIndex: 31,
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ padding: "8px 12px", fontSize: 11, color: "#666", borderBottom: "1px solid #eee" }}>
+              Hausanschlüsse exportieren (XLSX)
+            </div>
+            <button
+              onClick={() => { exportHausanschluesseXlsx(contacts, false); setOpen(false); }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", fontSize: 14, cursor: "pointer" }}
+            >
+              📋 Komplette Liste ({contacts.length})
+            </button>
+            <button
+              onClick={() => { exportHausanschluesseXlsx(contacts, true); setOpen(false); }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", borderTop: "1px solid #eee", fontSize: 14, cursor: "pointer" }}
+            >
+              ⭐ Nur Priorität ({contacts.filter((c) => isPriorityNvt(c.nvt)).length})
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
