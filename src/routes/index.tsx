@@ -14,32 +14,60 @@ import TeamSection from "@/components/TeamSection";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 
-function exportHausanschluesseXlsx(contacts: Contact[], onlyPriority: boolean) {
+function exportHausanschluesseXlsx(
+  contacts: Contact[],
+  callStates: Record<string, CallState>,
+  onlyPriority: boolean,
+) {
   const list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
   const rows = list.map((c) => {
     const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
     const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
+    const st = callStates[c.bid];
+    const status = st?.status === "erledigt" ? "erledigt" : "offen";
+    const terminDatum = st?.termin_datum || "";
     return {
+      Status: status,
       Adresse: adresse,
       NVT: c.nvt || "",
       Name: c.name || "",
       Mobil: c.mobil || "",
       Festnetz: c.festnetz || "",
       "Auskundung erforderlich": auskundung,
+      Termin: terminDatum,
     };
   });
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [{ wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 22 }];
+  ws["!cols"] = [
+    { wch: 10 },
+    { wch: 30 },
+    { wch: 10 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 12 },
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
   const date = new Date().toISOString().slice(0, 10);
   const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}.xlsx`;
   XLSX.writeFile(wb, fname);
-  XLSX.writeFile(wb, fname);
 }
 
-function ExportMenu({ contacts }: { contacts: Contact[] }) {
+function ExportMenu({
+  contacts,
+  callStates,
+}: {
+  contacts: Contact[];
+  callStates: Record<string, CallState>;
+}) {
   const [open, setOpen] = useState(false);
+  const totalErledigt = contacts.filter((c) => callStates[c.bid]?.status === "erledigt").length;
+  const totalOffen = contacts.length - totalErledigt;
+  const prioContacts = contacts.filter((c) => isPriorityNvt(c.nvt));
+  const prioErledigt = prioContacts.filter((c) => callStates[c.bid]?.status === "erledigt").length;
+  const prioOffen = prioContacts.length - prioErledigt;
   return (
     <div style={{ position: "relative" }}>
       <button
@@ -72,7 +100,7 @@ function ExportMenu({ contacts }: { contacts: Contact[] }) {
               color: "#111",
               borderRadius: 10,
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-              minWidth: 220,
+              minWidth: 260,
               zIndex: 31,
               overflow: "hidden",
             }}
@@ -81,16 +109,22 @@ function ExportMenu({ contacts }: { contacts: Contact[] }) {
               Hausanschlüsse exportieren (XLSX)
             </div>
             <button
-              onClick={() => { exportHausanschluesseXlsx(contacts, false); setOpen(false); }}
+              onClick={() => { exportHausanschluesseXlsx(contacts, callStates, false); setOpen(false); }}
               style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", fontSize: 14, cursor: "pointer" }}
             >
               📋 Komplette Liste ({contacts.length})
+              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                {totalOffen} offen · {totalErledigt} erledigt
+              </div>
             </button>
             <button
-              onClick={() => { exportHausanschluesseXlsx(contacts, true); setOpen(false); }}
+              onClick={() => { exportHausanschluesseXlsx(contacts, callStates, true); setOpen(false); }}
               style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", borderTop: "1px solid #eee", fontSize: 14, cursor: "pointer" }}
             >
-              ⭐ Nur Priorität ({contacts.filter((c) => isPriorityNvt(c.nvt)).length})
+              ⭐ Nur Priorität ({prioContacts.length})
+              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                {prioOffen} offen · {prioErledigt} erledigt
+              </div>
             </button>
           </div>
         </>
@@ -732,7 +766,7 @@ function Index() {
             {flash === "saving" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>⏳ Speichern…</span>}
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
             {flash === "error" && <span style={{ fontSize: 11, background: "#dc2626", borderRadius: 8, padding: "2px 8px" }}>⚠️ Fehler</span>}
-            <ExportMenu contacts={contacts} />
+            <ExportMenu contacts={contacts} callStates={states} />
 
           </div>
         </div>
