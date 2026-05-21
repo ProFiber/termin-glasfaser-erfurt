@@ -12,6 +12,92 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
+import * as XLSX from "xlsx";
+
+function exportHausanschluesseXlsx(contacts: Contact[], onlyPriority: boolean) {
+  const list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
+  const rows = list.map((c) => {
+    const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
+    const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
+    return {
+      Adresse: adresse,
+      NVT: c.nvt || "",
+      Name: c.name || "",
+      Mobil: c.mobil || "",
+      Festnetz: c.festnetz || "",
+      "Auskundung erforderlich": auskundung,
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [{ wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 22 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
+  const date = new Date().toISOString().slice(0, 10);
+  const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  XLSX.writeFile(wb, fname);
+}
+
+function ExportMenu({ contacts }: { contacts: Contact[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "rgba(255,255,255,0.22)",
+          color: "white",
+          border: "none",
+          borderRadius: 20,
+          padding: "4px 12px",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        ⬇ Export
+      </button>
+      {open && (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 30 }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: "calc(100% + 6px)",
+              background: "white",
+              color: "#111",
+              borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+              minWidth: 220,
+              zIndex: 31,
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ padding: "8px 12px", fontSize: 11, color: "#666", borderBottom: "1px solid #eee" }}>
+              Hausanschlüsse exportieren (XLSX)
+            </div>
+            <button
+              onClick={() => { exportHausanschluesseXlsx(contacts, false); setOpen(false); }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", fontSize: 14, cursor: "pointer" }}
+            >
+              📋 Komplette Liste ({contacts.length})
+            </button>
+            <button
+              onClick={() => { exportHausanschluesseXlsx(contacts, true); setOpen(false); }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", borderTop: "1px solid #eee", fontSize: 14, cursor: "pointer" }}
+            >
+              ⭐ Nur Priorität ({contacts.filter((c) => isPriorityNvt(c.nvt)).length})
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
 const TAB_TITLE: Record<TabKey, string> = {
@@ -646,9 +732,8 @@ function Index() {
             {flash === "saving" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>⏳ Speichern…</span>}
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
             {flash === "error" && <span style={{ fontSize: 11, background: "#dc2626", borderRadius: 8, padding: "2px 8px" }}>⚠️ Fehler</span>}
-            <span style={{ background: counts.termin >= 4 ? "#16a34a" : "rgba(255,255,255,0.22)", borderRadius: 20, padding: "3px 12px", fontSize: 14, fontWeight: 800 }}>
-              {counts.termin} / 4 ✓
-            </span>
+            <ExportMenu contacts={contacts} />
+
           </div>
         </div>
       </div>
