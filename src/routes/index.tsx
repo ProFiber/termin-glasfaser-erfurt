@@ -11,6 +11,7 @@ import GrabenPromptSheet from "@/components/GrabenPromptSheet";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
+import FinanzTab from "@/components/FinanzTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 
@@ -133,13 +134,14 @@ function ExportMenu({
   );
 }
 
-type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard";
+type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard" | "finanz";
 const TAB_TITLE: Record<TabKey, string> = {
   objekte: "🗂️ Objekte",
   karte: "🗺️ Karte",
   kalender: "📅 Kalender",
   doku: "📋 Dokumentation",
   dashboard: "🎯 Dashboard",
+  finanz: "💰 Finanzen",
 };
 
 export const Route = createFileRoute("/")({
@@ -814,6 +816,8 @@ function Index() {
           onOpenTeamDokuOffen={() => { setFilter("dokuOffen"); setActiveTab("objekte"); }}
         />
       )}
+
+      {activeTab === "finanz" && <FinanzTab />}
 
       {activeTab === "objekte" && (<>
       {/* SEARCH + FILTER */}
