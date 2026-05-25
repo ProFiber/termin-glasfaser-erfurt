@@ -16,9 +16,13 @@ export type Database = {
     Tables: {
       call_states: {
         Row: {
+          aufmass_am: string | null
+          avis_am: string | null
           bid: string
+          erledigt_datum: string | null
           fotos_erhalten: boolean
           grabenlaenge: number
+          gutschrift_am: string | null
           klarfall: boolean
           klarfall_notiz: string
           notiz: string
@@ -30,12 +34,19 @@ export type Database = {
           termin_datum: string | null
           termin_slot: string
           termin_zeit: string
+          umsatz_eur: number
           updated_at: string
+          verguetet_am: string | null
+          zusatz_eur: number
         }
         Insert: {
+          aufmass_am?: string | null
+          avis_am?: string | null
           bid: string
+          erledigt_datum?: string | null
           fotos_erhalten?: boolean
           grabenlaenge?: number
+          gutschrift_am?: string | null
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
@@ -47,12 +58,19 @@ export type Database = {
           termin_datum?: string | null
           termin_slot?: string
           termin_zeit?: string
+          umsatz_eur?: number
           updated_at?: string
+          verguetet_am?: string | null
+          zusatz_eur?: number
         }
         Update: {
+          aufmass_am?: string | null
+          avis_am?: string | null
           bid?: string
+          erledigt_datum?: string | null
           fotos_erhalten?: boolean
           grabenlaenge?: number
+          gutschrift_am?: string | null
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
@@ -64,7 +82,10 @@ export type Database = {
           termin_datum?: string | null
           termin_slot?: string
           termin_zeit?: string
+          umsatz_eur?: number
           updated_at?: string
+          verguetet_am?: string | null
+          zusatz_eur?: number
         }
         Relationships: [
           {
@@ -175,6 +196,66 @@ export type Database = {
           protokoll?: boolean
           sharepoint?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      import_log: {
+        Row: {
+          bid: string | null
+          created_at: string
+          details: Json | null
+          hnr: string | null
+          id: string
+          quelle: string
+          status: string
+          strasse: string | null
+        }
+        Insert: {
+          bid?: string | null
+          created_at?: string
+          details?: Json | null
+          hnr?: string | null
+          id?: string
+          quelle: string
+          status: string
+          strasse?: string | null
+        }
+        Update: {
+          bid?: string | null
+          created_at?: string
+          details?: Json | null
+          hnr?: string | null
+          id?: string
+          quelle?: string
+          status?: string
+          strasse?: string | null
+        }
+        Relationships: []
+      }
+      umsatz_ziele: {
+        Row: {
+          arbeitstage_pro_monat: number
+          id: string
+          saturday_buffer: boolean
+          scope: string
+          updated_at: string
+          ziel_eur: number
+        }
+        Insert: {
+          arbeitstage_pro_monat?: number
+          id?: string
+          saturday_buffer?: boolean
+          scope: string
+          updated_at?: string
+          ziel_eur: number
+        }
+        Update: {
+          arbeitstage_pro_monat?: number
+          id?: string
+          saturday_buffer?: boolean
+          scope?: string
+          updated_at?: string
+          ziel_eur?: number
         }
         Relationships: []
       }
