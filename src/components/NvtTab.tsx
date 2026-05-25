@@ -293,12 +293,11 @@ export default function NvtTab({
     return { offen, termin, gebaut };
   }, [p3contacts, states]);
 
-  // Animierte Zähler
-  const animTermine = useCounter(termineHeute.total);
-  const animErledigt = useCounter(erledigtHeute);
-  const animKlar = useCounter(klarfallCount);
+  // Animierte Zähler (nur noch Gesamt-%)
   const animPct = useCounter(totalPct);
   const animGraben = useCounter(grabenTotal);
+  void animPct; void animGraben;
+
 
   function shareWhatsApp() {
     const date = new Date().toLocaleDateString("de-DE");
