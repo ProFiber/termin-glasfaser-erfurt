@@ -293,12 +293,11 @@ export default function NvtTab({
     return { offen, termin, gebaut };
   }, [p3contacts, states]);
 
-  // Animierte Zähler
-  const animTermine = useCounter(termineHeute.total);
-  const animErledigt = useCounter(erledigtHeute);
-  const animKlar = useCounter(klarfallCount);
+  // Animierte Zähler (nur noch Gesamt-%)
   const animPct = useCounter(totalPct);
   const animGraben = useCounter(grabenTotal);
+  void animPct; void animGraben;
+
 
   function shareWhatsApp() {
     const date = new Date().toLocaleDateString("de-DE");
@@ -331,13 +330,10 @@ export default function NvtTab({
   return (
     <div style={{ padding: 12, paddingBottom: 100, background: "#f2f2f7", minHeight: "100%" }}>
 
-      {/* ══════════════════════════════════════════
-          EINSATZPLANUNG – Planungshorizont
-      ══════════════════════════════════════════ */}
+      {/* ══════════════ 1) EINSATZPLANUNG ══════════════ */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ ...SECTION_TITLE, marginBottom: 6 }}>🎯 Einsatzplanung</div>
 
-        {/* Kritische Warnung */}
         {kritischWarnungAktiv && (
           <div style={{
             background: "#fee2e2", border: "2px solid #dc2626", borderRadius: 12,
@@ -356,8 +352,7 @@ export default function NvtTab({
           </div>
         )}
 
-        {/* 3-Tage-Raster */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
           {[
             { label: "Heute", count: einsatzPlanung.heute, ampel: ampelHeute },
             { label: "Morgen", count: einsatzPlanung.morgen, ampel: ampelMorgen },
@@ -373,185 +368,28 @@ export default function NvtTab({
                 {count}
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#334155", marginTop: 2 }}>{label}</div>
-              <div style={{ fontSize: 10, color: "#64748b" }}>Aufträge</div>
             </div>
           ))}
         </div>
 
-        {/* Terminierbare + Bedarf */}
         <div style={{
           background: "white", border: "1px solid #e5e7eb", borderRadius: 12,
-          padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#111" }}>
-              {terminierbar} terminierbar
-            </div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-              Offen / Angerufen / Nicht erreicht
-            </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#111" }}>
+            <b>{terminierbar}</b> terminierbar
+            <span style={{ color: "#94a3b8", fontWeight: 500, marginLeft: 6 }}>(offen/angerufen/n. erreicht)</span>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
-              Bedarf: {bedarfProTag}/Tag
-            </div>
-            <div style={{ fontSize: 10, color: "#94a3b8" }}>
-              {NUM_TEAMS} Teams × {AUFTRAEGE_PRO_TEAM_PRO_TAG}
-            </div>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+            Bedarf {bedarfProTag}/Tag
           </div>
         </div>
       </div>
 
-      {/* SECTION 1 — Tages-KPIs */}
-      <div style={SECTION_TITLE}>📌 Tages-KPIs</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
-        <KpiCard
-          color="#3b82f6"
-          icon="🗓️"
-          label="Heute Termine"
-          value={animTermine}
-          sub={`VM ${termineHeute.vm} · NM ${termineHeute.nm}`}
-        />
-        <KpiCard
-          color="#22c55e"
-          icon="✅"
-          label="Heute erledigt"
-          value={animErledigt}
-        />
-        <KpiCard
-          color="#f59e0b"
-          icon="⚠️"
-          label="Klärfälle"
-          value={animKlar}
-          onClick={klarfallCount > 0 ? onOpenKlarfaelle : undefined}
-        />
-        <KpiCard
-          color="#a16207"
-          icon="⛏️"
-          label="Grabenlänge"
-          value={animGraben >= 1000 ? `${(animGraben / 1000).toFixed(1)} km` : `${animGraben} m`}
-          sub="Gesamt"
-        />
-      </div>
-
-      {/* Priorität-3-Schnellansicht */}
-      {p3contacts.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={SECTION_TITLE}>⭐⭐⭐ Priorität 3 – Schnellansicht</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-            {[
-              { label: "Offen", count: p3stats.offen, color: "#dc2626", bg: "#fee2e2" },
-              { label: "Terminiert", count: p3stats.termin, color: "#3b82f6", bg: "#eff6ff" },
-              { label: "Gebaut", count: p3stats.gebaut, color: "#16a34a", bg: "#dcfce7" },
-            ].map(({ label, count, color, bg }) => (
-              <div key={label} style={{
-                background: bg, border: `1px solid ${color}55`,
-                borderRadius: 10, padding: "8px 10px", textAlign: "center",
-              }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color }}>{count}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#334155" }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* SECTION 1.5 — Teams Live */}
-      <TeamsLive
-        contacts={contacts}
-        states={states}
-        today={today}
-        onOpenTeamDokuOffen={onOpenTeamDokuOffen}
-      />
-
-      {/* SECTION 2 — Fortschritts-Karussell */}
-      <div style={SECTION_TITLE}>📈 Fortschritt</div>
-      <ProgressCarousel
-        slides={[
-          {
-            title: "Gesamt",
-            color: "#22c55e",
-            done: totalErledigt,
-            total: totalGesamt,
-            pct: totalPct,
-            footer: `${totalErledigt} von ${totalGesamt} Objekten erledigt`,
-            extra: (
-              <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 6, fontSize: 11, fontWeight: 700 }}>
-                <span style={{ color: "#3b82f6" }}>● {totalTermin} Termin</span>
-                <span style={{ color: "#6b7280" }}>● {totalOffen} Offen</span>
-                <span style={{ color: "#ef4444" }}>● {totalAbgelehnt} Abgel.</span>
-              </div>
-            ),
-          },
-          {
-            title: "Top Prio",
-            color: "#ef4444",
-            done: u.e,
-            total: u.g,
-            pct: u.pct,
-            footer: `${u.e} von ${u.g} · Prio-3 NVTs`,
-            extra: (
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
-                {urgentRows.map((r) => (
-                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
-                ))}
-              </div>
-            ),
-          },
-          {
-            title: "Priorität",
-            color: "#f97316",
-            done: p.e,
-            total: p.g,
-            pct: p.pct,
-            footer: `${p.e} von ${p.g} · ${prioRows.length} NVTs`,
-            extra: (
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 10, fontWeight: 700, color: "#475569" }}>
-                {[...prioRows].sort((a, b) => b.pct - a.pct).slice(0, 3).map((r) => (
-                  <span key={r.nvt}>{r.nvt} {Math.round(r.pct)}%</span>
-                ))}
-              </div>
-            ),
-          },
-        ]}
-      />
-
-      {/* Doku-Fortschritt */}
-      <div style={CARD}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
-          📋 Doku: {dokuComplete} / {totalGesamt} vollständig dokumentiert ({dokuPct}%)
-        </div>
-        <ProgressBar pct={dokuPct} color="#22c55e" />
-      </div>
-
-      {/* SECTION 4 — Team Performance */}
-      <div style={SECTION_TITLE}>👥 Team heute</div>
-      <div style={CARD}>
-        {teamHeute.length === 0 ? (
-          <div style={{ fontSize: 13, color: "#94a3b8", textAlign: "center", padding: "8px 0" }}>
-            Heute noch keine Doku-Aktivität.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {teamHeute.map(([name, n], i) => (
-              <div key={name} style={{
-                background: teamColors[i % teamColors.length] + "1a",
-                border: `1px solid ${teamColors[i % teamColors.length]}55`,
-                color: teamColors[i % teamColors.length],
-                borderRadius: 999, padding: "6px 12px",
-                fontSize: 13, fontWeight: 700,
-              }}>
-                {name}: {n}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* SECTION 5 — Warnungen & Aktionen */}
+      {/* ══════════════ 2) AKTIONEN / WARNUNGEN ══════════════ */}
       {(klarfallCount > 0 || auskundungHeute.length > 0 || lowPrioNvts.length > 0) && (
-        <>
-          <div style={SECTION_TITLE}>⚠️ Warnungen & Aktionen</div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={SECTION_TITLE}>⚠️ Aktionen</div>
           {klarfallCount > 0 && (
             <button
               type="button"
@@ -559,14 +397,11 @@ export default function NvtTab({
               style={{
                 width: "100%", textAlign: "left", cursor: "pointer",
                 background: "#fef3c7", border: "2px solid #f59e0b", borderRadius: 12,
-                padding: "12px 14px", marginBottom: 10, color: "#7c2d12",
+                padding: "10px 14px", marginBottom: 8, color: "#7c2d12",
                 fontSize: 14, fontWeight: 800,
               }}
             >
-              ⚠️ {klarfallCount} offene Klärfall{klarfallCount === 1 ? "" : "e"}
-              <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#92400e" }}>
-                Tippen, um zur Objekte-Liste zu wechseln
-              </div>
+              ⚠️ {klarfallCount} Klärfall{klarfallCount === 1 ? "" : "e"} →
             </button>
           )}
           {auskundungHeute.length > 0 && (
@@ -576,12 +411,12 @@ export default function NvtTab({
               style={{
                 width: "100%", textAlign: "left", cursor: "pointer",
                 background: "#dbeafe", border: "2px solid #3b82f6", borderRadius: 12,
-                padding: "12px 14px", marginBottom: 10, color: "#1e3a8a",
+                padding: "10px 14px", marginBottom: 8, color: "#1e3a8a",
                 fontSize: 14, fontWeight: 800,
               }}
             >
               📅 {auskundungHeute.length} Auskundung{auskundungHeute.length === 1 ? "" : "en"} heute
-              <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: "#1e40af" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: "#1e40af" }}>
                 {auskundungHeute.slice(0, 3).map((c) => `${c.strasse} ${c.hnr}`).join(" · ")}
                 {auskundungHeute.length > 3 ? " …" : ""}
               </div>
@@ -590,43 +425,84 @@ export default function NvtTab({
           {lowPrioNvts.length > 0 && (
             <div style={{
               background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 12,
-              padding: "12px 14px", marginBottom: 10, color: "#7f1d1d",
+              padding: "10px 14px", color: "#7f1d1d",
             }}>
-              <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
-                🔴 Prioritäts-NVTs unter 50%
+              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
+                🔴 Prio-NVTs unter 50%
               </div>
-              {lowPrioNvts.map((r) => (
-                <div key={r.nvt} style={{ fontSize: 12, fontWeight: 600, marginTop: 3 }}>
-                  {r.nvt} · {r.ort} — {Math.round(r.pct)}% ({r.erledigt}/{r.gesamt})
-                </div>
-              ))}
+              <div style={{ fontSize: 11, fontWeight: 600 }}>
+                {lowPrioNvts.map((r) => `${r.nvt} (${Math.round(r.pct)}%)`).join(" · ")}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* SECTION 6 — NVT Übersicht */}
-      <div style={SECTION_TITLE}>📡 NVT Fortschritt</div>
-      <div style={{
-        ...CARD, padding: 12,
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📊 NVT-Übersicht</div>
-          <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-            {totalErledigt} von {totalGesamt} · <b style={{ color: MAGENTA }}>{totalPct}%</b>
+      {/* ══════════════ 3) HEUTE — Teams + Aktivität ══════════════ */}
+      <TeamsLive
+        contacts={contacts}
+        states={states}
+        today={today}
+        onOpenTeamDokuOffen={onOpenTeamDokuOffen}
+      />
+
+      <div style={{ ...CARD, padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#111" }}>Heute</div>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+            🗓 {termineHeute.total} Termine · ✅ {erledigtHeute} erledigt
           </div>
         </div>
-        <button onClick={shareWhatsApp}
-          style={{
-            background: "#25D366", color: "white", border: "none", borderRadius: 10,
-            padding: "8px 12px", fontWeight: 700, fontSize: 13, cursor: "pointer",
-          }}>
-          💬 Teilen
-        </button>
+        {teamHeute.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#94a3b8" }}>Noch keine Doku-Aktivität heute.</div>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {teamHeute.map(([name, n], i) => (
+              <div key={name} style={{
+                background: teamColors[i % teamColors.length] + "1a",
+                border: `1px solid ${teamColors[i % teamColors.length]}55`,
+                color: teamColors[i % teamColors.length],
+                borderRadius: 999, padding: "4px 10px",
+                fontSize: 12, fontWeight: 700,
+              }}>
+                {name}: {n}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <NvtStatusBar rows={rows} />
+      {/* ══════════════ 4) FORTSCHRITT — kompakte Zeile ══════════════ */}
+      <div style={SECTION_TITLE}>📊 Fortschritt</div>
+      <div style={{ ...CARD, padding: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+          {[
+            { label: "Gesamt", pct: totalPct, done: totalErledigt, total: totalGesamt, color: "#22c55e" },
+            { label: "Top Prio", pct: u.pct, done: u.e, total: u.g, color: "#dc2626" },
+            { label: "Doku", pct: dokuPct, done: dokuComplete, total: totalGesamt, color: "#6366f1" },
+          ].map(({ label, pct, done, total, color }) => (
+            <div key={label} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color }}>{pct}%</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#334155" }}>{label}</div>
+              <div style={{ fontSize: 10, color: "#94a3b8" }}>{done}/{total}</div>
+            </div>
+          ))}
+        </div>
+        <ProgressBar pct={totalPct} color="#22c55e" />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+          <span>⛏️ {grabenTotal >= 1000 ? `${(grabenTotal / 1000).toFixed(1)} km` : `${grabenTotal} m`} Graben</span>
+          <button onClick={shareWhatsApp}
+            style={{
+              background: "#25D366", color: "white", border: "none", borderRadius: 8,
+              padding: "5px 10px", fontWeight: 700, fontSize: 11, cursor: "pointer",
+            }}>
+            💬 Teilen
+          </button>
+        </div>
+      </div>
+
+      {/* ══════════════ 5) NVT-FORTSCHRITT ══════════════ */}
+      <div style={SECTION_TITLE}>📡 NVT Fortschritt</div>
 
       {(() => {
         const rest = rows.filter((r) => !isPriorityNvt(r.nvt));
@@ -641,44 +517,45 @@ export default function NvtTab({
               background: cardBg(r.pct),
               border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
               borderLeft: accent ? `4px solid ${accent}` : undefined,
-              borderRadius: 12, padding: 12, marginBottom: 10,
+              borderRadius: 12, padding: 10, marginBottom: 8,
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
                     {emoji}{r.nvt}
                     {stars && <span style={{ fontSize: 11, color: "#d97706" }}>{stars}</span>}
                   </div>
-                  <div style={{ fontSize: 12, color: "#666" }}>{r.ort || "—"} · {r.gesamt} Objekte</div>
+                  <div style={{ fontSize: 11, color: "#666" }}>{r.ort || "—"} · {r.gesamt} Objekte</div>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: r.pct >= 100 ? "#059669" : r.pct > 50 ? "#16a34a" : "#111" }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: r.pct >= 100 ? "#059669" : r.pct > 50 ? "#16a34a" : "#111" }}>
                   {pct}%
                 </div>
               </div>
               <ProgressBar pct={pct} color={r.pct >= 100 ? "#059669" : "#22c55e"} />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, fontWeight: 600, marginTop: 8 }}>
-                <span style={{ color: "#16a34a" }}>✅ {r.erledigt} erl.</span>
-                <span style={{ color: "#3b82f6" }}>📅 {r.termin} Termin</span>
-                <span style={{ color: "#6b7280" }}>⚪ {r.offen} offen</span>
-                <span style={{ color: "#ef4444" }}>🔴 {r.abgelehnt} abgel.</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11, fontWeight: 600, marginTop: 6 }}>
+                <span style={{ color: "#16a34a" }}>✅ {r.erledigt}</span>
+                <span style={{ color: "#3b82f6" }}>📅 {r.termin}</span>
+                <span style={{ color: "#6b7280" }}>⚪ {r.offen}</span>
+                {r.abgelehnt > 0 && <span style={{ color: "#ef4444" }}>🔴 {r.abgelehnt}</span>}
               </div>
             </div>
           );
         };
         return (
           <>
-            {urgentRows.length > 0 && urgentRows.map((r) => renderCard(r, "urgent"))}
-            {prioRows.length > 0 && prioRows.map((r) => renderCard(r, "prio"))}
+            {urgentRows.map((r) => renderCard(r, "urgent"))}
+            {prioRows.map((r) => renderCard(r, "prio"))}
             {rest.length > 0 && (
-              <>
-                <div style={{
-                  background: "#f1f5f9", color: "#334155", fontWeight: 700, fontSize: 13,
-                  padding: "10px 12px", borderRadius: 10, marginTop: 6, marginBottom: 10,
+              <details style={{ marginTop: 6 }}>
+                <summary style={{
+                  background: "#f1f5f9", color: "#334155", fontWeight: 700, fontSize: 12,
+                  padding: "10px 12px", borderRadius: 10, marginBottom: 8, cursor: "pointer",
+                  listStyle: "none",
                 }}>
-                  Weitere NVTs
-                </div>
+                  ▾ Weitere NVTs ({rest.length})
+                </summary>
                 {rest.map((r) => renderCard(r, "normal"))}
-              </>
+              </details>
             )}
           </>
         );
@@ -686,6 +563,7 @@ export default function NvtTab({
     </div>
   );
 }
+
 
 // ─── Sub-Komponenten ──────────────────────────────────────────────
 
