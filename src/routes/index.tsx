@@ -1670,13 +1670,32 @@ function Index() {
           bottom: "calc(56px + env(safe-area-inset-bottom, 0px) - 30px + 12px)",
           left: "50%", transform: "translateX(-50%)",
           width: 60, height: 60, borderRadius: "50%",
-          background: "#22c55e", border: "none", cursor: "pointer",
+          background: activeTab === "dashboard" ? "#16a34a" : "#22c55e", border: "none", cursor: "pointer",
           boxShadow: "0 4px 16px rgba(34,197,94,0.5)",
           display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 10000, color: "white", fontSize: 28, lineHeight: 1,
         }}
       >
         🎯
+      </button>
+      <button
+        onClick={() => setActiveTab("finanz")}
+        aria-label="Finanzen"
+        style={{
+          position: "fixed",
+          bottom: "calc(56px + env(safe-area-inset-bottom, 0px) + 8px)",
+          right: 14,
+          width: 56, height: 56, borderRadius: "50%",
+          background: activeTab === "finanz"
+            ? "linear-gradient(135deg, #b8005c, #7a003d)"
+            : "linear-gradient(135deg, #e20074, #b8005c)",
+          border: "none", cursor: "pointer",
+          boxShadow: "0 4px 16px rgba(226,0,116,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 10000, color: "white", fontSize: 24, lineHeight: 1,
+        }}
+      >
+        💰
       </button>
     </div>
   );
