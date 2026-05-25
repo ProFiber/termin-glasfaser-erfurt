@@ -23,6 +23,7 @@ export type Database = {
           fotos_erhalten: boolean
           grabenlaenge: number
           gutschrift_am: string | null
+          gutschrift_nr: string
           klarfall: boolean
           klarfall_notiz: string
           notiz: string
@@ -47,6 +48,7 @@ export type Database = {
           fotos_erhalten?: boolean
           grabenlaenge?: number
           gutschrift_am?: string | null
+          gutschrift_nr?: string
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
@@ -71,6 +73,7 @@ export type Database = {
           fotos_erhalten?: boolean
           grabenlaenge?: number
           gutschrift_am?: string | null
+          gutschrift_nr?: string
           klarfall?: boolean
           klarfall_notiz?: string
           notiz?: string
