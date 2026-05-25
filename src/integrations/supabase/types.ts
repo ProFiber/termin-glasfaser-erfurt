@@ -264,6 +264,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_import_call_states_from_excel: {
+        Args: { payload: Json }
+        Returns: Json
+      }
       bulk_import_contacts: { Args: { payload: Json }; Returns: number }
     }
     Enums: {
