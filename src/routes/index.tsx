@@ -1243,7 +1243,7 @@ function Index() {
                             {rel && <div style={{ fontSize: 9, fontWeight: 500, color: "#0891b2", marginTop: 1 }}>{rel}</div>}
                           </div>
                           {[[vm, "☀️ Vorm."], [nm, "🌤 Nachm."]].map(([key, lbl]) => (
-                            <button key={key} onClick={() => patch(c.bid, { termin_slot: key, termin_datum: date, status: "termin" })}
+                            <button key={key} onClick={() => { setPinnedBid(c.bid); patch(c.bid, { termin_slot: key, termin_datum: date, status: "termin" }); }}
                               style={slotBtn(appt === key && apptDate === date)}>{lbl}</button>
                           ))}
                         </div>
