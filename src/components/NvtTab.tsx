@@ -923,7 +923,7 @@ function TeamsLive({
     <>
       <div style={SECTION_TITLE}>👷 Teams Live</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-        <TeamCard name="Team Halil" color="#3b82f6" data={teams.team1} />
+        <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} />
         <TeamCard name="Team Adil" color="#7c3aed" data={teams.team2} />
       </div>
       <button

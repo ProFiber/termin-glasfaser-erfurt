@@ -978,7 +978,7 @@ function Index() {
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
           {([
             { k: "alle", label: "Alle Teams", color: "#64748b" },
-            { k: "team1", label: "👷 Team Halil", color: "#3b82f6" },
+            { k: "team1", label: "👷 Team Jozey", color: "#3b82f6" },
             { k: "team2", label: "👷 Team Adil", color: "#7c3aed" },
             { k: "dokuOffen", label: "⚠️ Doku ausstehend", color: "#f59e0b" },
           ] as const).map((tf) => {
@@ -1082,7 +1082,7 @@ function Index() {
                   </div>
                   {cs?.team && cs?.team_status && (
                     <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>
-                      👷 {cs.team === "team1" ? "Team Halil" : "Team Adil"} · {cs.team_status === "zugewiesen" ? "Zugewiesen" : cs.team_status === "in_arbeit" ? "In Arbeit" : "Fertig"}
+                      👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"} · {cs.team_status === "zugewiesen" ? "Zugewiesen" : cs.team_status === "in_arbeit" ? "In Arbeit" : "Fertig"}
                     </div>
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
