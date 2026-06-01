@@ -312,6 +312,7 @@ function Index() {
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
   const [focusBid, setFocusBid] = useState<string | null>(null);
+  const [pinnedBid, setPinnedBid] = useState<string | null>(null);
   const [mapFocusBid, setMapFocusBid] = useState<string | null>(null);
 
   function openContactOnMap(bid: string) {
@@ -599,16 +600,12 @@ function Index() {
       return true;
     });
     return list.sort((a, b) => {
-      // 1. Priorität absteigend (höchste zuerst)
-      const pa = states[a.bid]?.priority_override ?? getNvtPriority(a.nvt);
-      const pb = states[b.bid]?.priority_override ?? getNvtPriority(b.nvt);
-      if (pb !== pa) return pb - pa;
-      // 2. Terminstatus
-      const statusOrder: Record<string, number> = { termin: 0, erledigt: 1, offen: 2, angerufen: 3, nichtErreicht: 4, abgelehnt: 5 };
-      const sa = statusOrder[states[a.bid]?.status ?? "offen"] ?? 9;
-      const sb = statusOrder[states[b.bid]?.status ?? "offen"] ?? 9;
-      if (sa !== sb) return sa - sb;
-      // 3. Straße / HNR
+      // 0. Angepinnter Datensatz (zuletzt angerufen) immer ganz oben
+      if (pinnedBid) {
+        if (a.bid === pinnedBid && b.bid !== pinnedBid) return -1;
+        if (b.bid === pinnedBid && a.bid !== pinnedBid) return 1;
+      }
+      // 1. Rein alphabetisch: Straße / HNR / Zusatz
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       const na = parseInt(a.hnr, 10);
@@ -618,7 +615,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, priorityFilter, focusBid]);
+  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, priorityFilter, focusBid, pinnedBid]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
@@ -1119,13 +1116,13 @@ function Index() {
 
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     {c.mobil && (
-                      <a href={`tel:${c.mobil}`} onClick={() => { if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
+                      <a href={`tel:${c.mobil}`} onClick={() => { setPinnedBid(c.bid); if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
                         style={{ flex: 1, background: "#e20074", color: "white", borderRadius: 9, padding: "11px 6px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block" }}>
                         📱 Mobil<br /><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.85 }}>{c.mobil}</span>
                       </a>
                     )}
                     {c.festnetz && c.festnetz !== c.mobil && (
-                      <a href={`tel:${c.festnetz}`} onClick={() => { if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
+                      <a href={`tel:${c.festnetz}`} onClick={() => { setPinnedBid(c.bid); if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
                         style={{ flex: 1, background: "#1f2937", color: "white", borderRadius: 9, padding: "11px 6px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block" }}>
                         ☎️ Festnetz<br /><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{c.festnetz}</span>
                       </a>
