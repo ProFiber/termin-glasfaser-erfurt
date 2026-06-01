@@ -1132,6 +1132,20 @@ function Index() {
                     )}
                   </div>
 
+                  {c.mobil && (
+                    <a
+                      href={`https://wa.me/${c.mobil.replace(/[^\d]/g, "").replace(/^0/, "49")}?text=${encodeURIComponent(
+                        `Guten Tag Herr/Frau ${lastName(c.name)},\n\nhier ist Störmer Bau im Auftrag der Telekom. Wir haben versucht Sie telefonisch zu erreichen bezüglich Ihres Glasfaser-Hausanschlusses in der ${c.strasse} ${c.hnr}${c.hnr_zusatz}.\n\nBitte melden Sie sich kurz zurück, damit wir zeitnah einen Termin vereinbaren können.\n\nVielen Dank!`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => { if (st === "offen" || st === "angerufen") patch(c.bid, { status: "nichtErreicht" }); }}
+                      style={{ display: "block", background: "#25D366", color: "white", borderRadius: 9, padding: "10px 6px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 13, marginBottom: 10 }}
+                    >
+                      💬 WhatsApp · Rückruf-Bitte senden
+                    </a>
+                  )}
+
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
                       <button key={s} onClick={() => {
