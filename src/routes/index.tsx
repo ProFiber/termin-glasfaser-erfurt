@@ -1116,13 +1116,13 @@ function Index() {
 
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     {c.mobil && (
-                      <a href={`tel:${c.mobil}`} onClick={() => { if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
+                      <a href={`tel:${c.mobil}`} onClick={() => { setPinnedBid(c.bid); if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
                         style={{ flex: 1, background: "#e20074", color: "white", borderRadius: 9, padding: "11px 6px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block" }}>
                         📱 Mobil<br /><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.85 }}>{c.mobil}</span>
                       </a>
                     )}
                     {c.festnetz && c.festnetz !== c.mobil && (
-                      <a href={`tel:${c.festnetz}`} onClick={() => { if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
+                      <a href={`tel:${c.festnetz}`} onClick={() => { setPinnedBid(c.bid); if (st === "offen") patch(c.bid, { status: "angerufen" }); }}
                         style={{ flex: 1, background: "#1f2937", color: "white", borderRadius: 9, padding: "11px 6px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block" }}>
                         ☎️ Festnetz<br /><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{c.festnetz}</span>
                       </a>
