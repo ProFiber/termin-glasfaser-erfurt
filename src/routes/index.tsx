@@ -312,6 +312,7 @@ function Index() {
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
   const [focusBid, setFocusBid] = useState<string | null>(null);
+  const [pinnedBid, setPinnedBid] = useState<string | null>(null);
   const [mapFocusBid, setMapFocusBid] = useState<string | null>(null);
 
   function openContactOnMap(bid: string) {
