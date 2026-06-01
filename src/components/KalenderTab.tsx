@@ -299,7 +299,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
               ]
             : [
-                { key: `${date}-t1`, lbl: "👷 Team Halil", color: "#3b82f6", appts: team1Contacts },
+                { key: `${date}-t1`, lbl: "👷 Team Jozey", color: "#3b82f6", appts: team1Contacts },
                 { key: `${date}-t2`, lbl: "👷 Team Adil", color: "#7c3aed", appts: team2Contacts },
               ];
           return (
@@ -438,7 +438,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 padding: "1px 6px",
                                 borderRadius: 4,
                               }}>
-                                👷 {cs.team === "team1" ? "Team Halil" : "Team Adil"}
+                                👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"}
                               </div>
                             )}
                             {cs?.termin_zeit && (

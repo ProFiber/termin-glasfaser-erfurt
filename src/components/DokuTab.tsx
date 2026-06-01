@@ -12,7 +12,7 @@ type Props = {
   onClearFocus?: () => void;
 };
 
-const PERSONEN = ["FF", "FH", "Brahim", "Sezai", "Halil"];
+const PERSONEN = ["FF", "FH", "Brahim", "Sezai", "Jozey"];
 const MAGENTA = "#e20074";
 
 function score(d: DokuState | undefined): number {
