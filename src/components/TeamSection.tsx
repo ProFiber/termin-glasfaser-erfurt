@@ -23,26 +23,20 @@ function buildAddress(c: Contact) {
   return `${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}, Germany`;
 }
 
-function buildWaMessage(c: Contact, team: string) {
-  const teamLabel = team === "team1" ? "Jozey" : team === "team2" ? "Adil" : "?";
+function buildWaMessage(c: Contact, cs: CallState | undefined) {
+  const lines: string[] = [];
+  lines.push(`🏠 ${c.strasse} ${c.hnr}${c.hnr_zusatz}`);
+  if (c.name?.trim()) lines.push(c.name.trim());
+  if (c.nvt?.trim()) lines.push(`📡 ${c.nvt}`);
+  if (cs?.termin_zeit?.trim()) lines.push(`ab ${cs.termin_zeit} Uhr`);
+  if (c.mobil?.trim()) lines.push(`📞 ${c.mobil}`);
+  if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
   const adr = encodeURIComponent(buildAddress(c));
-  return `👷 *Neuer Auftrag · Glasfaser*
-_Störmer Bau · Pro-Fiber_
-
-📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}
-🏠 ${c.typ}${c.we ? ` · ${c.we} WE` : ""}
-📮 ${c.plz} ${c.ort}
-🔌 NVT: ${c.nvt}
-📞 Eigentümer: ${c.mobil}
-☎️ Festnetz: ${c.festnetz}
-
-🗺️ Navigation: https://www.google.com/maps/dir/?api=1&destination=${adr}
-📸 Streetview: https://www.google.com/maps?q=${adr}
-
-⚠️ Bitte Fotos + Protokoll gemeinsam hochladen wenn fertig.
-
-_Team ${teamLabel} · Pro-Fiber GmbH_`;
+  lines.push("");
+  lines.push(`🗺️ https://www.google.com/maps/dir/?api=1&destination=${adr}`);
+  return lines.join("\n");
 }
+
 
 export default function TeamSection({ contact, cs, onPatch }: Props) {
   const team = cs?.team ?? "";
@@ -66,9 +60,10 @@ export default function TeamSection({ contact, cs, onPatch }: Props) {
   }, [fotos, protokoll, doneSynced, contact.bid]);
 
   function openWa() {
-    const msg = buildWaMessage(contact, team);
+    const msg = buildWaMessage(contact, cs);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   }
+
 
   return (
     <div style={{ marginTop: 12, marginBottom: 12, padding: "10px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9 }}>
