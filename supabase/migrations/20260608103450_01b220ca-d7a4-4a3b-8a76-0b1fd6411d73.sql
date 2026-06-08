@@ -1,0 +1,1 @@
+UPDATE public.contacts SET nvt = '2V8039' WHERE bid = '2V8039' AND strasse = 'Neue Str.' AND hnr = '17';
