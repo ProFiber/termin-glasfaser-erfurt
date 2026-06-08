@@ -24,16 +24,25 @@ function buildAddress(c: Contact) {
 }
 
 function buildWaMessage(c: Contact, cs: CallState | undefined) {
-  const lines: string[] = [];
-  lines.push(`🏠 ${c.strasse} ${c.hnr}${c.hnr_zusatz}`);
-  if (c.name?.trim()) lines.push(c.name.trim());
-  if (c.nvt?.trim()) lines.push(`📡 ${c.nvt}`);
-  if (cs?.termin_zeit?.trim()) lines.push(`ab ${cs.termin_zeit} Uhr`);
-  if (c.mobil?.trim()) lines.push(`📞 ${c.mobil}`);
-  if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
+  const teamLabel = cs?.team ? TEAM_COLORS[cs.team]?.label ?? "" : "";
   const adr = encodeURIComponent(buildAddress(c));
+  // Kürzere Maps-URL (statt /dir/?api=1&destination=…)
+  const mapsUrl = `https://www.google.com/maps?q=${adr}`;
+
+  const lines: string[] = [];
+  lines.push("👷 *Neuer Auftrag*");
   lines.push("");
-  lines.push(`🗺️ https://www.google.com/maps/dir/?api=1&destination=${adr}`);
+  lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}*`);
+  if (c.name?.trim()) lines.push(c.name.trim());
+  if (c.nvt?.trim()) lines.push(`🔌 NVT: ${c.nvt}`);
+  lines.push("");
+  lines.push(`🗺️ ${mapsUrl}`);
+  lines.push("");
+  lines.push("⚠️ Bitte Fotos + Protokoll gemeinsam hochladen wenn fertig.");
+  if (teamLabel) {
+    lines.push("");
+    lines.push(`_${teamLabel} · Pro-Fiber GmbH_`);
+  }
   return lines.join("\n");
 }
 
