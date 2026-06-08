@@ -600,12 +600,7 @@ function Index() {
       return true;
     });
     return list.sort((a, b) => {
-      // 0. Angepinnter Datensatz (zuletzt angerufen) immer ganz oben
-      if (pinnedBid) {
-        if (a.bid === pinnedBid && b.bid !== pinnedBid) return -1;
-        if (b.bid === pinnedBid && a.bid !== pinnedBid) return 1;
-      }
-      // 1. Rein alphabetisch: Straße / HNR / Zusatz
+      // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       const na = parseInt(a.hnr, 10);
