@@ -60,9 +60,10 @@ export default function TeamSection({ contact, cs, onPatch }: Props) {
   }, [fotos, protokoll, doneSynced, contact.bid]);
 
   function openWa() {
-    const msg = buildWaMessage(contact, team);
+    const msg = buildWaMessage(contact, cs);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   }
+
 
   return (
     <div style={{ marginTop: 12, marginBottom: 12, padding: "10px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9 }}>
