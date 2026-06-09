@@ -111,6 +111,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen,
   onTeamAction,
   onPickKalenderDate,
+  onOpenPlan,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
@@ -119,6 +120,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
+  onOpenPlan?: () => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
