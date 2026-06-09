@@ -233,31 +233,31 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     setMenuFor(null);
   };
 
-  // Swipe to toggle view mode (Tageszeit <-> Team)
-  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number } | null>(null);
-  const onSwipeStart = (e: React.TouchEvent) => {
+  // Per-day swipe to toggle view mode (Tageszeit <-> Team)
+  const daySwipeStart = useState<{ x: number; y: number; t: number; date: string } | null>(null);
+  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number; date: string } | null>(null);
+  const onDaySwipeStart = (date: string) => (e: React.TouchEvent) => {
     const t = e.touches[0];
-    setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now() });
+    setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now(), date });
   };
-  const onSwipeEnd = (e: React.TouchEvent) => {
+  const onDaySwipeEnd = (e: React.TouchEvent) => {
     if (!swipeStart) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - swipeStart.x;
     const dy = t.clientY - swipeStart.y;
     const dt = Date.now() - swipeStart.t;
+    const date = swipeStart.date;
     setSwipeStart(null);
     if (dt < 600 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      setViewMode((v) => (v === "tageszeit" ? "team" : "tageszeit"));
-      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+      toggleDayMode(date);
     }
   };
 
   return (
     <div
       style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}
-      onTouchStart={onSwipeStart}
-      onTouchEnd={onSwipeEnd}
     >
+
       <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div
         style={{
