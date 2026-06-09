@@ -109,12 +109,14 @@ export default function NvtTab({
   onOpenKlarfaelle,
   onOpenAuskundungHeute,
   onOpenTeamDokuOffen,
+  onTeamAction,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   onOpenKlarfaelle?: () => void;
   onOpenAuskundungHeute?: () => void;
   onOpenTeamDokuOffen?: () => void;
+  onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
