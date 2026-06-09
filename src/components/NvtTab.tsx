@@ -187,13 +187,16 @@ export default function NvtTab({
     let heute = 0, morgen = 0, uebermorgen = 0;
     for (const c of contacts) {
       const s = states[c.bid];
-      if (s?.status !== "termin" || !s.termin_datum) continue;
+      if (!s?.termin_datum) continue;
+      // Termine zählen unabhängig vom Status (auch bereits erledigte Termine)
+      if (s.status !== "termin" && s.status !== "erledigt") continue;
       if (s.termin_datum === today) heute++;
       else if (s.termin_datum === morgenStr) morgen++;
       else if (s.termin_datum === uebermorganStr) uebermorgen++;
     }
     return { heute, morgen, uebermorgen };
   }, [contacts, states, today, morgenStr, uebermorganStr]);
+
 
   const terminierbar = useMemo(() => {
     return contacts.filter((c) => {
@@ -225,10 +228,13 @@ export default function NvtTab({
   const erledigtHeute = useMemo(() => {
     let n = 0;
     for (const s of Object.values(states)) {
-      if (s.status === "erledigt" && isSameLocalDay(s.updated_at, today)) n++;
+      if (s.status !== "erledigt") continue;
+      // Entweder Erledigt-Datum heute, oder Termin war heute, oder zuletzt heute geändert
+      if (s.erledigt_datum === today || s.termin_datum === today || isSameLocalDay(s.updated_at, today)) n++;
     }
     return n;
   }, [states, today]);
+
 
   // Doku-Fortschritt
   const dokuComplete = useMemo(() => {
