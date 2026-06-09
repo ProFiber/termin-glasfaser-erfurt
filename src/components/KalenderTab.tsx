@@ -92,6 +92,7 @@ const iconStyle: CSSProperties = {
 };
 
 const VIEW_MODE_KEY = "kalender:viewMode";
+const DAY_MODES_KEY = "kalender:dayModes";
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
@@ -103,7 +104,28 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(VIEW_MODE_KEY, viewMode);
   }, [viewMode]);
+  const [dayModes, setDayModes] = useState<Record<string, "tageszeit" | "team">>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(DAY_MODES_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(DAY_MODES_KEY, JSON.stringify(dayModes));
+  }, [dayModes]);
+  const modeForDay = (date: string) => dayModes[date] ?? viewMode;
+  const toggleDayMode = (date: string) => {
+    setDayModes((m) => {
+      const current = m[date] ?? viewMode;
+      return { ...m, [date]: current === "tageszeit" ? "team" : "tageszeit" };
+    });
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+  };
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
+
+
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
@@ -211,31 +233,31 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     setMenuFor(null);
   };
 
-  // Swipe to toggle view mode (Tageszeit <-> Team)
-  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number } | null>(null);
-  const onSwipeStart = (e: React.TouchEvent) => {
+  // Per-day swipe to toggle view mode (Tageszeit <-> Team)
+  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number; date: string } | null>(null);
+
+  const onDaySwipeStart = (date: string) => (e: React.TouchEvent) => {
     const t = e.touches[0];
-    setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now() });
+    setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now(), date });
   };
-  const onSwipeEnd = (e: React.TouchEvent) => {
+  const onDaySwipeEnd = (e: React.TouchEvent) => {
     if (!swipeStart) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - swipeStart.x;
     const dy = t.clientY - swipeStart.y;
     const dt = Date.now() - swipeStart.t;
+    const date = swipeStart.date;
     setSwipeStart(null);
     if (dt < 600 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      setViewMode((v) => (v === "tageszeit" ? "team" : "tageszeit"));
-      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+      toggleDayMode(date);
     }
   };
 
   return (
     <div
       style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}
-      onTouchStart={onSwipeStart}
-      onTouchEnd={onSwipeEnd}
     >
+
       <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div
         style={{
@@ -308,35 +330,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             </button>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-          {([
-            { k: "tageszeit", lbl: "☀️ Tageszeit" },
-            { k: "team", lbl: "👷 Team" },
-          ] as const).map(({ k, lbl }) => {
-            const active = viewMode === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setViewMode(k)}
-                style={{
-                  flex: 1,
-                  background: active ? "#e20074" : "#f1f5f9",
-                  color: active ? "#fff" : "#475569",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "6px 8px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                {lbl}
-              </button>
-            );
-          })}
-        </div>
       </div>
+
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {slotDays.map(({ day, date, vm, nm, isToday }) => {
@@ -346,7 +341,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           const allDayContacts = [...vmContacts, ...nmContacts];
           const team1Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team1");
           const team2Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team2");
-          const buckets = viewMode === "tageszeit"
+          const dayMode = modeForDay(date);
+          const buckets = dayMode === "tageszeit"
             ? [
                 { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
                 { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
@@ -359,6 +355,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             <div
               key={date}
               id={`kalender-day-${date}`}
+              onTouchStart={onDaySwipeStart(date)}
+              onTouchEnd={onDaySwipeEnd}
               style={{
                 background: "#fff",
                 borderRadius: 10,
@@ -366,6 +364,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 borderLeft: isToday ? "4px solid #e20074" : "4px solid transparent",
                 scrollMarginTop: 60,
+                touchAction: "pan-y",
               }}
             >
               <div
@@ -374,6 +373,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   justifyContent: "space-between",
                   alignItems: "center",
                   marginBottom: 8,
+                  gap: 8,
                 }}
               >
                 <div
@@ -386,12 +386,36 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   {day}
                   {isToday ? " · Heute" : ""}
                 </div>
-                {total > 0 && (
-                  <span style={{ fontSize: 11, color: "#64748b" }}>
-                    {total} Termin{total === 1 ? "" : "e"}
-                  </span>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {total > 0 && (
+                    <span style={{ fontSize: 11, color: "#64748b" }}>
+                      {total} Termin{total === 1 ? "" : "e"}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDayMode(date);
+                    }}
+                    title="Ansicht wechseln (oder seitlich wischen)"
+                    style={{
+                      background: dayMode === "team" ? "#ede9fe" : "#fef3c7",
+                      color: dayMode === "team" ? "#6d28d9" : "#a16207",
+                      border: "none",
+                      borderRadius: 999,
+                      padding: "3px 8px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {dayMode === "team" ? "👷 Team ⇄" : "☀️ Tageszeit ⇄"}
+                  </button>
+                </div>
               </div>
+
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {buckets.map(({ key, lbl, color, appts }) => (
