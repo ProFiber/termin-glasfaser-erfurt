@@ -640,6 +640,24 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 <span>Terminbestätigung senden</span>
               </a>
             )}
+            {(() => {
+              const inArbeit = cs?.team_status === "in_arbeit";
+              return (
+                <button
+                  style={menuRow}
+                  onClick={() =>
+                    doPatch(c, {
+                      team_status: inArbeit ? "zugewiesen" : "in_arbeit",
+                      team: cs?.team || "team1",
+                    })
+                  }
+                >
+                  <span style={{ ...iconStyle, color: "#f97316" }}>🔨</span>
+                  <span>{inArbeit ? "Arbeitsmodus beenden" : "Jetzt in Arbeit (Bau läuft)"}</span>
+                </button>
+              );
+            })()}
+
 
             <button
               style={menuRow}
