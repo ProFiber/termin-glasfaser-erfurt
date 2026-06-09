@@ -1012,11 +1012,13 @@ function TeamCard({
   color,
   data,
   onAction,
+  longPressFiredRef,
 }: {
   name: string;
   color: string;
   data: { inArbeit: Contact[]; fertig: Contact[]; heute: number };
   onAction?: (action: "auftraege" | "karte" | "doku") => void;
+  longPressFiredRef?: React.RefObject<boolean>;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const n = data.inArbeit.length;
@@ -1025,6 +1027,7 @@ function TeamCard({
 
   const handleClick = () => {
     if (!onAction) return;
+    if (longPressFiredRef?.current) return;
     setMenuOpen((v) => !v);
   };
 
