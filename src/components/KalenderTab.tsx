@@ -89,9 +89,18 @@ const iconStyle: CSSProperties = {
   flexShrink: 0,
 };
 
+const VIEW_MODE_KEY = "kalender:viewMode";
+
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
-  const [viewMode, setViewMode] = useState<"tageszeit" | "team">("tageszeit");
+  const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
+    if (typeof window === "undefined") return "tageszeit";
+    const v = window.localStorage.getItem(VIEW_MODE_KEY);
+    return v === "team" ? "team" : "tageszeit";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
@@ -210,6 +219,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
       onTouchStart={onSwipeStart}
       onTouchEnd={onSwipeEnd}
     >
+      <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div
         style={{
           position: "sticky",
@@ -395,6 +405,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done;
                         return (
                           <div
                             key={c.bid}
@@ -415,15 +426,40 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: done ? "#f0fff6" : "#ffffff",
+                              background: inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: done ? "3px solid #22c55e" : "3px solid #3b82f6",
+                              borderLeft: inArbeit
+                                ? "3px solid #f97316"
+                                : done
+                                ? "3px solid #22c55e"
+                                : "3px solid #3b82f6",
+                              boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+                              animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
                               userSelect: "none",
                             }}
                           >
+                            {inArbeit && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  color: "#9a3412",
+                                  background: "#fed7aa",
+                                  padding: "1px 5px",
+                                  borderRadius: 4,
+                                  lineHeight: 1.3,
+                                }}
+                                aria-label="in Arbeit"
+                              >
+                                🔨 BAU
+                              </span>
+                            )}
                             {done && (
                               <span
                                 style={{
@@ -604,6 +640,24 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 <span>Terminbestätigung senden</span>
               </a>
             )}
+            {(() => {
+              const inArbeit = cs?.team_status === "in_arbeit";
+              return (
+                <button
+                  style={menuRow}
+                  onClick={() =>
+                    doPatch(c, {
+                      team_status: inArbeit ? "zugewiesen" : "in_arbeit",
+                      team: cs?.team || "team1",
+                    })
+                  }
+                >
+                  <span style={{ ...iconStyle, color: "#f97316" }}>🔨</span>
+                  <span>{inArbeit ? "Arbeitsmodus beenden" : "Jetzt in Arbeit (Bau läuft)"}</span>
+                </button>
+              );
+            })()}
+
 
             <button
               style={menuRow}
