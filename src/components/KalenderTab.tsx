@@ -51,6 +51,8 @@ type Props = {
   patch?: (bid: string, partial: Partial<CallState>) => void;
   onSwitchToDoku?: (bid: string) => void;
   onShowOnMap?: (bid: string) => void;
+  focusDate?: string | null;
+  onClearFocusDate?: () => void;
 };
 
 const navBtn: CSSProperties = {
@@ -91,7 +93,7 @@ const iconStyle: CSSProperties = {
 
 const VIEW_MODE_KEY = "kalender:viewMode";
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
@@ -130,11 +132,26 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   // Auto-scroll to today
   useEffect(() => {
     const t = window.setTimeout(() => {
-      const el = document.getElementById("kalender-today");
+      const el = document.getElementById(`kalender-day-${toIsoDate(new Date())}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
     return () => window.clearTimeout(t);
   }, []);
+
+  // Switch week + scroll when focusDate is provided
+  useEffect(() => {
+    if (!focusDate) return;
+    const d = new Date(`${focusDate}T00:00:00`);
+    if (isNaN(d.getTime())) return;
+    const ws = mondayOf(d);
+    setWeekStart((cur) => (toIsoDate(cur) === toIsoDate(ws) ? cur : ws));
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`kalender-day-${focusDate}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      onClearFocusDate?.();
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [focusDate, onClearFocusDate]);
 
   const weekRangeLabel = useMemo(() => {
     const end = new Date(weekStart);
@@ -341,7 +358,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           return (
             <div
               key={date}
-              id={isToday ? "kalender-today" : undefined}
+              id={`kalender-day-${date}`}
               style={{
                 background: "#fff",
                 borderRadius: 10,

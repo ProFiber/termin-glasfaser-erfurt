@@ -308,6 +308,7 @@ function Index() {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+  const [kalenderFocusDate, setKalenderFocusDate] = useState<string | null>(null);
   const [longPressContact, setLongPressContact] = useState<Contact | null>(null);
   const [grabenPromptFor, setGrabenPromptFor] = useState<{ contact: Contact; prev: CallState | undefined } | null>(null);
   const [dokuFocusBid, setDokuFocusBid] = useState<string | null>(null);
@@ -787,6 +788,8 @@ function Index() {
           patch={patch}
           onSwitchToDoku={openContactInDoku}
           onShowOnMap={openContactOnMap}
+          focusDate={kalenderFocusDate}
+          onClearFocusDate={() => setKalenderFocusDate(null)}
         />
       )}
 
@@ -812,6 +815,7 @@ function Index() {
             else if (action === "karte") { setActiveTab("karte"); }
             else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
           }}
+          onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
         />
       )}
 

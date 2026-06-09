@@ -110,6 +110,7 @@ export default function NvtTab({
   onOpenAuskundungHeute,
   onOpenTeamDokuOffen,
   onTeamAction,
+  onPickKalenderDate,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
@@ -117,6 +118,7 @@ export default function NvtTab({
   onOpenAuskundungHeute?: () => void;
   onOpenTeamDokuOffen?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
+  onPickKalenderDate?: (dateISO: string) => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
@@ -362,22 +364,36 @@ export default function NvtTab({
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
           {[
-            { label: "Heute", count: einsatzPlanung.heute, ampel: ampelHeute },
-            { label: "Morgen", count: einsatzPlanung.morgen, ampel: ampelMorgen },
-            { label: "Übermorgen", count: einsatzPlanung.uebermorgen, ampel: ampelUebermorgen },
-          ].map(({ label, count, ampel }) => (
-            <div key={label} style={{
-              background: AMPEL_BG[ampel],
-              border: `2px solid ${AMPEL_COLOR[ampel]}`,
-              borderRadius: 12, padding: "10px 8px", textAlign: "center",
-            }}>
-              <div style={{ fontSize: 18 }}>{AMPEL_DOT[ampel]}</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: AMPEL_COLOR[ampel], lineHeight: 1.1 }}>
-                {count}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#334155", marginTop: 2 }}>{label}</div>
-            </div>
-          ))}
+            { label: "Heute", count: einsatzPlanung.heute, ampel: ampelHeute, date: today },
+            { label: "Morgen", count: einsatzPlanung.morgen, ampel: ampelMorgen, date: morgenStr },
+            { label: "Übermorgen", count: einsatzPlanung.uebermorgen, ampel: ampelUebermorgen, date: uebermorganStr },
+          ].map(({ label, count, ampel, date }) => {
+            const clickable = !!onPickKalenderDate;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={clickable ? () => onPickKalenderDate!(date) : undefined}
+                disabled={!clickable}
+                title={clickable ? `Im Kalender öffnen (${date})` : undefined}
+                style={{
+                  background: AMPEL_BG[ampel],
+                  border: `2px solid ${AMPEL_COLOR[ampel]}`,
+                  borderRadius: 12, padding: "10px 8px", textAlign: "center",
+                  cursor: clickable ? "pointer" : "default",
+                  font: "inherit", color: "inherit",
+                }}
+              >
+                <div style={{ fontSize: 18 }}>{AMPEL_DOT[ampel]}</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: AMPEL_COLOR[ampel], lineHeight: 1.1 }}>
+                  {count}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#334155", marginTop: 2 }}>
+                  {label} {clickable && <span style={{ color: "#94a3b8" }}>›</span>}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <div style={{
