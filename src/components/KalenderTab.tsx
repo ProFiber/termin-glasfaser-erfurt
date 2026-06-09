@@ -51,6 +51,8 @@ type Props = {
   patch?: (bid: string, partial: Partial<CallState>) => void;
   onSwitchToDoku?: (bid: string) => void;
   onShowOnMap?: (bid: string) => void;
+  focusDate?: string | null;
+  onClearFocusDate?: () => void;
 };
 
 const navBtn: CSSProperties = {
