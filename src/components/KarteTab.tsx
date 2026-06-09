@@ -724,6 +724,45 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             style={{ ...btnBase, background: "white" }}
           >🔝</button>
         )}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setLayerMenu((v) => !v)}
+            aria-label="Kartenstil"
+            title="Kartenstil ändern"
+            style={{
+              ...btnBase,
+              background: mapLayer !== "standard" ? MAGENTA : "white",
+              color: mapLayer !== "standard" ? "white" : "inherit",
+            }}
+          >🗺️</button>
+          {layerMenu && (
+            <div
+              style={{
+                position: "absolute", top: 0, right: 48,
+                background: "white", borderRadius: 10, padding: 6,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                display: "flex", flexDirection: "column", gap: 4, minWidth: 170,
+              }}
+            >
+              {([
+                ["standard", "🗺️ Standard"],
+                ["satellit", "🛰️ Satellit"],
+                ["hybrid", "🛰️ Sat + Beschriftung"],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => { setMapLayer(k); setLayerMenu(false); }}
+                  style={{
+                    padding: "8px 10px", border: "none", cursor: "pointer",
+                    background: mapLayer === k ? "#f1f5f9" : "white",
+                    fontWeight: mapLayer === k ? 700 : 500, fontSize: 13,
+                    textAlign: "left", borderRadius: 6, color: "#0f172a",
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Compass rose top-right of map (always shows true north) */}
