@@ -921,6 +921,7 @@ function TeamsLive({
 
   return (
     <>
+      <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div style={SECTION_TITLE}>👷 Teams Live</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} />
