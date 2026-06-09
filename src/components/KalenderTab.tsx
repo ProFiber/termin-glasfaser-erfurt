@@ -92,6 +92,7 @@ const iconStyle: CSSProperties = {
 };
 
 const VIEW_MODE_KEY = "kalender:viewMode";
+const DAY_MODES_KEY = "kalender:dayModes";
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
@@ -103,7 +104,28 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(VIEW_MODE_KEY, viewMode);
   }, [viewMode]);
+  const [dayModes, setDayModes] = useState<Record<string, "tageszeit" | "team">>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(DAY_MODES_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(DAY_MODES_KEY, JSON.stringify(dayModes));
+  }, [dayModes]);
+  const modeForDay = (date: string) => dayModes[date] ?? viewMode;
+  const toggleDayMode = (date: string) => {
+    setDayModes((m) => {
+      const current = m[date] ?? viewMode;
+      return { ...m, [date]: current === "tageszeit" ? "team" : "tageszeit" };
+    });
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+  };
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
+
+
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
