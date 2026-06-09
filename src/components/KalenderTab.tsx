@@ -332,7 +332,6 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         </div>
       </div>
 
-      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {slotDays.map(({ day, date, vm, nm, isToday }) => {
