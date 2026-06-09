@@ -452,6 +452,7 @@ export default function NvtTab({
         states={states}
         today={today}
         onOpenTeamDokuOffen={onOpenTeamDokuOffen}
+        onTeamAction={onTeamAction}
       />
 
       <div style={{ ...CARD, padding: 12 }}>
