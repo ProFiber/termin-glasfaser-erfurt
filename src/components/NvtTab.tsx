@@ -921,6 +921,7 @@ function TeamsLive({
 
   return (
     <>
+      <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div style={SECTION_TITLE}>👷 Teams Live</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} />
@@ -955,12 +956,41 @@ function TeamCard({
   data: { inArbeit: Contact[]; fertig: Contact[]; heute: number };
 }) {
   const n = data.inArbeit.length;
+  const inArbeit = n > 0;
   const ampel = n === 0 ? { icon: "🟢", label: "Frei" } : n <= 2 ? { icon: "🟡", label: "Aktiv" } : { icon: "🔴", label: "Voll" };
   return (
     <div style={{
-      background: "white", borderRadius: 12, padding: 12,
-      border: `2px solid ${color}`, display: "flex", flexDirection: "column", gap: 4,
+      background: inArbeit ? "#fff7ed" : "white",
+      borderRadius: 12,
+      padding: 12,
+      border: inArbeit ? "2px solid #f97316" : `2px solid ${color}`,
+      display: "flex",
+      flexDirection: "column",
+      gap: 4,
+      boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+      animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
+      position: "relative",
     }}>
+      {inArbeit && (
+        <span
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            fontSize: 11,
+            fontWeight: 800,
+            color: "#9a3412",
+            background: "#fed7aa",
+            padding: "2px 6px",
+            borderRadius: 4,
+            lineHeight: 1.3,
+            zIndex: 2,
+          }}
+          aria-label="in Arbeit"
+        >
+          🔨 BAU
+        </span>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <div style={{ width: 10, height: 10, borderRadius: "50%", background: color }} />
         <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a" }}>{name}</div>
