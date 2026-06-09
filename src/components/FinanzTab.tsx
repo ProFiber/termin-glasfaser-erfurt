@@ -74,25 +74,28 @@ function workdaysPassedInMonth(now: Date, saturdayBuffer: boolean) {
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
+  const [haPreis, setHaPreis] = useState<number>(1200);
   const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
-  const [zielInput, setZielInput] = useState("100000");
+  const [zielInput, setZielInput] = useState("70000");
+  const [haPreisInput, setHaPreisInput] = useState("1200");
 
   useEffect(() => {
     (async () => {
-      const [{ data: cs }, { data: z }] = await Promise.all([
+      const [{ data: cs }, { data: zList }] = await Promise.all([
         supabase
           .from("call_states")
           .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
-        supabase.from("umsatz_ziele").select("*").eq("scope", "monat").maybeSingle(),
+        supabase.from("umsatz_ziele").select("*"),
       ]);
       setRows((cs as FinRow[]) || []);
-      if (z) {
-        setZiel(z as Ziel);
-        setZielInput(String(z.ziel_eur));
-      }
+      const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
+      const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
+      if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
+      if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
       setLoading(false);
     })();
+
 
     const ch = supabase
       .channel("finanz_live")
