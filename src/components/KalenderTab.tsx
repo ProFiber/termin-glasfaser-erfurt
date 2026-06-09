@@ -404,6 +404,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done;
                         return (
                           <div
                             key={c.bid}
@@ -424,15 +425,40 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: done ? "#f0fff6" : "#ffffff",
+                              background: inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: done ? "3px solid #22c55e" : "3px solid #3b82f6",
+                              borderLeft: inArbeit
+                                ? "3px solid #f97316"
+                                : done
+                                ? "3px solid #22c55e"
+                                : "3px solid #3b82f6",
+                              boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+                              animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
                               userSelect: "none",
                             }}
                           >
+                            {inArbeit && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  color: "#9a3412",
+                                  background: "#fed7aa",
+                                  padding: "1px 5px",
+                                  borderRadius: 4,
+                                  lineHeight: 1.3,
+                                }}
+                                aria-label="in Arbeit"
+                              >
+                                🔨 BAU
+                              </span>
+                            )}
                             {done && (
                               <span
                                 style={{
