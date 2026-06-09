@@ -138,6 +138,21 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     return () => window.clearTimeout(t);
   }, []);
 
+  // Switch week + scroll when focusDate is provided
+  useEffect(() => {
+    if (!focusDate) return;
+    const d = new Date(`${focusDate}T00:00:00`);
+    if (isNaN(d.getTime())) return;
+    const ws = mondayOf(d);
+    setWeekStart((cur) => (toIsoDate(cur) === toIsoDate(ws) ? cur : ws));
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`kalender-day-${focusDate}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      onClearFocusDate?.();
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [focusDate, onClearFocusDate]);
+
   const weekRangeLabel = useMemo(() => {
     const end = new Date(weekStart);
     end.setDate(weekStart.getDate() + 5);
