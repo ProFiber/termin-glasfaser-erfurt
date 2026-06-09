@@ -408,14 +408,15 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const map = Lmod.map(mapEl.current, {
         rotate: true,
         touchRotate: true,
+        rotateControl: { closeOnZeroBearing: true, position: "bottomright" },
         bearing: 0,
         touchZoom: true,
         scrollWheelZoom: true,
       }).setView([view.lat, view.lng], view.zoom);
-      Lmod.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap",
-      }).addTo(map);
+      baseLayerRef.current = buildBaseLayer(Lmod, mapLayer).addTo(map);
+      if (mapLayer === "hybrid") {
+        labelsLayerRef.current = buildLabelsLayer(Lmod).addTo(map);
+      }
       map.on("moveend zoomend", () => {
         const c = map.getCenter();
         try {
