@@ -185,15 +185,41 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     setMenuFor(null);
   };
 
+  // Swipe to toggle view mode (Tageszeit <-> Team)
+  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number } | null>(null);
+  const onSwipeStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now() });
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    if (!swipeStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStart.x;
+    const dy = t.clientY - swipeStart.y;
+    const dt = Date.now() - swipeStart.t;
+    setSwipeStart(null);
+    if (dt < 600 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      setViewMode((v) => (v === "tageszeit" ? "team" : "tageszeit"));
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+    }
+  };
+
   return (
-    <div style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div
+      style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}
+      onTouchStart={onSwipeStart}
+      onTouchEnd={onSwipeEnd}
+    >
       <div
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
           background: "#fff",
           borderRadius: 10,
           padding: 12,
           marginBottom: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
         }}
       >
         <div
