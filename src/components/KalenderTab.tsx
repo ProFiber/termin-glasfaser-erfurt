@@ -234,8 +234,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   };
 
   // Per-day swipe to toggle view mode (Tageszeit <-> Team)
-  const daySwipeStart = useState<{ x: number; y: number; t: number; date: string } | null>(null);
   const [swipeStart, setSwipeStart] = useState<{ x: number; y: number; t: number; date: string } | null>(null);
+
   const onDaySwipeStart = (date: string) => (e: React.TouchEvent) => {
     const t = e.touches[0];
     setSwipeStart({ x: t.clientX, y: t.clientY, t: Date.now(), date });
