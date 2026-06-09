@@ -135,6 +135,30 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildBaseLayer(L: any, kind: "standard" | "satellit" | "hybrid") {
+  if (kind === "standard") {
+    return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    });
+  }
+  // Esri World Imagery (satellite)
+  return L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "Tiles © Esri" },
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildLabelsLayer(L: any) {
+  // CARTO labels-only overlay (transparent) — street + place labels
+  return L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19, attribution: "© CARTO", pane: "overlayPane" },
+  );
+}
+
 export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,6 +177,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [headingUp, setHeadingUp] = useState(false);
   const [bearing, setBearing] = useState(0);
   const [hasHeading, setHasHeading] = useState(false);
+  type MapLayer = "standard" | "satellit" | "hybrid";
+  const [mapLayer, setMapLayer] = useState<MapLayer>(() => {
+    if (typeof window === "undefined") return "standard";
+    return (localStorage.getItem("karte_layer") as MapLayer) || "standard";
+  });
+  const [layerMenu, setLayerMenu] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const baseLayerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const labelsLayerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,6 +202,27 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
   useEffect(() => { followRef.current = follow; }, [follow]);
   useEffect(() => { headingUpRef.current = headingUp; }, [headingUp]);
+
+  // Switch base/labels layer when mapLayer changes
+  useEffect(() => {
+    if (!ready || !mapRef.current || !window.L) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = window.L as any;
+    const map = mapRef.current;
+    try {
+      if (baseLayerRef.current) map.removeLayer(baseLayerRef.current);
+      baseLayerRef.current = buildBaseLayer(L, mapLayer).addTo(map);
+      baseLayerRef.current.bringToBack?.();
+      if (labelsLayerRef.current) {
+        map.removeLayer(labelsLayerRef.current);
+        labelsLayerRef.current = null;
+      }
+      if (mapLayer === "hybrid") {
+        labelsLayerRef.current = buildLabelsLayer(L).addTo(map);
+      }
+      try { localStorage.setItem("karte_layer", mapLayer); } catch { /* ignore */ }
+    } catch (e) { console.warn("layer switch failed", e); }
+  }, [mapLayer, ready]);
 
   function showLocError(msg: string, ms = 3500) {
     setLocError(msg);
@@ -398,14 +453,15 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const map = Lmod.map(mapEl.current, {
         rotate: true,
         touchRotate: true,
+        rotateControl: { closeOnZeroBearing: true, position: "bottomright" },
         bearing: 0,
         touchZoom: true,
         scrollWheelZoom: true,
       }).setView([view.lat, view.lng], view.zoom);
-      Lmod.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap",
-      }).addTo(map);
+      baseLayerRef.current = buildBaseLayer(Lmod, mapLayer).addTo(map);
+      if (mapLayer === "hybrid") {
+        labelsLayerRef.current = buildLabelsLayer(Lmod).addTo(map);
+      }
       map.on("moveend zoomend", () => {
         const c = map.getCenter();
         try {
@@ -668,6 +724,45 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             style={{ ...btnBase, background: "white" }}
           >🔝</button>
         )}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setLayerMenu((v) => !v)}
+            aria-label="Kartenstil"
+            title="Kartenstil ändern"
+            style={{
+              ...btnBase,
+              background: mapLayer !== "standard" ? MAGENTA : "white",
+              color: mapLayer !== "standard" ? "white" : "inherit",
+            }}
+          >🗺️</button>
+          {layerMenu && (
+            <div
+              style={{
+                position: "absolute", top: 0, right: 48,
+                background: "white", borderRadius: 10, padding: 6,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                display: "flex", flexDirection: "column", gap: 4, minWidth: 170,
+              }}
+            >
+              {([
+                ["standard", "🗺️ Standard"],
+                ["satellit", "🛰️ Satellit"],
+                ["hybrid", "🛰️ Sat + Beschriftung"],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => { setMapLayer(k); setLayerMenu(false); }}
+                  style={{
+                    padding: "8px 10px", border: "none", cursor: "pointer",
+                    background: mapLayer === k ? "#f1f5f9" : "white",
+                    fontWeight: mapLayer === k ? 700 : 500, fontSize: 13,
+                    textAlign: "left", borderRadius: 6, color: "#0f172a",
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Compass rose top-right of map (always shows true north) */}
