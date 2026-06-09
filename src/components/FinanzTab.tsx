@@ -124,14 +124,19 @@ export default function FinanzTab() {
     const monthStartIso = toIso(monthStart);
 
     const erledigte = rows.filter((r) => r.status === "erledigt" && r.erledigt_datum);
+    // EUR: realer Wert wenn eingetragen, sonst Pauschale pro HA
     const sumUmsatz = (rs: FinRow[]) =>
-      rs.reduce((s, r) => s + Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0), 0);
+      rs.reduce((s, r) => {
+        const real = Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0);
+        return s + (real > 0 ? real : haPreis);
+      }, 0);
     const sumMeter = (rs: FinRow[]) =>
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
+
 
     // Pipeline-Stände (Buchhaltung)
     const fertig = rows.filter((r) => r.status === "erledigt");
