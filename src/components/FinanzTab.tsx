@@ -264,7 +264,9 @@ export default function FinanzTab() {
           <div>
             <div style={{ fontSize: 11, opacity: 0.85, textTransform: "uppercase", letterSpacing: 0.5 }}>Monatsziel</div>
             <div style={{ fontSize: 26, fontWeight: 800, marginTop: 2 }}>{EUR(data.umsatzMonat)}</div>
-            <div style={{ fontSize: 12, opacity: 0.9 }}>von {EUR(data.zielMonat)} ({data.fortschritt.toFixed(1)}%)</div>
+            <div style={{ fontSize: 12, opacity: 0.9 }}>
+              von {EUR(data.zielMonat)} ({data.fortschritt.toFixed(1)}%) · {data.countMonat} / {Math.round(data.haZielMonat)} HA
+            </div>
           </div>
           <button
             onClick={() => setEditingZiel(true)}
@@ -289,27 +291,59 @@ export default function FinanzTab() {
           }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, opacity: 0.9 }}>
-          <span>Soll heute: {EUR(data.sollHeute)}</span>
+          <span>Soll heute: {EUR(data.sollHeute)} · {Math.round(data.haSollHeute)} HA</span>
           <span style={{ fontWeight: 700 }}>
-            {overUnder ? "▲" : "▼"} {EUR(Math.abs(data.sollIst))} {overUnder ? "über" : "unter"} Soll
+            {overUnder ? "▲" : "▼"} {EUR(Math.abs(data.sollIst))} · {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "über" : "unter"} Soll
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"}
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
         </div>
+      </div>
+
+      {/* On-Time Banner */}
+      <div style={{
+        background: overUnder ? "#dcfce7" : "#fee2e2",
+        color: overUnder ? "#166534" : "#991b1b",
+        borderLeft: `4px solid ${overUnder ? "#22c55e" : "#ef4444"}`,
+        borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+        fontSize: 13, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <span>
+          {overUnder
+            ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
+            : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
+        </span>
+        <span style={{ fontSize: 11, opacity: 0.8 }}>
+          {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
+        </span>
       </div>
 
       {editingZiel && (
         <div style={{ background: "white", borderRadius: 10, padding: 12, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Monatsziel anpassen</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ziele anpassen</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <label style={{ fontSize: 11, color: "#475569" }}>
+              Monatsziel (€)
+              <input
+                type="number"
+                value={zielInput}
+                onChange={(e) => setZielInput(e.target.value)}
+                style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+              />
+            </label>
+            <label style={{ fontSize: 11, color: "#475569" }}>
+              Pauschale pro HA (€)
+              <input
+                type="number"
+                value={haPreisInput}
+                onChange={(e) => setHaPreisInput(e.target.value)}
+                style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+              />
+            </label>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="number"
-              value={zielInput}
-              onChange={(e) => setZielInput(e.target.value)}
-              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
-            />
-            <button onClick={saveZiel} style={{ padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={saveZiel} style={{ flex: 1, padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
               Speichern
             </button>
             <button onClick={() => setEditingZiel(false)} style={{ padding: "8px 12px", background: "#f3f4f6", border: "none", borderRadius: 8, cursor: "pointer" }}>
@@ -321,10 +355,11 @@ export default function FinanzTab() {
 
       {/* KPI-Cards: Heute / Woche / Monat */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <KpiCard title="Heute" eur={data.umsatzHeute} ziel={data.tagesziel} meter={data.meterHeute} count={data.countHeute} color="#3b82f6" />
-        <KpiCard title="Woche" eur={data.umsatzWoche} ziel={data.wochenziel} meter={data.meterWoche} count={data.countWoche} color="#8b5cf6" />
-        <KpiCard title="Monat" eur={data.umsatzMonat} ziel={data.zielMonat} meter={data.meterMonat} count={data.countMonat} color="#22c55e" />
+        <KpiCard title="Heute" eur={data.umsatzHeute} ziel={data.tagesziel} haZiel={data.haTagesziel} meter={data.meterHeute} count={data.countHeute} color="#3b82f6" />
+        <KpiCard title="Woche" eur={data.umsatzWoche} ziel={data.wochenziel} haZiel={data.haWochenziel} meter={data.meterWoche} count={data.countWoche} color="#8b5cf6" />
+        <KpiCard title="Monat" eur={data.umsatzMonat} ziel={data.zielMonat} haZiel={data.haZielMonat} meter={data.meterMonat} count={data.countMonat} color="#22c55e" />
       </div>
+
 
       {/* Trend Tage */}
       <Card title="Umsatz pro Tag (30 Tage)">
