@@ -788,6 +788,8 @@ function Index() {
           patch={patch}
           onSwitchToDoku={openContactInDoku}
           onShowOnMap={openContactOnMap}
+          focusDate={kalenderFocusDate}
+          onClearFocusDate={() => setKalenderFocusDate(null)}
         />
       )}
 
