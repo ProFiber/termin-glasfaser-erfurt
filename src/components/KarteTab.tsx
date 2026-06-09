@@ -153,6 +153,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [headingUp, setHeadingUp] = useState(false);
   const [bearing, setBearing] = useState(0);
   const [hasHeading, setHasHeading] = useState(false);
+  type MapLayer = "standard" | "satellit" | "hybrid";
+  const [mapLayer, setMapLayer] = useState<MapLayer>(() => {
+    if (typeof window === "undefined") return "standard";
+    return (localStorage.getItem("karte_layer") as MapLayer) || "standard";
+  });
+  const [layerMenu, setLayerMenu] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const baseLayerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const labelsLayerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
