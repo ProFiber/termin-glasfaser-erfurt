@@ -109,12 +109,14 @@ export default function NvtTab({
   onOpenKlarfaelle,
   onOpenAuskundungHeute,
   onOpenTeamDokuOffen,
+  onTeamAction,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   onOpenKlarfaelle?: () => void;
   onOpenAuskundungHeute?: () => void;
   onOpenTeamDokuOffen?: () => void;
+  onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
@@ -450,6 +452,7 @@ export default function NvtTab({
         states={states}
         today={today}
         onOpenTeamDokuOffen={onOpenTeamDokuOffen}
+        onTeamAction={onTeamAction}
       />
 
       <div style={{ ...CARD, padding: 12 }}>
@@ -888,11 +891,13 @@ function TeamsLive({
   states,
   today,
   onOpenTeamDokuOffen,
+  onTeamAction,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   today: string;
   onOpenTeamDokuOffen?: () => void;
+  onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
 }) {
   const teams = useMemo(() => {
     const init = () => ({ inArbeit: [] as Contact[], fertig: [] as Contact[], heute: 0 });
@@ -930,8 +935,8 @@ function TeamsLive({
       <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div style={SECTION_TITLE}>👷 Teams Live</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-        <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} />
-        <TeamCard name="Team Adil" color="#7c3aed" data={teams.team2} />
+        <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} onAction={onTeamAction ? (a) => onTeamAction("team1", a) : undefined} />
+        <TeamCard name="Team Adil" color="#7c3aed" data={teams.team2} onAction={onTeamAction ? (a) => onTeamAction("team2", a) : undefined} />
       </div>
       <button
         type="button"
@@ -956,27 +961,48 @@ function TeamCard({
   name,
   color,
   data,
+  onAction,
 }: {
   name: string;
   color: string;
   data: { inArbeit: Contact[]; fertig: Contact[]; heute: number };
+  onAction?: (action: "auftraege" | "karte" | "doku") => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const n = data.inArbeit.length;
   const inArbeit = n > 0;
   const ampel = n === 0 ? { icon: "🟢", label: "Frei" } : n <= 2 ? { icon: "🟡", label: "Aktiv" } : { icon: "🔴", label: "Voll" };
+
+  const handleClick = () => {
+    if (!onAction) return;
+    setMenuOpen((v) => !v);
+  };
+
   return (
-    <div style={{
-      background: inArbeit ? "#fff7ed" : "white",
-      borderRadius: 12,
-      padding: 12,
-      border: inArbeit ? "2px solid #f97316" : `2px solid ${color}`,
-      display: "flex",
-      flexDirection: "column",
-      gap: 4,
-      boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
-      animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
-      position: "relative",
-    }}>
+    <div
+      role={onAction ? "button" : undefined}
+      tabIndex={onAction ? 0 : undefined}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (!onAction) return;
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((v) => !v); }
+        if (e.key === "Escape") setMenuOpen(false);
+      }}
+      style={{
+        background: inArbeit ? "#fff7ed" : "white",
+        borderRadius: 12,
+        padding: 12,
+        border: inArbeit ? "2px solid #f97316" : `2px solid ${color}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+        animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
+        position: "relative",
+        cursor: onAction ? "pointer" : "default",
+        userSelect: "none",
+      }}
+    >
       {inArbeit && (
         <span
           style={{
@@ -1015,6 +1041,50 @@ function TeamCard({
       <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, marginTop: 4 }}>
         Heute {data.heute} erledigt
       </div>
+
+      {menuOpen && onAction && (
+        <>
+          <div
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+            style={{ position: "fixed", inset: 0, zIndex: 40, background: "transparent" }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 8,
+              right: 8,
+              zIndex: 50,
+              background: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              overflow: "hidden",
+            }}
+          >
+            {([
+              { k: "auftraege", icon: "📋", label: "Aufträge anzeigen" },
+              { k: "karte", icon: "🗺️", label: "Auf Karte anzeigen" },
+              { k: "doku", icon: "📑", label: "Doku offen prüfen" },
+            ] as const).map((it) => (
+              <button
+                key={it.k}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onAction(it.k); }}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "10px 12px", background: "white", border: "none",
+                  borderBottom: "1px solid #f1f5f9",
+                  fontSize: 13, fontWeight: 600, color: "#0f172a", cursor: "pointer",
+                }}
+              >
+                {it.icon} {it.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

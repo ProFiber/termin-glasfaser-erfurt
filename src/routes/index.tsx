@@ -806,6 +806,12 @@ function Index() {
           onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
           onOpenTeamDokuOffen={() => { setFilter("dokuOffen"); setActiveTab("objekte"); }}
+          onTeamAction={(team, action) => {
+            setTeamFilter(team);
+            if (action === "auftraege") { setFilter("alle"); setActiveTab("objekte"); }
+            else if (action === "karte") { setActiveTab("karte"); }
+            else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
+          }}
         />
       )}
 
