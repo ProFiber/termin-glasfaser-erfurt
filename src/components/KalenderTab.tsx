@@ -341,7 +341,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           const allDayContacts = [...vmContacts, ...nmContacts];
           const team1Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team1");
           const team2Contacts = allDayContacts.filter((c) => states[c.bid]?.team === "team2");
-          const buckets = viewMode === "tageszeit"
+          const dayMode = modeForDay(date);
+          const buckets = dayMode === "tageszeit"
             ? [
                 { key: vm, lbl: "☀️ Vormittag", color: "#fbbf24", appts: vmContacts },
                 { key: nm, lbl: "🌤 Nachmittag", color: "#60a5fa", appts: nmContacts },
@@ -354,6 +355,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             <div
               key={date}
               id={`kalender-day-${date}`}
+              onTouchStart={onDaySwipeStart(date)}
+              onTouchEnd={onDaySwipeEnd}
               style={{
                 background: "#fff",
                 borderRadius: 10,
@@ -361,6 +364,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 borderLeft: isToday ? "4px solid #e20074" : "4px solid transparent",
                 scrollMarginTop: 60,
+                touchAction: "pan-y",
               }}
             >
               <div
@@ -369,6 +373,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   justifyContent: "space-between",
                   alignItems: "center",
                   marginBottom: 8,
+                  gap: 8,
                 }}
               >
                 <div
@@ -381,12 +386,36 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   {day}
                   {isToday ? " · Heute" : ""}
                 </div>
-                {total > 0 && (
-                  <span style={{ fontSize: 11, color: "#64748b" }}>
-                    {total} Termin{total === 1 ? "" : "e"}
-                  </span>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {total > 0 && (
+                    <span style={{ fontSize: 11, color: "#64748b" }}>
+                      {total} Termin{total === 1 ? "" : "e"}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDayMode(date);
+                    }}
+                    title="Ansicht wechseln (oder seitlich wischen)"
+                    style={{
+                      background: dayMode === "team" ? "#ede9fe" : "#fef3c7",
+                      color: dayMode === "team" ? "#6d28d9" : "#a16207",
+                      border: "none",
+                      borderRadius: 999,
+                      padding: "3px 8px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {dayMode === "team" ? "👷 Team ⇄" : "☀️ Tageszeit ⇄"}
+                  </button>
+                </div>
               </div>
+
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {buckets.map(({ key, lbl, color, appts }) => (
