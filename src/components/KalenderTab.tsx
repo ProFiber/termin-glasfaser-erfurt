@@ -89,9 +89,18 @@ const iconStyle: CSSProperties = {
   flexShrink: 0,
 };
 
+const VIEW_MODE_KEY = "kalender:viewMode";
+
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
-  const [viewMode, setViewMode] = useState<"tageszeit" | "team">("tageszeit");
+  const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
+    if (typeof window === "undefined") return "tageszeit";
+    const v = window.localStorage.getItem(VIEW_MODE_KEY);
+    return v === "team" ? "team" : "tageszeit";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
   const slotDays = useMemo(() => getWeekSlots(weekStart), [weekStart]);
 
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
