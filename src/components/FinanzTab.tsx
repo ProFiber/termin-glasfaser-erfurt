@@ -184,7 +184,7 @@ export default function FinanzTab() {
       .sort((a, b) => b.eur - a.eur);
 
     // Ziele
-    const zielMonat = ziel?.ziel_eur ?? 100_000;
+    const zielMonat = ziel?.ziel_eur ?? 70_000;
     const satBuffer = ziel?.saturday_buffer ?? true;
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
@@ -196,6 +196,12 @@ export default function FinanzTab() {
     const umsatzHeute = sumUmsatz(heute);
     const fortschritt = (umsatzMonat / zielMonat) * 100;
     const sollIst = umsatzMonat - sollHeute; // positiv = über Soll
+    // HA-Ziele
+    const haZielMonat = haPreis > 0 ? zielMonat / haPreis : 0;
+    const haTagesziel = haPreis > 0 ? tagesziel / haPreis : 0;
+    const haWochenziel = haTagesziel * 5;
+    const haSollHeute = haTagesziel * arbeitstagePassed;
+    const haSollIst = monat.length - haSollHeute;
 
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
@@ -205,6 +211,7 @@ export default function FinanzTab() {
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
+      haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer,
       pipeline: {
         auftragsvolumen,
@@ -217,18 +224,27 @@ export default function FinanzTab() {
       },
       trend, trendWoche, teamData,
     };
-  }, [rows, ziel]);
+  }, [rows, ziel, haPreis]);
 
   async function saveZiel() {
     const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
-    if (!isFinite(v) || v <= 0) return;
-    await supabase.from("umsatz_ziele").upsert({
-      scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
-      saturday_buffer: ziel?.saturday_buffer ?? true,
-    }, { onConflict: "scope" });
-    setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
+    const p = parseFloat(haPreisInput.replace(/[^\d.]/g, ""));
+    if (isFinite(v) && v > 0) {
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
+        saturday_buffer: ziel?.saturday_buffer ?? true,
+      }, { onConflict: "scope" });
+      setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
+    }
+    if (isFinite(p) && p > 0) {
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "ha_preis", ziel_eur: p, arbeitstage_pro_monat: 22, saturday_buffer: true,
+      }, { onConflict: "scope" });
+      setHaPreis(p);
+    }
     setEditingZiel(false);
   }
+
 
   if (loading) {
     return <div style={{ padding: 40, textAlign: "center", color: "#888" }}>Lade Finanzdaten…</div>;
