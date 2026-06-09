@@ -203,6 +203,27 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   useEffect(() => { followRef.current = follow; }, [follow]);
   useEffect(() => { headingUpRef.current = headingUp; }, [headingUp]);
 
+  // Switch base/labels layer when mapLayer changes
+  useEffect(() => {
+    if (!ready || !mapRef.current || !window.L) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = window.L as any;
+    const map = mapRef.current;
+    try {
+      if (baseLayerRef.current) map.removeLayer(baseLayerRef.current);
+      baseLayerRef.current = buildBaseLayer(L, mapLayer).addTo(map);
+      baseLayerRef.current.bringToBack?.();
+      if (labelsLayerRef.current) {
+        map.removeLayer(labelsLayerRef.current);
+        labelsLayerRef.current = null;
+      }
+      if (mapLayer === "hybrid") {
+        labelsLayerRef.current = buildLabelsLayer(L).addTo(map);
+      }
+      try { localStorage.setItem("karte_layer", mapLayer); } catch { /* ignore */ }
+    } catch (e) { console.warn("layer switch failed", e); }
+  }, [mapLayer, ready]);
+
   function showLocError(msg: string, ms = 3500) {
     setLocError(msg);
     window.setTimeout(() => setLocError(null), ms);
