@@ -132,7 +132,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   // Auto-scroll to today
   useEffect(() => {
     const t = window.setTimeout(() => {
-      const el = document.getElementById("kalender-today");
+      const el = document.getElementById(`kalender-day-${toIsoDate(new Date())}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
     return () => window.clearTimeout(t);
