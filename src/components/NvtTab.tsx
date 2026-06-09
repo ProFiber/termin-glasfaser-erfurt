@@ -111,6 +111,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen,
   onTeamAction,
   onPickKalenderDate,
+  onOpenPlan,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
@@ -119,6 +120,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
+  onOpenPlan?: () => void;
 }) {
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
@@ -469,6 +471,7 @@ export default function NvtTab({
         today={today}
         onOpenTeamDokuOffen={onOpenTeamDokuOffen}
         onTeamAction={onTeamAction}
+        onOpenPlan={onOpenPlan}
       />
 
       <div style={{ ...CARD, padding: 12 }}>
@@ -908,12 +911,14 @@ function TeamsLive({
   today,
   onOpenTeamDokuOffen,
   onTeamAction,
+  onOpenPlan,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   today: string;
   onOpenTeamDokuOffen?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
+  onOpenPlan?: () => void;
 }) {
   const teams = useMemo(() => {
     const init = () => ({ inArbeit: [] as Contact[], fertig: [] as Contact[], heute: 0 });
@@ -946,13 +951,43 @@ function TeamsLive({
 
   const summaryAlert = totals.fotosOffen > 0 || totals.protOffen > 0;
 
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+
+  const startLongPress = () => {
+    if (!onOpenPlan) return;
+    longPressFired.current = false;
+    if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try { navigator.vibrate(50); } catch {}
+      }
+      onOpenPlan();
+    }, 600);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   return (
     <>
       <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div style={SECTION_TITLE}>👷 Teams Live</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-        <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} onAction={onTeamAction ? (a) => onTeamAction("team1", a) : undefined} />
-        <TeamCard name="Team Adil" color="#7c3aed" data={teams.team2} onAction={onTeamAction ? (a) => onTeamAction("team2", a) : undefined} />
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}
+        onTouchStart={startLongPress}
+        onTouchEnd={cancelLongPress}
+        onTouchMove={cancelLongPress}
+        onMouseDown={startLongPress}
+        onMouseUp={cancelLongPress}
+        onMouseLeave={cancelLongPress}
+      >
+        <TeamCard name="Team Jozey" color="#3b82f6" data={teams.team1} onAction={onTeamAction ? (a) => onTeamAction("team1", a) : undefined} longPressFiredRef={longPressFired} />
+        <TeamCard name="Team Adil" color="#7c3aed" data={teams.team2} onAction={onTeamAction ? (a) => onTeamAction("team2", a) : undefined} longPressFiredRef={longPressFired} />
       </div>
       <button
         type="button"
@@ -978,11 +1013,13 @@ function TeamCard({
   color,
   data,
   onAction,
+  longPressFiredRef,
 }: {
   name: string;
   color: string;
   data: { inArbeit: Contact[]; fertig: Contact[]; heute: number };
   onAction?: (action: "auftraege" | "karte" | "doku") => void;
+  longPressFiredRef?: React.RefObject<boolean>;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const n = data.inArbeit.length;
@@ -991,6 +1028,7 @@ function TeamCard({
 
   const handleClick = () => {
     if (!onAction) return;
+    if (longPressFiredRef?.current) return;
     setMenuOpen((v) => !v);
   };
 
