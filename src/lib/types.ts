@@ -29,6 +29,7 @@ export type CallStatus =
   | "erledigt";
 
 export type CallState = {
+  erledigt_datum?: string | null;
   bid: string;
   status: CallStatus;
   termin_slot: string;

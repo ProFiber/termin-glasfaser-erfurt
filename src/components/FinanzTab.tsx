@@ -74,25 +74,28 @@ function workdaysPassedInMonth(now: Date, saturdayBuffer: boolean) {
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
+  const [haPreis, setHaPreis] = useState<number>(1200);
   const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
-  const [zielInput, setZielInput] = useState("100000");
+  const [zielInput, setZielInput] = useState("70000");
+  const [haPreisInput, setHaPreisInput] = useState("1200");
 
   useEffect(() => {
     (async () => {
-      const [{ data: cs }, { data: z }] = await Promise.all([
+      const [{ data: cs }, { data: zList }] = await Promise.all([
         supabase
           .from("call_states")
           .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
-        supabase.from("umsatz_ziele").select("*").eq("scope", "monat").maybeSingle(),
+        supabase.from("umsatz_ziele").select("*"),
       ]);
       setRows((cs as FinRow[]) || []);
-      if (z) {
-        setZiel(z as Ziel);
-        setZielInput(String(z.ziel_eur));
-      }
+      const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
+      const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
+      if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
+      if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
       setLoading(false);
     })();
+
 
     const ch = supabase
       .channel("finanz_live")
@@ -121,14 +124,19 @@ export default function FinanzTab() {
     const monthStartIso = toIso(monthStart);
 
     const erledigte = rows.filter((r) => r.status === "erledigt" && r.erledigt_datum);
+    // EUR: realer Wert wenn eingetragen, sonst Pauschale pro HA
     const sumUmsatz = (rs: FinRow[]) =>
-      rs.reduce((s, r) => s + Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0), 0);
+      rs.reduce((s, r) => {
+        const real = Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0);
+        return s + (real > 0 ? real : haPreis);
+      }, 0);
     const sumMeter = (rs: FinRow[]) =>
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
+
 
     // Pipeline-Stände (Buchhaltung)
     const fertig = rows.filter((r) => r.status === "erledigt");
@@ -176,7 +184,7 @@ export default function FinanzTab() {
       .sort((a, b) => b.eur - a.eur);
 
     // Ziele
-    const zielMonat = ziel?.ziel_eur ?? 100_000;
+    const zielMonat = ziel?.ziel_eur ?? 70_000;
     const satBuffer = ziel?.saturday_buffer ?? true;
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
@@ -188,6 +196,12 @@ export default function FinanzTab() {
     const umsatzHeute = sumUmsatz(heute);
     const fortschritt = (umsatzMonat / zielMonat) * 100;
     const sollIst = umsatzMonat - sollHeute; // positiv = über Soll
+    // HA-Ziele
+    const haZielMonat = haPreis > 0 ? zielMonat / haPreis : 0;
+    const haTagesziel = haPreis > 0 ? tagesziel / haPreis : 0;
+    const haWochenziel = haTagesziel * 5;
+    const haSollHeute = haTagesziel * arbeitstagePassed;
+    const haSollIst = monat.length - haSollHeute;
 
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
@@ -197,6 +211,7 @@ export default function FinanzTab() {
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
+      haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer,
       pipeline: {
         auftragsvolumen,
@@ -209,18 +224,27 @@ export default function FinanzTab() {
       },
       trend, trendWoche, teamData,
     };
-  }, [rows, ziel]);
+  }, [rows, ziel, haPreis]);
 
   async function saveZiel() {
     const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
-    if (!isFinite(v) || v <= 0) return;
-    await supabase.from("umsatz_ziele").upsert({
-      scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
-      saturday_buffer: ziel?.saturday_buffer ?? true,
-    }, { onConflict: "scope" });
-    setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
+    const p = parseFloat(haPreisInput.replace(/[^\d.]/g, ""));
+    if (isFinite(v) && v > 0) {
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
+        saturday_buffer: ziel?.saturday_buffer ?? true,
+      }, { onConflict: "scope" });
+      setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
+    }
+    if (isFinite(p) && p > 0) {
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "ha_preis", ziel_eur: p, arbeitstage_pro_monat: 22, saturday_buffer: true,
+      }, { onConflict: "scope" });
+      setHaPreis(p);
+    }
     setEditingZiel(false);
   }
+
 
   if (loading) {
     return <div style={{ padding: 40, textAlign: "center", color: "#888" }}>Lade Finanzdaten…</div>;
@@ -240,7 +264,9 @@ export default function FinanzTab() {
           <div>
             <div style={{ fontSize: 11, opacity: 0.85, textTransform: "uppercase", letterSpacing: 0.5 }}>Monatsziel</div>
             <div style={{ fontSize: 26, fontWeight: 800, marginTop: 2 }}>{EUR(data.umsatzMonat)}</div>
-            <div style={{ fontSize: 12, opacity: 0.9 }}>von {EUR(data.zielMonat)} ({data.fortschritt.toFixed(1)}%)</div>
+            <div style={{ fontSize: 12, opacity: 0.9 }}>
+              von {EUR(data.zielMonat)} ({data.fortschritt.toFixed(1)}%) · {data.countMonat} / {Math.round(data.haZielMonat)} HA
+            </div>
           </div>
           <button
             onClick={() => setEditingZiel(true)}
@@ -265,27 +291,59 @@ export default function FinanzTab() {
           }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, opacity: 0.9 }}>
-          <span>Soll heute: {EUR(data.sollHeute)}</span>
+          <span>Soll heute: {EUR(data.sollHeute)} · {Math.round(data.haSollHeute)} HA</span>
           <span style={{ fontWeight: 700 }}>
-            {overUnder ? "▲" : "▼"} {EUR(Math.abs(data.sollIst))} {overUnder ? "über" : "unter"} Soll
+            {overUnder ? "▲" : "▼"} {EUR(Math.abs(data.sollIst))} · {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "über" : "unter"} Soll
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"}
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
         </div>
+      </div>
+
+      {/* On-Time Banner */}
+      <div style={{
+        background: overUnder ? "#dcfce7" : "#fee2e2",
+        color: overUnder ? "#166534" : "#991b1b",
+        borderLeft: `4px solid ${overUnder ? "#22c55e" : "#ef4444"}`,
+        borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+        fontSize: 13, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <span>
+          {overUnder
+            ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
+            : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
+        </span>
+        <span style={{ fontSize: 11, opacity: 0.8 }}>
+          {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
+        </span>
       </div>
 
       {editingZiel && (
         <div style={{ background: "white", borderRadius: 10, padding: 12, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Monatsziel anpassen</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ziele anpassen</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <label style={{ fontSize: 11, color: "#475569" }}>
+              Monatsziel (€)
+              <input
+                type="number"
+                value={zielInput}
+                onChange={(e) => setZielInput(e.target.value)}
+                style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+              />
+            </label>
+            <label style={{ fontSize: 11, color: "#475569" }}>
+              Pauschale pro HA (€)
+              <input
+                type="number"
+                value={haPreisInput}
+                onChange={(e) => setHaPreisInput(e.target.value)}
+                style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+              />
+            </label>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="number"
-              value={zielInput}
-              onChange={(e) => setZielInput(e.target.value)}
-              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
-            />
-            <button onClick={saveZiel} style={{ padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={saveZiel} style={{ flex: 1, padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
               Speichern
             </button>
             <button onClick={() => setEditingZiel(false)} style={{ padding: "8px 12px", background: "#f3f4f6", border: "none", borderRadius: 8, cursor: "pointer" }}>
@@ -297,10 +355,11 @@ export default function FinanzTab() {
 
       {/* KPI-Cards: Heute / Woche / Monat */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <KpiCard title="Heute" eur={data.umsatzHeute} ziel={data.tagesziel} meter={data.meterHeute} count={data.countHeute} color="#3b82f6" />
-        <KpiCard title="Woche" eur={data.umsatzWoche} ziel={data.wochenziel} meter={data.meterWoche} count={data.countWoche} color="#8b5cf6" />
-        <KpiCard title="Monat" eur={data.umsatzMonat} ziel={data.zielMonat} meter={data.meterMonat} count={data.countMonat} color="#22c55e" />
+        <KpiCard title="Heute" eur={data.umsatzHeute} ziel={data.tagesziel} haZiel={data.haTagesziel} meter={data.meterHeute} count={data.countHeute} color="#3b82f6" />
+        <KpiCard title="Woche" eur={data.umsatzWoche} ziel={data.wochenziel} haZiel={data.haWochenziel} meter={data.meterWoche} count={data.countWoche} color="#8b5cf6" />
+        <KpiCard title="Monat" eur={data.umsatzMonat} ziel={data.zielMonat} haZiel={data.haZielMonat} meter={data.meterMonat} count={data.countMonat} color="#22c55e" />
       </div>
+
 
       {/* Trend Tage */}
       <Card title="Umsatz pro Tag (30 Tage)">
@@ -387,20 +446,18 @@ export default function FinanzTab() {
   );
 }
 
-function KpiCard({ title, eur, ziel, meter, count, color }: { title: string; eur: number; ziel: number; meter: number; count: number; color: string }) {
+function KpiCard({ title, eur, ziel, haZiel, meter, count, color }: { title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string }) {
   const pct = ziel > 0 ? (eur / ziel) * 100 : 0;
   return (
     <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
       <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.3 }}>{title}</div>
       <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2, lineHeight: 1.1 }}>{EUR(eur)}</div>
-      <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>Ziel {EUR(ziel)}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginTop: 2 }}>{count} <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>HA</span></div>
+      <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>Ziel {EUR(ziel)} · {haZiel.toFixed(1)} HA</div>
       <div style={{ height: 4, background: "#f3f4f6", borderRadius: 2, marginTop: 5, overflow: "hidden" }}>
         <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: color }} />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 10, color: "#6b7280" }}>
-        <span>{count} HA</span>
-        <span>{meter} m</span>
-      </div>
+      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{meter} m Graben</div>
     </div>
   );
 }
