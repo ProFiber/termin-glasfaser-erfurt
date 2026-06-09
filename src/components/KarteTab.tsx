@@ -135,6 +135,30 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildBaseLayer(L: any, kind: "standard" | "satellit" | "hybrid") {
+  if (kind === "standard") {
+    return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    });
+  }
+  // Esri World Imagery (satellite)
+  return L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "Tiles © Esri" },
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildLabelsLayer(L: any) {
+  // CARTO labels-only overlay (transparent) — street + place labels
+  return L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19, attribution: "© CARTO", pane: "overlayPane" },
+  );
+}
+
 export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
