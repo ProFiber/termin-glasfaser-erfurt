@@ -25,8 +25,7 @@ type NvtRow = {
 };
 
 function todayISO(): string {
-  const d = new Date(); d.setHours(0,0,0,0);
-  return d.toISOString().slice(0,10);
+  return toIsoDate(new Date());
 }
 
 function toIsoDate(d: Date): string {
@@ -41,7 +40,8 @@ function addDays(iso: string, n: number): string {
 
 function isSameLocalDay(iso: string | null | undefined, ref: string): boolean {
   if (!iso) return false;
-  return new Date(iso).toISOString().slice(0,10) === ref;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso === ref;
+  return toIsoDate(new Date(iso)) === ref;
 }
 
 // ─── Ampel-Logik ─────────────────────────────────────────────────
