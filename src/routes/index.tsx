@@ -815,6 +815,7 @@ function Index() {
             else if (action === "karte") { setActiveTab("karte"); }
             else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
           }}
+          onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
         />
       )}
 
