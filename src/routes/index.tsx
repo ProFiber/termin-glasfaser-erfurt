@@ -816,6 +816,7 @@ function Index() {
             else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
           }}
           onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
+          onOpenPlan={() => setShowPlan(true)}
         />
       )}
 
