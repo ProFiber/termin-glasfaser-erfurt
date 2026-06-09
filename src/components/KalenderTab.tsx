@@ -662,7 +662,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             <button
               style={menuRow}
               onClick={() => {
-                if (patch) patch(c.bid, { status: "erledigt" });
+                const today = new Date();
+                const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                if (patch) patch(c.bid, { status: "erledigt", erledigt_datum: iso, team_status: "" });
                 setMenuFor(null);
                 setGrabenFor(c);
               }}
