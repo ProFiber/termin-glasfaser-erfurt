@@ -358,7 +358,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
           return (
             <div
               key={date}
-              id={isToday ? "kalender-today" : undefined}
+              id={`kalender-day-${date}`}
               style={{
                 background: "#fff",
                 borderRadius: 10,
