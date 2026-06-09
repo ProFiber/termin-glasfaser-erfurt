@@ -891,11 +891,13 @@ function TeamsLive({
   states,
   today,
   onOpenTeamDokuOffen,
+  onTeamAction,
 }: {
   contacts: Contact[];
   states: Record<string, CallState>;
   today: string;
   onOpenTeamDokuOffen?: () => void;
+  onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
 }) {
   const teams = useMemo(() => {
     const init = () => ({ inArbeit: [] as Contact[], fertig: [] as Contact[], heute: 0 });
