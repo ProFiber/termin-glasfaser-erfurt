@@ -15,44 +15,144 @@ import FinanzTab from "@/components/FinanzTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 
+type StatusFilter = "alle" | "offen" | "erledigt";
+
+type FieldKey =
+  | "Status"
+  | "Adresse"
+  | "PLZ"
+  | "Ort"
+  | "NVT"
+  | "Name"
+  | "Email"
+  | "Mobil"
+  | "Festnetz"
+  | "Typ"
+  | "WE"
+  | "GE"
+  | "Zustimmung"
+  | "Auskundung erforderlich"
+  | "Auskundung von"
+  | "Auskundung bis"
+  | "Termin"
+  | "Termin Zeit"
+  | "Erledigt am"
+  | "Notiz"
+  | "Klarfall"
+  | "Klarfall Notiz"
+  | "Grabenlänge"
+  | "Team"
+  | "Team Status"
+  | "Umsatz EUR"
+  | "Zusatz EUR"
+  | "BID"
+  | "Priorität";
+
+const ALL_FIELDS: FieldKey[] = [
+  "Status",
+  "Adresse",
+  "PLZ",
+  "Ort",
+  "NVT",
+  "Priorität",
+  "Name",
+  "Email",
+  "Mobil",
+  "Festnetz",
+  "Typ",
+  "WE",
+  "GE",
+  "Zustimmung",
+  "Auskundung erforderlich",
+  "Auskundung von",
+  "Auskundung bis",
+  "Termin",
+  "Termin Zeit",
+  "Erledigt am",
+  "Notiz",
+  "Klarfall",
+  "Klarfall Notiz",
+  "Grabenlänge",
+  "Team",
+  "Team Status",
+  "Umsatz EUR",
+  "Zusatz EUR",
+  "BID",
+];
+
+const DEFAULT_FIELDS: FieldKey[] = [
+  "Status",
+  "Adresse",
+  "NVT",
+  "Name",
+  "Mobil",
+  "Festnetz",
+  "Auskundung erforderlich",
+  "Termin",
+];
+
+function buildRow(c: Contact, st: CallState | undefined, fields: FieldKey[]): Record<string, unknown> {
+  const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
+  const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
+  const status = st?.status === "erledigt" ? "erledigt" : "offen";
+  const all: Record<FieldKey, unknown> = {
+    Status: status,
+    Adresse: adresse,
+    PLZ: c.plz || "",
+    Ort: c.ort || "",
+    NVT: c.nvt || "",
+    Priorität: getNvtPriority(c.nvt) ?? "",
+    Name: c.name || "",
+    Email: c.email || "",
+    Mobil: c.mobil || "",
+    Festnetz: c.festnetz || "",
+    Typ: c.typ || "",
+    WE: c.we ?? 0,
+    GE: c.ge ?? 0,
+    Zustimmung: c.zustimmung || "",
+    "Auskundung erforderlich": auskundung,
+    "Auskundung von": c.auskundung_von || "",
+    "Auskundung bis": c.auskundung_bis || "",
+    Termin: st?.termin_datum || "",
+    "Termin Zeit": st?.termin_zeit || "",
+    "Erledigt am": st?.erledigt_datum || "",
+    Notiz: st?.notiz || "",
+    Klarfall: st?.klarfall ? "ja" : "",
+    "Klarfall Notiz": st?.klarfall_notiz || "",
+    Grabenlänge: st?.grabenlaenge ?? 0,
+    Team: st?.team || "",
+    "Team Status": st?.team_status || "",
+    "Umsatz EUR": (st as unknown as { umsatz_eur?: number })?.umsatz_eur ?? 0,
+    "Zusatz EUR": (st as unknown as { zusatz_eur?: number })?.zusatz_eur ?? 0,
+    BID: c.bid,
+  };
+  const row: Record<string, unknown> = {};
+  for (const f of fields) row[f] = all[f];
+  return row;
+}
+
 function exportHausanschluesseXlsx(
   contacts: Contact[],
   callStates: Record<string, CallState>,
   onlyPriority: boolean,
+  statusFilter: StatusFilter,
+  fields: FieldKey[],
 ) {
-  const list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
-  const rows = list.map((c) => {
-    const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
-    const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
-    const st = callStates[c.bid];
-    const status = st?.status === "erledigt" ? "erledigt" : "offen";
-    const terminDatum = st?.termin_datum || "";
-    return {
-      Status: status,
-      Adresse: adresse,
-      NVT: c.nvt || "",
-      Name: c.name || "",
-      Mobil: c.mobil || "",
-      Festnetz: c.festnetz || "",
-      "Auskundung erforderlich": auskundung,
-      Termin: terminDatum,
-    };
-  });
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [
-    { wch: 10 },
-    { wch: 30 },
-    { wch: 10 },
-    { wch: 24 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 22 },
-    { wch: 12 },
-  ];
+  let list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
+  if (statusFilter !== "alle") {
+    list = list.filter((c) => {
+      const isErl = callStates[c.bid]?.status === "erledigt";
+      return statusFilter === "erledigt" ? isErl : !isErl;
+    });
+  }
+  const rows = list.map((c) => buildRow(c, callStates[c.bid], fields));
+  const ws = XLSX.utils.json_to_sheet(rows, { header: fields });
+  ws["!cols"] = fields.map(() => ({ wch: 18 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
   const date = new Date().toISOString().slice(0, 10);
-  const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}.xlsx`;
+  const statusSuffix = statusFilter === "alle" ? "" : `_${statusFilter}`;
+  const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}${statusSuffix}.xlsx`;
   XLSX.writeFile(wb, fname);
 }
 
@@ -64,11 +164,36 @@ function ExportMenu({
   callStates: Record<string, CallState>;
 }) {
   const [open, setOpen] = useState(false);
-  const totalErledigt = contacts.filter((c) => callStates[c.bid]?.status === "erledigt").length;
-  const totalOffen = contacts.length - totalErledigt;
-  const prioContacts = contacts.filter((c) => isPriorityNvt(c.nvt));
-  const prioErledigt = prioContacts.filter((c) => callStates[c.bid]?.status === "erledigt").length;
-  const prioOffen = prioContacts.length - prioErledigt;
+  const [onlyPriority, setOnlyPriority] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
+  const [fields, setFields] = useState<FieldKey[]>(DEFAULT_FIELDS);
+
+  const toggleField = (f: FieldKey) =>
+    setFields((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...ALL_FIELDS.filter((x) => prev.includes(x) || x === f)]));
+
+  const baseList = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
+  const erlCount = baseList.filter((c) => callStates[c.bid]?.status === "erledigt").length;
+  const offenCount = baseList.length - erlCount;
+  const filteredCount =
+    statusFilter === "alle" ? baseList.length : statusFilter === "erledigt" ? erlCount : offenCount;
+
+  const doExport = () => {
+    if (fields.length === 0) return;
+    exportHausanschluesseXlsx(contacts, callStates, onlyPriority, statusFilter, fields);
+    setOpen(false);
+  };
+
+  const radio = (val: StatusFilter, label: string, count: number) => (
+    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer", padding: "4px 0" }}>
+      <input
+        type="radio"
+        checked={statusFilter === val}
+        onChange={() => setStatusFilter(val)}
+      />
+      {label} <span style={{ color: "#666" }}>({count})</span>
+    </label>
+  );
+
   return (
     <div style={{ position: "relative" }}>
       <button
@@ -88,10 +213,7 @@ function ExportMenu({
       </button>
       {open && (
         <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 30 }}
-          />
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
           <div
             style={{
               position: "absolute",
@@ -101,32 +223,83 @@ function ExportMenu({
               color: "#111",
               borderRadius: 10,
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-              minWidth: 260,
+              width: 320,
+              maxHeight: "70vh",
+              overflowY: "auto",
               zIndex: 31,
-              overflow: "hidden",
             }}
           >
-            <div style={{ padding: "8px 12px", fontSize: 11, color: "#666", borderBottom: "1px solid #eee" }}>
+            <div style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, borderBottom: "1px solid #eee" }}>
               Hausanschlüsse exportieren (XLSX)
             </div>
-            <button
-              onClick={() => { exportHausanschluesseXlsx(contacts, callStates, false); setOpen(false); }}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", fontSize: 14, cursor: "pointer" }}
-            >
-              📋 Komplette Liste ({contacts.length})
-              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
-                {totalOffen} offen · {totalErledigt} erledigt
+
+            <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                <input type="checkbox" checked={onlyPriority} onChange={(e) => setOnlyPriority(e.target.checked)} />
+                ⭐ Nur Priorität
+              </label>
+            </div>
+
+            <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+              <div style={{ fontSize: 11, color: "#666", fontWeight: 600, marginBottom: 4 }}>STATUS</div>
+              {radio("alle", "Beide", baseList.length)}
+              {radio("offen", "Nur offene", offenCount)}
+              {radio("erledigt", "Nur erledigte", erlCount)}
+            </div>
+
+            <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ fontSize: 11, color: "#666", fontWeight: 600 }}>FELDER ({fields.length})</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => setFields([...ALL_FIELDS])}
+                    style={{ fontSize: 11, padding: "2px 6px", border: "1px solid #ddd", background: "white", borderRadius: 4, cursor: "pointer" }}
+                  >
+                    Alle
+                  </button>
+                  <button
+                    onClick={() => setFields([])}
+                    style={{ fontSize: 11, padding: "2px 6px", border: "1px solid #ddd", background: "white", borderRadius: 4, cursor: "pointer" }}
+                  >
+                    Keine
+                  </button>
+                  <button
+                    onClick={() => setFields([...DEFAULT_FIELDS])}
+                    style={{ fontSize: 11, padding: "2px 6px", border: "1px solid #ddd", background: "white", borderRadius: 4, cursor: "pointer" }}
+                  >
+                    Standard
+                  </button>
+                </div>
               </div>
-            </button>
-            <button
-              onClick={() => { exportHausanschluesseXlsx(contacts, callStates, true); setOpen(false); }}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "white", border: "none", borderTop: "1px solid #eee", fontSize: 14, cursor: "pointer" }}
-            >
-              ⭐ Nur Priorität ({prioContacts.length})
-              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
-                {prioOffen} offen · {prioErledigt} erledigt
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
+                {ALL_FIELDS.map((f) => (
+                  <label key={f} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}>
+                    <input type="checkbox" checked={fields.includes(f)} onChange={() => toggleField(f)} />
+                    {f}
+                  </label>
+                ))}
               </div>
-            </button>
+            </div>
+
+            <div style={{ padding: 10, display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 12, color: "#666" }}>{filteredCount} Zeilen</div>
+              <button
+                onClick={doExport}
+                disabled={fields.length === 0 || filteredCount === 0}
+                style={{
+                  background: fields.length === 0 || filteredCount === 0 ? "#ccc" : "#e20074",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 14px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: fields.length === 0 || filteredCount === 0 ? "not-allowed" : "pointer",
+                }}
+              >
+                ⬇ Exportieren
+              </button>
+            </div>
           </div>
         </>
       )}
