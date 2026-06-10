@@ -601,6 +601,18 @@ function Index() {
       return true;
     });
     return list.sort((a, b) => {
+      // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
+      if (filter === "termin") {
+        const da = states[a.bid]?.termin_datum ?? "";
+        const db = states[b.bid]?.termin_datum ?? "";
+        // leere Daten ans Ende
+        if (da && !db) return -1;
+        if (!da && db) return 1;
+        if (da !== db) return db.localeCompare(da); // desc
+        const za = states[a.bid]?.termin_zeit ?? "";
+        const zb = states[b.bid]?.termin_zeit ?? "";
+        if (za !== zb) return zb.localeCompare(za);
+      }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
