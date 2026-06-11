@@ -197,6 +197,7 @@ export default function FinanzTab() {
     const satBuffer = ziel?.saturday_buffer ?? true;
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
+    const samstageRest = saturdaysRemainingInMonth(today);
     const tagesziel = zielMonat / arbeitstageMonat;
     const wochenziel = tagesziel * 5; // Mo-Fr
     const sollHeute = tagesziel * arbeitstagePassed;
@@ -204,6 +205,10 @@ export default function FinanzTab() {
     const umsatzWoche = sumUmsatz(woche);
     const umsatzHeute = sumUmsatz(heute);
     const fortschritt = (umsatzMonat / zielMonat) * 100;
+    const arbeitstageRest = Math.max(0, arbeitstageMonat - arbeitstagePassed);
+    const fehlendEur = Math.max(0, zielMonat - umsatzMonat);
+    const benoetigtProTagEur = arbeitstageRest > 0 ? fehlendEur / arbeitstageRest : 0;
+    const benoetigtProTagHa = haPreis > 0 ? benoetigtProTagEur / haPreis : 0;
     const sollIst = umsatzMonat - sollHeute; // positiv = über Soll
     // HA-Ziele
     const haZielMonat = haPreis > 0 ? zielMonat / haPreis : 0;
