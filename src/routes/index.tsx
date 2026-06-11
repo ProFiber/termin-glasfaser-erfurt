@@ -1261,9 +1261,19 @@ function Index() {
             }}>
               {kf && (<div style={{ position: "absolute", top: 4, right: 22, fontSize: 14, zIndex: 1 }} title="Klärfall">⚠️</div>)}
               <div
-                onClick={() => {
+                onClick={(e) => {
                   if (longPressFired.current) { longPressFired.current = false; return; }
+                  const willOpen = !open;
                   setExpanded(open ? null : c.bid);
+                  if (willOpen) {
+                    const cardEl = e.currentTarget.parentElement as HTMLElement | null;
+                    const topBefore = cardEl?.getBoundingClientRect().top ?? 0;
+                    window.setTimeout(() => {
+                      if (!cardEl) return;
+                      const topAfter = cardEl.getBoundingClientRect().top;
+                      window.scrollBy({ top: topAfter - topBefore, behavior: "auto" });
+                    }, 0);
+                  }
                 }}
                 onTouchStart={() => startLongPress(c)}
                 onTouchEnd={cancelLongPress}
