@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
 
-export const Route = createFileRoute("/api/maps-image")({
+export const Route = createFileRoute("/api/public/maps-image")({
   server: {
     handlers: {
       GET: async ({ request }) => {

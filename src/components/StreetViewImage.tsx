@@ -24,8 +24,8 @@ export default function StreetViewImage({
   const mapsUrl = `https://www.google.com/maps?q=${encoded}&layer=c`;
   const satUrl = `https://www.google.com/maps/place/${encoded}/@/data=!3m1!1e3`;
 
-  const svSrc = `/api/maps-image?type=streetview&size=640x${Math.round(height * 2)}&address=${encoded}`;
-  const satSrc = `/api/maps-image?type=satellite&size=640x${Math.round(height * 2)}&zoom=20&address=${encoded}`;
+  const svSrc = `/api/public/maps-image?type=streetview&size=640x${Math.round(height * 2)}&address=${encoded}`;
+  const satSrc = `/api/public/maps-image?type=satellite&size=640x${Math.round(height * 2)}&zoom=20&address=${encoded}`;
 
   const [svErr, setSvErr] = useState(false);
   const [satErr, setSatErr] = useState(false);
