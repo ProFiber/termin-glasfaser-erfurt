@@ -226,7 +226,8 @@ export default function FinanzTab() {
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
-      arbeitstageMonat, arbeitstagePassed, satBuffer,
+      arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
+      arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
