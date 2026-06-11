@@ -312,7 +312,7 @@ export default function FinanzTab() {
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
         </div>
       </div>
 
@@ -322,16 +322,21 @@ export default function FinanzTab() {
         color: overUnder ? "#166534" : "#991b1b",
         borderLeft: `4px solid ${overUnder ? "#22c55e" : "#ef4444"}`,
         borderRadius: 10, padding: "10px 12px", marginBottom: 12,
-        fontSize: 13, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: 13, fontWeight: 700,
       }}>
-        <span>
-          {overUnder
-            ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
-            : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
-        </span>
-        <span style={{ fontSize: 11, opacity: 0.8 }}>
-          {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
-        </span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>
+            {overUnder
+              ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
+              : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
+          </span>
+          <span style={{ fontSize: 11, opacity: 0.8 }}>
+            {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
+          </span>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, opacity: 0.95, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
+          📈 Benötigt ab jetzt: <b>{data.benoetigtProTagHa.toFixed(1)} HA/Tag</b> ({EUR(data.benoetigtProTagEur)}) · noch {data.arbeitstageRest} Arbeitstage
+        </div>
       </div>
 
       {editingZiel && (
