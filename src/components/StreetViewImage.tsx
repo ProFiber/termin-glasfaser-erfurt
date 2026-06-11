@@ -1,4 +1,4 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties } from "react";
 
 type Props = {
   strasse: string;
@@ -21,14 +21,14 @@ export default function StreetViewImage({
 }: Props) {
   const address = `${strasse} ${hnr}${hnr_zusatz ?? ""}, ${plz} ${ort}, Germany`;
   const encoded = encodeURIComponent(address);
-  const mapsUrl = `https://www.google.com/maps?q=${encoded}&layer=c`;
-  const satUrl = `https://www.google.com/maps/place/${encoded}/@/data=!3m1!1e3`;
 
-  const svSrc = `/api/public/maps-image?type=streetview&size=640x${Math.round(height * 2)}&address=${encoded}`;
-  const satSrc = `/api/public/maps-image?type=satellite&size=640x${Math.round(height * 2)}&zoom=20&address=${encoded}`;
+  // Keyless Google Maps embed URLs – funktionieren ohne API-Key auf jeder Domain
+  const svEmbed = `https://maps.google.com/maps?q=${encoded}&layer=c&output=svembed`;
+  const satEmbed = `https://maps.google.com/maps?q=${encoded}&t=k&z=20&output=embed`;
 
-  const [svErr, setSvErr] = useState(false);
-  const [satErr, setSatErr] = useState(false);
+  // Klickziele (öffnen Google Maps in neuem Tab)
+  const svLink = `https://www.google.com/maps?q=${encoded}&layer=c`;
+  const satLink = `https://www.google.com/maps/place/${encoded}/@/data=!3m1!1e3`;
 
   const wrap: CSSProperties = {
     display: "grid",
@@ -44,14 +44,13 @@ export default function StreetViewImage({
     borderRadius: 8,
     overflow: "hidden",
     background: "#f1f5f9",
-    cursor: "pointer",
     display: "block",
   };
 
-  const img: CSSProperties = {
+  const iframe: CSSProperties = {
     width: "100%",
     height: "100%",
-    objectFit: "cover",
+    border: 0,
     display: "block",
   };
 
@@ -66,51 +65,53 @@ export default function StreetViewImage({
     fontSize: 11,
     fontWeight: 700,
     boxShadow: "0 4px 12px rgba(15, 23, 42, 0.18)",
+    pointerEvents: "none",
+    zIndex: 2,
   };
 
-  const fallback: CSSProperties = {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#64748b",
-    fontSize: 12,
-    fontWeight: 600,
-    padding: 8,
-    textAlign: "center",
+  const openLink: CSSProperties = {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    borderRadius: 6,
+    padding: "4px 8px",
+    background: "rgba(255, 255, 255, 0.92)",
+    color: "#0f172a",
+    fontSize: 11,
+    fontWeight: 700,
+    textDecoration: "none",
+    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.18)",
+    zIndex: 2,
   };
 
   return (
     <div style={wrap}>
-      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={tile}>
-        {svErr ? (
-          <div style={fallback}>Kein Street View verfügbar</div>
-        ) : (
-          <img
-            src={svSrc}
-            alt={`Street View ${address}`}
-            loading="lazy"
-            style={img}
-            onError={() => setSvErr(true)}
-          />
-        )}
+      <div style={tile}>
+        <iframe
+          src={svEmbed}
+          style={iframe}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Street View ${address}`}
+        />
         <div style={badge}>📸 Street View</div>
-      </a>
-      <a href={satUrl} target="_blank" rel="noopener noreferrer" style={tile}>
-        {satErr ? (
-          <div style={fallback}>Kein Satellit verfügbar</div>
-        ) : (
-          <img
-            src={satSrc}
-            alt={`Satellit ${address}`}
-            loading="lazy"
-            style={img}
-            onError={() => setSatErr(true)}
-          />
-        )}
+        <a href={svLink} target="_blank" rel="noopener noreferrer" style={openLink}>
+          Öffnen ↗
+        </a>
+      </div>
+      <div style={tile}>
+        <iframe
+          src={satEmbed}
+          style={iframe}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Satellit ${address}`}
+        />
         <div style={badge}>🛰️ Satellit</div>
-      </a>
+        <a href={satLink} target="_blank" rel="noopener noreferrer" style={openLink}>
+          Öffnen ↗
+        </a>
+      </div>
     </div>
   );
 }
