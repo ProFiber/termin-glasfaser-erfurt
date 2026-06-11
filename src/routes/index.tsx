@@ -1325,12 +1325,14 @@ function Index() {
                     plz={c.plz}
                     ort={c.ort}
                   />
-                  <div style={{ background: "#eef2ff", borderRadius: 9, padding: "9px 12px", marginBottom: 12, fontSize: 13, lineHeight: 1.7, color: "#1e293b" }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: "#6366f1", letterSpacing: 1.2, marginBottom: 4 }}>LEITFADEN</div>
-                    „Guten Tag Herr/Frau <strong>{lastName(c.name)}</strong>, hier ist Störmer Bau im Auftrag der Telekom.<br />
-                    Wir sind aktuell in der <strong>{c.strasse}</strong> und setzen die Glasfaser-Hausanschlüsse um.<br />
-                    Passt es Ihnen <strong>diese Woche</strong> – <strong>vormittags ab 7:30 Uhr</strong> oder <strong>nachmittags ab 13 Uhr</strong>?"
-                  </div>
+                  <details style={{ background: "#eef2ff", borderRadius: 9, padding: "9px 12px", marginBottom: 12, fontSize: 13, lineHeight: 1.7, color: "#1e293b" }}>
+                    <summary style={{ fontSize: 9, fontWeight: 800, color: "#6366f1", letterSpacing: 1.2, cursor: "pointer", listStyle: "none" }}>LEITFADEN ▾</summary>
+                    <div style={{ marginTop: 6 }}>
+                      „Guten Tag Herr/Frau <strong>{lastName(c.name)}</strong>, hier ist Störmer Bau im Auftrag der Telekom.<br />
+                      Wir sind aktuell in der <strong>{c.strasse}</strong> und setzen die Glasfaser-Hausanschlüsse um.<br />
+                      Passt es Ihnen <strong>diese Woche</strong> – <strong>vormittags ab 7:30 Uhr</strong> oder <strong>nachmittags ab 13 Uhr</strong>?"
+                    </div>
+                  </details>
 
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     {c.mobil && (
