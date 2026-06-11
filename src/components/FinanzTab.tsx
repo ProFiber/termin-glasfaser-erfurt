@@ -71,6 +71,15 @@ function workdaysPassedInMonth(now: Date, saturdayBuffer: boolean) {
   return count;
 }
 
+function saturdaysRemainingInMonth(now: Date) {
+  let count = 0;
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  for (let day = now.getDate() + 1; day <= last; day++) {
+    if (new Date(now.getFullYear(), now.getMonth(), day).getDay() === 6) count++;
+  }
+  return count;
+}
+
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
