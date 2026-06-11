@@ -71,6 +71,15 @@ function workdaysPassedInMonth(now: Date, saturdayBuffer: boolean) {
   return count;
 }
 
+function saturdaysRemainingInMonth(now: Date) {
+  let count = 0;
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  for (let day = now.getDate() + 1; day <= last; day++) {
+    if (new Date(now.getFullYear(), now.getMonth(), day).getDay() === 6) count++;
+  }
+  return count;
+}
+
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
@@ -188,6 +197,7 @@ export default function FinanzTab() {
     const satBuffer = ziel?.saturday_buffer ?? true;
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
+    const samstageRest = saturdaysRemainingInMonth(today);
     const tagesziel = zielMonat / arbeitstageMonat;
     const wochenziel = tagesziel * 5; // Mo-Fr
     const sollHeute = tagesziel * arbeitstagePassed;
@@ -195,6 +205,10 @@ export default function FinanzTab() {
     const umsatzWoche = sumUmsatz(woche);
     const umsatzHeute = sumUmsatz(heute);
     const fortschritt = (umsatzMonat / zielMonat) * 100;
+    const arbeitstageRest = Math.max(0, arbeitstageMonat - arbeitstagePassed);
+    const fehlendEur = Math.max(0, zielMonat - umsatzMonat);
+    const benoetigtProTagEur = arbeitstageRest > 0 ? fehlendEur / arbeitstageRest : 0;
+    const benoetigtProTagHa = haPreis > 0 ? benoetigtProTagEur / haPreis : 0;
     const sollIst = umsatzMonat - sollHeute; // positiv = über Soll
     // HA-Ziele
     const haZielMonat = haPreis > 0 ? zielMonat / haPreis : 0;
@@ -212,7 +226,8 @@ export default function FinanzTab() {
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
-      arbeitstageMonat, arbeitstagePassed, satBuffer,
+      arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
+      arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
@@ -297,7 +312,7 @@ export default function FinanzTab() {
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? "Sa = Puffer" : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
         </div>
       </div>
 
@@ -307,16 +322,21 @@ export default function FinanzTab() {
         color: overUnder ? "#166534" : "#991b1b",
         borderLeft: `4px solid ${overUnder ? "#22c55e" : "#ef4444"}`,
         borderRadius: 10, padding: "10px 12px", marginBottom: 12,
-        fontSize: 13, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: 13, fontWeight: 700,
       }}>
-        <span>
-          {overUnder
-            ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
-            : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
-        </span>
-        <span style={{ fontSize: 11, opacity: 0.8 }}>
-          {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
-        </span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>
+            {overUnder
+              ? `✅ On Time – wir liegen ${EUR(Math.abs(data.sollIst))} vor dem Plan`
+              : `⚠️ Hinten dran – uns fehlen ${EUR(Math.abs(data.sollIst))} zum Tagessoll`}
+          </span>
+          <span style={{ fontSize: 11, opacity: 0.8 }}>
+            {Math.abs(data.haSollIst).toFixed(1)} HA {overUnder ? "Vorsprung" : "Rückstand"}
+          </span>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, opacity: 0.95, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
+          📈 Benötigt ab jetzt: <b>{data.benoetigtProTagHa.toFixed(1)} HA/Tag</b> ({EUR(data.benoetigtProTagEur)}) · noch {data.arbeitstageRest} Arbeitstage
+        </div>
       </div>
 
       {editingZiel && (
