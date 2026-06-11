@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type Props = {
   strasse: string;
@@ -10,38 +10,103 @@ type Props = {
   style?: CSSProperties;
 };
 
+// Sehr einfacher In-Memory + localStorage Cache, damit wir Nominatim nicht
+// für jede Karte erneut befragen.
+const COORD_CACHE_KEY = "sv_coord_cache_v1";
+type Coord = { lat: number; lng: number };
+const memCache: Record<string, Coord | null> = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(COORD_CACHE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+})();
+
+function saveCache() {
+  try {
+    localStorage.setItem(COORD_CACHE_KEY, JSON.stringify(memCache));
+  } catch {
+    /* ignore */
+  }
+}
+
+async function geocode(address: string): Promise<Coord | null> {
+  if (address in memCache) return memCache[address];
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    const res = await fetch(url, {
+      headers: { "Accept-Language": "de" },
+    });
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const c: Coord = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      memCache[address] = c;
+      saveCache();
+      return c;
+    }
+    memCache[address] = null;
+    saveCache();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default function StreetViewImage({
   strasse,
   hnr,
   hnr_zusatz,
   plz,
   ort,
-  height = 180,
+  height = 260,
   style,
 }: Props) {
   const address = `${strasse} ${hnr}${hnr_zusatz ?? ""}, ${plz} ${ort}, Germany`;
   const encoded = encodeURIComponent(address);
+  const [coord, setCoord] = useState<Coord | null>(
+    address in memCache ? memCache[address] : null,
+  );
 
-  // Keyless Google Maps embed URLs – funktionieren ohne API-Key auf jeder Domain
-  const svEmbed = `https://maps.google.com/maps?q=${encoded}&layer=c&output=svembed`;
-  const satEmbed = `https://maps.google.com/maps?q=${encoded}&t=k&z=20&output=embed`;
+  useEffect(() => {
+    let cancelled = false;
+    if (!(address in memCache)) {
+      geocode(address).then((c) => {
+        if (!cancelled) setCoord(c);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
 
-  // Klickziele (öffnen Google Maps in neuem Tab)
-  const svLink = `https://www.google.com/maps?q=${encoded}&layer=c`;
-  const satLink = `https://www.google.com/maps/place/${encoded}/@/data=!3m1!1e3`;
+  // Street View embed: braucht cbll=lat,lng, sonst zeigt es nur die Karte.
+  const svEmbed = coord
+    ? `https://maps.google.com/maps?q=&layer=c&cbll=${coord.lat},${coord.lng}&cbp=11,0,0,0,0&output=svembed`
+    : `https://maps.google.com/maps?q=${encoded}&layer=c&output=svembed`;
+  const satEmbed = coord
+    ? `https://maps.google.com/maps?q=${coord.lat},${coord.lng}&t=k&z=20&output=embed`
+    : `https://maps.google.com/maps?q=${encoded}&t=k&z=20&output=embed`;
+
+  const svLink = coord
+    ? `https://www.google.com/maps?q=&layer=c&cbll=${coord.lat},${coord.lng}`
+    : `https://www.google.com/maps?q=${encoded}&layer=c`;
+  const satLink = coord
+    ? `https://www.google.com/maps/@${coord.lat},${coord.lng},20z/data=!3m1!1e3`
+    : `https://www.google.com/maps/place/${encoded}/@/data=!3m1!1e3`;
 
   const wrap: CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 8,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
     marginBottom: 12,
     ...style,
   };
 
   const tile: CSSProperties = {
     position: "relative",
+    width: "100%",
     height,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: "hidden",
     background: "#f1f5f9",
     display: "block",
@@ -59,10 +124,10 @@ export default function StreetViewImage({
     left: 8,
     bottom: 8,
     borderRadius: 999,
-    padding: "4px 8px",
+    padding: "4px 10px",
     background: "rgba(15, 23, 42, 0.82)",
     color: "white",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     boxShadow: "0 4px 12px rgba(15, 23, 42, 0.18)",
     pointerEvents: "none",
@@ -71,13 +136,13 @@ export default function StreetViewImage({
 
   const openLink: CSSProperties = {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 8,
+    right: 8,
     borderRadius: 6,
-    padding: "4px 8px",
-    background: "rgba(255, 255, 255, 0.92)",
+    padding: "5px 10px",
+    background: "rgba(255, 255, 255, 0.94)",
     color: "#0f172a",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     textDecoration: "none",
     boxShadow: "0 2px 8px rgba(15, 23, 42, 0.18)",
@@ -88,6 +153,7 @@ export default function StreetViewImage({
     <div style={wrap}>
       <div style={tile}>
         <iframe
+          key={svEmbed}
           src={svEmbed}
           style={iframe}
           loading="lazy"
@@ -101,6 +167,7 @@ export default function StreetViewImage({
       </div>
       <div style={tile}>
         <iframe
+          key={satEmbed}
           src={satEmbed}
           style={iframe}
           loading="lazy"
