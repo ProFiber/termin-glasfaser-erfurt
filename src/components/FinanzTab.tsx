@@ -886,12 +886,20 @@ export default function FinanzTab() {
           eur={data.umsatzWoche} meter={data.meterWoche} count={data.countWoche}
           prevEur={data.umsatzVorwoche} prevMeter={data.meterVorwoche} prevCount={data.countVorwoche}
           ziel={data.wochenziel} haZiel={data.haWochenziel} color="#8b5cf6"
+          workdays={data.tatsaechlicheWocheTage}
+          prevWorkdays={data.tatsaechlicheVorwocheTage}
+          haPerWorkday={data.haProArbeitstagWoche}
+          prevHaPerWorkday={data.haProArbeitstagVorwoche}
         />
         <KpiCard
           title="Monat" prevTitle="Vormonat" showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
           eur={data.umsatzMonat} meter={data.meterMonat} count={data.countMonat}
           prevEur={data.umsatzVormonat} prevMeter={data.meterVormonat} prevCount={data.countVormonat}
           ziel={data.zielMonat} haZiel={data.haZielMonat} color="#22c55e"
+          workdays={data.tatsaechlicheMonatTage}
+          prevWorkdays={data.tatsaechlicheVormonatTage}
+          haPerWorkday={data.haProArbeitstagMonat}
+          prevHaPerWorkday={data.haProArbeitstagVormonat}
         />
       </div>
 
