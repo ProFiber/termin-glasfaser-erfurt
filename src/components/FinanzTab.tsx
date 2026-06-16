@@ -106,62 +106,102 @@ export default function FinanzTab() {
   const exportRef = useRef<HTMLDivElement>(null);
 
   async function exportPDF() {
-    if (!exportRef.current) return;
     setExporting(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-      // kurze Pause, damit ausgeblendete Buttons gerendert sind
-      await new Promise((r) => setTimeout(r, 50));
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2,
-        backgroundColor: "#f7f8fa",
-        useCORS: true,
-        logging: false,
-      });
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF("p", "mm", "a4");
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 8;
-      const imgW = pageW - margin * 2;
-      const imgH = (canvas.height * imgW) / canvas.width;
-
-      // Header
+      const margin = 14;
+      let y = margin;
       const today = new Date();
-      const datum = today.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const datumStr = today.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
       const uhrzeit = today.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      const ensureSpace = (need: number) => { if (y + need > pageH - margin) { pdf.addPage(); y = margin; } };
 
-      if (imgH <= pageH - margin * 2 - 10) {
-        pdf.setFontSize(9); pdf.setTextColor(120);
-        pdf.text(`Finanzübersicht · ${datum} ${uhrzeit}`, margin, margin + 3);
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin + 6, imgW, imgH);
-      } else {
-        // mehrseitig: über sliced Canvas-Bereiche aufteilen
-        const pxPerMm = canvas.width / imgW;
-        const pageContentHmm = pageH - margin * 2 - 8;
-        const sliceHpx = Math.floor(pageContentHmm * pxPerMm);
-        let y = 0;
-        let pageNum = 1;
-        while (y < canvas.height) {
-          const h = Math.min(sliceHpx, canvas.height - y);
-          const slice = document.createElement("canvas");
-          slice.width = canvas.width;
-          slice.height = h;
-          const ctx = slice.getContext("2d");
-          if (!ctx) break;
-          ctx.fillStyle = "#f7f8fa";
-          ctx.fillRect(0, 0, slice.width, slice.height);
-          ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
-          if (pageNum > 1) pdf.addPage();
-          pdf.setFontSize(9); pdf.setTextColor(120);
-          pdf.text(`Finanzübersicht · ${datum} ${uhrzeit} · Seite ${pageNum}`, margin, margin + 3);
-          pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin + 6, imgW, (h / pxPerMm));
-          y += h;
-          pageNum++;
-        }
+      // Titel
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.setTextColor(20);
+      pdf.text("Finanzübersicht", margin, y); y += 7;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(90);
+      pdf.text(`Stand: ${datumStr}, ${uhrzeit} Uhr`, margin, y); y += 8;
+      pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.8);
+      pdf.line(margin, y, pageW - margin, y); y += 8;
+
+      // KPI-Kacheln (Heute / Woche / Monat)
+      const tileW = (pageW - margin * 2 - 8) / 3;
+      const tileH = 26;
+      const drawTile = (x: number, title: string, big: string, sub: string, color: [number, number, number]) => {
+        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.3);
+        pdf.roundedRect(x, y, tileW, tileH, 2, 2, "FD");
+        pdf.setFillColor(...color); pdf.rect(x, y, 2.5, tileH, "F");
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
+        pdf.text(title, x + 5, y + 5);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(15, 23, 42);
+        pdf.text(big, x + 5, y + 14);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
+        pdf.text(sub, x + 5, y + 21);
+      };
+      drawTile(margin, "Heute", `${data.countHeute} HA`, `${data.meterHeute} m · ${Math.round(data.umsatzHeute).toLocaleString("de-DE")} €`, [34, 197, 94]);
+      drawTile(margin + tileW + 4, "Diese Woche", `${data.countWoche} HA`, `${data.meterWoche} m · ${Math.round(data.umsatzWoche).toLocaleString("de-DE")} €`, [59, 130, 246]);
+      drawTile(margin + (tileW + 4) * 2, "Dieser Monat", `${data.countMonat} HA`, `${data.meterMonat} m · ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €`, [226, 0, 116]);
+      y += tileH + 8;
+
+      // Ziel-Block
+      ensureSpace(40);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      pdf.text("Monatsziel", margin, y); y += 6;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(50);
+      pdf.text(`Ziel: ${Math.round(data.zielMonat).toLocaleString("de-DE")} €  ·  Ist: ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €  ·  Fortschritt: ${data.fortschritt.toFixed(1)}%`, margin, y); y += 5;
+      pdf.text(`Soll-Ist: ${data.sollIst >= 0 ? "+" : ""}${Math.round(data.sollIst).toLocaleString("de-DE")} €  ·  Arbeitstage Rest: ${data.arbeitstageRest}  ·  Samstage Puffer: ${data.samstageRest}`, margin, y); y += 5;
+      pdf.text(`Benötigt ab jetzt: ${data.benoetigtProTagHa.toFixed(1)} HA/Tag  (${Math.round(data.benoetigtProTagEur).toLocaleString("de-DE")} €/Tag)`, margin, y); y += 6;
+      // Fortschrittsbalken
+      const barW = pageW - margin * 2;
+      pdf.setFillColor(240, 240, 240); pdf.rect(margin, y, barW, 5, "F");
+      pdf.setFillColor(34, 197, 94); pdf.rect(margin, y, (barW * Math.min(100, data.fortschritt)) / 100, 5, "F");
+      y += 10;
+
+      // Samstag-Szenarien
+      if (data.samstagSzenarien.length > 0) {
+        ensureSpace(15 + data.samstagSzenarien.length * 5);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(20);
+        pdf.text("Samstag-Szenarien", margin, y); y += 5;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(60);
+        data.samstagSzenarien.forEach((s) => {
+          pdf.text(`+ ${s.anzahl} Samstag (${s.label}): ${s.haProTag.toFixed(1)} HA/Tag  ·  ${Math.round(s.eurProTag).toLocaleString("de-DE")} €/Tag`, margin, y);
+          y += 5;
+        });
+        y += 4;
       }
+
+      // Pipeline
+      ensureSpace(40);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      pdf.text("Pipeline (Buchhaltung)", margin, y); y += 6;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(50);
+      const p = data.pipeline;
+      pdf.text(`Auftragsvolumen: ${Math.round(p.auftragsvolumen).toLocaleString("de-DE")} €  ·  Vergütet: ${Math.round(p.verguetet).toLocaleString("de-DE")} €  ·  Offen: ${Math.round(p.offeneBetraege).toLocaleString("de-DE")} €`, margin, y); y += 6;
+      const rows2: Array<[string, number, number]> = [
+        ["Aufmaß offen", p.aufmassOffen.count, p.aufmassOffen.eur],
+        ["Gutschrift offen", p.gutschriftOffen.count, p.gutschriftOffen.eur],
+        ["Avis offen", p.avisOffen.count, p.avisOffen.eur],
+        ["Vergütung offen", p.verguetetOffen.count, p.verguetetOffen.eur],
+      ];
+      pdf.setFontSize(9);
+      rows2.forEach(([label, c, eur]) => {
+        ensureSpace(5);
+        pdf.text(`${label}:`, margin, y);
+        pdf.text(`${c} HA  ·  ${Math.round(eur).toLocaleString("de-DE")} €`, margin + 50, y);
+        y += 5;
+      });
+
+      // Footer
+      const totalPages = pdf.getNumberOfPages();
+      for (let pg = 1; pg <= totalPages; pg++) {
+        pdf.setPage(pg);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(140);
+        pdf.text(`Finanzübersicht · ${datumStr} · Seite ${pg}/${totalPages}`, margin, pageH - 6);
+      }
+
       const fn = `Finanzen_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.pdf`;
       pdf.save(fn);
     } catch (e) {
@@ -177,24 +217,25 @@ export default function FinanzTab() {
     try {
       const { default: jsPDF } = await import("jspdf");
 
-      // Daten holen: Kontakte + Status (alle = aktuelles Projekt)
+      // Daten holen
       const [{ data: contacts }, { data: states }] = await Promise.all([
         supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort"),
         supabase
           .from("call_states")
-          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,umsatz_eur,zusatz_eur"),
+          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz"),
       ]);
 
       type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string };
       type S = {
         bid: string; status: string; team: string; team_status: string;
         termin_datum: string | null; erledigt_datum: string | null;
-        grabenlaenge: number; umsatz_eur: number | string; zusatz_eur: number | string;
+        grabenlaenge: number; klarfall: boolean; klarfall_notiz: string;
       };
       const stateMap = new Map<string, S>();
       ((states as S[]) || []).forEach((s) => stateMap.set(s.bid, s));
+      const contactMap = new Map<string, C>();
+      ((contacts as C[]) || []).forEach((c) => contactMap.set(c.bid, c));
 
-      // Status-Klassifizierung
       const klass = (s?: S): "erledigt" | "in_arbeit" | "offen" => {
         if (!s) return "offen";
         if (s.status === "erledigt") return "erledigt";
@@ -212,27 +253,49 @@ export default function FinanzTab() {
         nvtMap.set(nvt, cur);
       });
       const nvtList = Array.from(nvtMap.entries())
-        .map(([nvt, v]) => ({ nvt, ...v, pct: v.total > 0 ? (v.erledigt / v.total) * 100 : 0 }))
-        .sort((a, b) => a.nvt.localeCompare(b.nvt));
+        .map(([nvt, v]) => ({ nvt, ...v, pct: v.total > 0 ? (v.erledigt / v.total) * 100 : 0, prio: getNvtPriority(nvt) }))
+        // Priorität DESC, dann NVT alphabetisch
+        .sort((a, b) => (b.prio - a.prio) || a.nvt.localeCompare(b.nvt));
 
       // Diese Woche erledigt
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const weekStart = startOfWeek(today);
       const wsIso = toIso(weekStart);
-      const contactMap = new Map<string, C>();
-      ((contacts as C[]) || []).forEach((c) => contactMap.set(c.bid, c));
       const wocheErledigt = ((states as S[]) || [])
         .filter((s) => s.status === "erledigt" && s.erledigt_datum && s.erledigt_datum >= wsIso)
         .map((s) => {
           const c = contactMap.get(s.bid);
           const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
-          const eur = Number(s.umsatz_eur || 0) + Number(s.zusatz_eur || 0) || haPreis;
-          return {
-            datum: s.erledigt_datum!, adresse: adr, nvt: c?.nvt || "—",
-            team: s.team || "—", graben: Number(s.grabenlaenge || 0), eur,
-          };
+          const nvt = c?.nvt || "—";
+          return { datum: s.erledigt_datum!, adresse: adr, nvt, graben: Number(s.grabenlaenge || 0), prio: getNvtPriority(nvt) };
         })
         .sort((a, b) => a.datum.localeCompare(b.datum));
+
+      // Klärfälle
+      const klaerfaelle = ((states as S[]) || [])
+        .filter((s) => s.klarfall)
+        .map((s) => {
+          const c = contactMap.get(s.bid);
+          const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
+          const nvt = c?.nvt || "—";
+          const bauDatum = s.erledigt_datum;
+          const tage = bauDatum ? Math.max(0, Math.round((today.getTime() - new Date(bauDatum).getTime()) / 86400000)) : null;
+          return { adresse: adr, nvt, notiz: s.klarfall_notiz || "", bauDatum, tage, prio: getNvtPriority(nvt) };
+        })
+        .sort((a, b) => {
+          if (a.bauDatum && b.bauDatum) return a.bauDatum.localeCompare(b.bauDatum);
+          if (a.bauDatum) return -1;
+          if (b.bauDatum) return 1;
+          return 0;
+        });
+      const aeltesterKlarfall = klaerfaelle.find((k) => k.tage != null)?.tage ?? null;
+
+      // Gesamt
+      const totals = nvtList.reduce(
+        (a, n) => ({ offen: a.offen + n.offen, in_arbeit: a.in_arbeit + n.in_arbeit, erledigt: a.erledigt + n.erledigt, total: a.total + n.total }),
+        { offen: 0, in_arbeit: 0, erledigt: 0, total: 0 },
+      );
+      const gesPct = totals.total > 0 ? (totals.erledigt / totals.total) * 100 : 0;
 
       // PDF aufbauen
       const pdf = new jsPDF("p", "mm", "a4");
@@ -244,45 +307,59 @@ export default function FinanzTab() {
       const datumStr = today.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
       const uhrzeit = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
-      const ensureSpace = (need: number) => {
-        if (y + need > pageH - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-      };
+      const ensureSpace = (need: number) => { if (y + need > pageH - margin) { pdf.addPage(); y = margin; } };
 
       // Titel
       pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.setTextColor(20);
       pdf.text("Bauleiter-Bericht", margin, y); y += 7;
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(90);
       pdf.text(`Projekt: An der Schmücke · Stand: ${datumStr}, ${uhrzeit} Uhr`, margin, y); y += 8;
-      // Trennlinie
       pdf.setDrawColor(226, 0, 116); pdf.setLineWidth(0.8);
       pdf.line(margin, y, pageW - margin, y); y += 8;
 
-      // Gesamt-Kennzahlen
-      const totals = nvtList.reduce(
-        (a, n) => ({ offen: a.offen + n.offen, in_arbeit: a.in_arbeit + n.in_arbeit, erledigt: a.erledigt + n.erledigt, total: a.total + n.total }),
-        { offen: 0, in_arbeit: 0, erledigt: 0, total: 0 },
+      // KPI-Kacheln
+      const tileW = (pageW - margin * 2 - 9) / 4;
+      const tileH = 24;
+      const drawKpi = (x: number, label: string, big: string, sub: string, color: [number, number, number]) => {
+        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.3);
+        pdf.roundedRect(x, y, tileW, tileH, 2, 2, "FD");
+        pdf.setFillColor(...color); pdf.rect(x, y, 2.5, tileH, "F");
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
+        pdf.text(label, x + 5, y + 5);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(15, 23, 42);
+        pdf.text(big, x + 5, y + 13);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(110);
+        pdf.text(sub, x + 5, y + 19);
+      };
+      drawKpi(margin + (tileW + 3) * 0, "Erledigt", `${totals.erledigt}`, `${gesPct.toFixed(1)}% von ${totals.total}`, [34, 197, 94]);
+      drawKpi(margin + (tileW + 3) * 1, "In Arbeit", `${totals.in_arbeit}`, `HA aktiv`, [59, 130, 246]);
+      drawKpi(margin + (tileW + 3) * 2, "Offen", `${totals.offen}`, `noch zu bauen`, [148, 163, 184]);
+      drawKpi(
+        margin + (tileW + 3) * 3, "Klärfälle", `${klaerfaelle.length}`,
+        aeltesterKlarfall != null ? `ältester: ${aeltesterKlarfall} Tage` : "—",
+        [234, 88, 12],
       );
-      const gesPct = totals.total > 0 ? (totals.erledigt / totals.total) * 100 : 0;
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(20);
-      pdf.text("Gesamtstand", margin, y); y += 5;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(50);
-      pdf.text(
-        `${totals.total} Hausanschlüsse insgesamt · ${totals.erledigt} erledigt (${gesPct.toFixed(1)}%) · ${totals.in_arbeit} in Arbeit · ${totals.offen} offen`,
-        margin, y,
-      ); y += 8;
+      y += tileH + 6;
 
-      // Status-Übersicht je NVT
+      // Gesamt-Fortschrittsbalken
+      ensureSpace(14);
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(90);
+      pdf.text(`Gesamtfortschritt: ${totals.erledigt} / ${totals.total} HA  (${gesPct.toFixed(1)}%)`, margin, y); y += 3;
+      const fbarW = pageW - margin * 2;
+      pdf.setFillColor(240, 240, 240); pdf.rect(margin, y, fbarW, 5, "F");
+      pdf.setFillColor(34, 197, 94); pdf.rect(margin, y, (fbarW * Math.min(100, gesPct)) / 100, 5, "F");
+      y += 10;
+
+      // NVT-Übersicht
       ensureSpace(20);
       pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
-      pdf.text("Status-Übersicht je NVT", margin, y); y += 6;
+      pdf.text("Status-Übersicht je NVT", margin, y); y += 2;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(120);
+      pdf.text("Sortiert nach Priorität (⭐⭐⭐ = höchste)", margin, y + 4); y += 8;
 
-      // Tabellen-Header
-      const colX = { nvt: margin, ges: margin + 35, off: margin + 60, arb: margin + 85, erl: margin + 110, pct: margin + 140, bar: margin + 165 };
-      pdf.setFontSize(9); pdf.setTextColor(110);
-      pdf.setFont("helvetica", "bold");
+      const colX = { prio: margin, nvt: margin + 20, ges: margin + 48, off: margin + 70, arb: margin + 92, erl: margin + 116, pct: margin + 142, bar: margin + 158 };
+      pdf.setFontSize(9); pdf.setTextColor(110); pdf.setFont("helvetica", "bold");
+      pdf.text("Prio", colX.prio, y);
       pdf.text("NVT", colX.nvt, y);
       pdf.text("Gesamt", colX.ges, y);
       pdf.text("Offen", colX.off, y);
@@ -297,21 +374,66 @@ export default function FinanzTab() {
       pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
       nvtList.forEach((n) => {
         ensureSpace(7);
+        // Hintergrund-Hervorhebung Prio 3
+        if (n.prio === 3) {
+          pdf.setFillColor(253, 232, 244);
+          pdf.rect(margin - 1, y - 4, pageW - margin * 2 + 2, 6, "F");
+        } else if (n.prio === 2) {
+          pdf.setFillColor(254, 243, 226);
+          pdf.rect(margin - 1, y - 4, pageW - margin * 2 + 2, 6, "F");
+        }
+        const stars = n.prio > 0 ? "*".repeat(n.prio) : "-";
+        if (n.prio === 3) { pdf.setTextColor(226, 0, 116); pdf.setFont("helvetica", "bold"); }
+        else if (n.prio === 2) { pdf.setTextColor(234, 88, 12); pdf.setFont("helvetica", "bold"); }
+        else { pdf.setTextColor(150); pdf.setFont("helvetica", "normal"); }
+        pdf.text(stars, colX.prio, y);
+        pdf.setFont("helvetica", n.prio >= 2 ? "bold" : "normal"); pdf.setTextColor(30);
         pdf.text(n.nvt, colX.nvt, y);
+        pdf.setFont("helvetica", "normal");
         pdf.text(String(n.total), colX.ges, y);
         pdf.text(String(n.offen), colX.off, y);
         pdf.text(String(n.in_arbeit), colX.arb, y);
         pdf.text(String(n.erledigt), colX.erl, y);
         pdf.text(`${n.pct.toFixed(0)}%`, colX.pct, y);
-        // Mini-Bar
         const barW = pageW - margin - colX.bar;
-        pdf.setDrawColor(220); pdf.setFillColor(240, 240, 240);
+        pdf.setFillColor(240, 240, 240);
         pdf.rect(colX.bar, y - 3, barW, 3, "F");
         pdf.setFillColor(34, 197, 94);
         pdf.rect(colX.bar, y - 3, (barW * Math.min(100, n.pct)) / 100, 3, "F");
         y += 6;
       });
-      y += 4;
+      y += 6;
+
+      // Klärfälle
+      ensureSpace(20);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(234, 88, 12);
+      pdf.text(`⚠ Klärfälle (${klaerfaelle.length})`, margin, y); y += 6;
+      pdf.setTextColor(20);
+
+      if (klaerfaelle.length === 0) {
+        pdf.setFont("helvetica", "italic"); pdf.setFontSize(10); pdf.setTextColor(140);
+        pdf.text("Aktuell keine offenen Klärfälle.", margin, y); y += 8;
+      } else {
+        klaerfaelle.forEach((k) => {
+          ensureSpace(14);
+          const stars = k.prio > 0 ? " " + "*".repeat(k.prio) : "";
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(10); pdf.setTextColor(20);
+          pdf.text(`${k.adresse}  ·  ${k.nvt}${stars}`, margin, y); y += 4;
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(110);
+          const bauStr = k.bauDatum
+            ? `Gebaut am ${new Date(k.bauDatum).toLocaleDateString("de-DE")}${k.tage != null ? ` · seit ${k.tage} Tagen offen` : ""}`
+            : "Bau-Datum unbekannt";
+          pdf.text(bauStr, margin, y); y += 4;
+          if (k.notiz) {
+            pdf.setTextColor(60);
+            const lines = pdf.splitTextToSize(`Notiz: ${k.notiz}`, pageW - margin * 2);
+            lines.forEach((line: string) => { ensureSpace(4); pdf.text(line, margin, y); y += 4; });
+          }
+          pdf.setDrawColor(230); pdf.setLineWidth(0.2);
+          pdf.line(margin, y, pageW - margin, y); y += 4;
+        });
+        y += 2;
+      }
 
       // Diese Woche erledigt
       ensureSpace(20);
@@ -319,24 +441,20 @@ export default function FinanzTab() {
       const kw = getWeek(today);
       pdf.text(`Diese Woche erledigt (KW ${kw})`, margin, y); y += 6;
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(90);
-      const summeEur = wocheErledigt.reduce((s, r) => s + r.eur, 0);
       const summeMeter = wocheErledigt.reduce((s, r) => s + r.graben, 0);
-      pdf.text(`${wocheErledigt.length} HA · ${summeMeter} m Graben · ${summeEur.toLocaleString("de-DE")} €`, margin, y); y += 6;
+      pdf.text(`${wocheErledigt.length} HA · ${summeMeter} m Graben`, margin, y); y += 6;
 
       if (wocheErledigt.length === 0) {
         pdf.setFont("helvetica", "italic"); pdf.setTextColor(140);
         pdf.text("Diese Woche wurden noch keine Hausanschlüsse abgeschlossen.", margin, y);
         y += 6;
       } else {
-        // Header
-        const wX = { dat: margin, adr: margin + 22, nvt: margin + 92, team: margin + 115, gra: margin + 145, eur: margin + 168 };
+        const wX = { dat: margin, adr: margin + 22, nvt: margin + 120, gra: margin + 160 };
         pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(110);
         pdf.text("Datum", wX.dat, y);
         pdf.text("Adresse", wX.adr, y);
         pdf.text("NVT", wX.nvt, y);
-        pdf.text("Team", wX.team, y);
         pdf.text("Graben", wX.gra, y);
-        pdf.text("Betrag", wX.eur, y);
         y += 2;
         pdf.setDrawColor(200); pdf.line(margin, y, pageW - margin, y); y += 3;
         pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
@@ -345,19 +463,16 @@ export default function FinanzTab() {
           const d = new Date(r.datum);
           const dStr = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
           pdf.text(dStr, wX.dat, y);
-          // Adresse kürzen falls zu lang
-          const adr = r.adresse.length > 38 ? r.adresse.slice(0, 36) + "…" : r.adresse;
+          const adr = r.adresse.length > 52 ? r.adresse.slice(0, 50) + "…" : r.adresse;
           pdf.text(adr, wX.adr, y);
-          pdf.text(r.nvt, wX.nvt, y);
-          const team = (r.team || "—").length > 12 ? r.team.slice(0, 11) + "…" : (r.team || "—");
-          pdf.text(team, wX.team, y);
+          const stars = r.prio > 0 ? " " + "*".repeat(r.prio) : "";
+          pdf.text(`${r.nvt}${stars}`, wX.nvt, y);
           pdf.text(`${r.graben} m`, wX.gra, y);
-          pdf.text(`${Math.round(r.eur).toLocaleString("de-DE")} €`, wX.eur, y);
           y += 5;
         });
       }
 
-      // Footer auf jeder Seite
+      // Footer
       const totalPages = pdf.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         pdf.setPage(p);
