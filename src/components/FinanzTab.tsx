@@ -556,6 +556,16 @@ export default function FinanzTab() {
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
     const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
 
+    // Tatsächliche Arbeitstage = Tage mit mindestens 1 erledigtem HA
+    const uniqueDays = (rs: FinRow[]) => new Set(rs.map((r) => r.erledigt_datum)).size;
+    const tatsaechlicheWocheTage = uniqueDays(woche);
+    const tatsaechlicheMonatTage = uniqueDays(monat);
+    const tatsaechlicheVorwocheTage = uniqueDays(vorwoche);
+    const tatsaechlicheVormonatTage = uniqueDays(vormonat);
+    const haProArbeitstagWoche = tatsaechlicheWocheTage > 0 ? woche.length / tatsaechlicheWocheTage : 0;
+    const haProArbeitstagMonat = tatsaechlicheMonatTage > 0 ? monat.length / tatsaechlicheMonatTage : 0;
+    const haProArbeitstagVorwoche = tatsaechlicheVorwocheTage > 0 ? vorwoche.length / tatsaechlicheVorwocheTage : 0;
+    const haProArbeitstagVormonat = tatsaechlicheVormonatTage > 0 ? vormonat.length / tatsaechlicheVormonatTage : 0;
 
     // Pipeline-Stände (Buchhaltung)
     const fertig = rows.filter((r) => r.status === "erledigt");
@@ -655,6 +665,11 @@ export default function FinanzTab() {
       umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
       umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
       umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
+      // Tatsächliche Arbeitstage / Tempo
+      tatsaechlicheWocheTage, tatsaechlicheMonatTage,
+      tatsaechlicheVorwocheTage, tatsaechlicheVormonatTage,
+      haProArbeitstagWoche, haProArbeitstagMonat,
+      haProArbeitstagVorwoche, haProArbeitstagVormonat,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
