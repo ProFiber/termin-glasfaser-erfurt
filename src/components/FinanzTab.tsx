@@ -985,16 +985,22 @@ export default function FinanzTab() {
 function KpiCard({
   title, eur, ziel, haZiel, meter, count, color,
   prevTitle, showPrev, onToggle, prevEur, prevMeter, prevCount,
+  workdays, prevWorkdays, haPerWorkday, prevHaPerWorkday,
 }: {
   title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string;
   prevTitle: string; showPrev: boolean; onToggle: () => void;
   prevEur: number; prevMeter: number; prevCount: number;
+  workdays?: number; prevWorkdays?: number;
+  haPerWorkday?: number; prevHaPerWorkday?: number;
 }) {
   const dispEur = showPrev ? prevEur : eur;
   const dispCount = showPrev ? prevCount : count;
   const dispMeter = showPrev ? prevMeter : meter;
+  const dispWorkdays = showPrev ? prevWorkdays : workdays;
+  const dispHaPerWorkday = showPrev ? prevHaPerWorkday : haPerWorkday;
   const pct = ziel > 0 ? (dispEur / ziel) * 100 : 0;
   const dispTitle = showPrev ? prevTitle : title;
+  const hasWorkdayInfo = dispWorkdays != null && dispWorkdays > 0 && dispHaPerWorkday != null;
   return (
     <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1019,6 +1025,12 @@ function KpiCard({
         <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: color }} />
       </div>
       <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{dispMeter} m Graben</div>
+      {hasWorkdayInfo && (
+        <div style={{ marginTop: 4, paddingTop: 4, borderTop: "1px solid #f3f4f6", fontSize: 10, color: "#475569", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Ø <b>{dispHaPerWorkday!.toFixed(1)} HA</b>/Tag</span>
+          <span style={{ color: "#9ca3af" }}>{dispWorkdays} Arbeitst{dispWorkdays === 1 ? "ag" : "age"}</span>
+        </div>
+      )}
     </div>
   );
 }
