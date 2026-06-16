@@ -80,6 +80,16 @@ function saturdaysRemainingInMonth(now: Date) {
   return count;
 }
 
+function saturdayDatesRemaining(now: Date): Date[] {
+  const list: Date[] = [];
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  for (let day = now.getDate() + 1; day <= last; day++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), day);
+    if (d.getDay() === 6) list.push(d);
+  }
+  return list;
+}
+
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
@@ -88,6 +98,9 @@ export default function FinanzTab() {
   const [editingZiel, setEditingZiel] = useState(false);
   const [zielInput, setZielInput] = useState("70000");
   const [haPreisInput, setHaPreisInput] = useState("1200");
+  const [showPrevHeute, setShowPrevHeute] = useState(false);
+  const [showPrevWoche, setShowPrevWoche] = useState(false);
+  const [showPrevMonat, setShowPrevMonat] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -127,13 +140,19 @@ export default function FinanzTab() {
   const data = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayIso = toIso(today);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const yesterdayIso = toIso(yesterday);
     const weekStart = startOfWeek(today);
     const weekStartIso = toIso(weekStart);
+    const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate() - 7);
+    const prevWeekStartIso = toIso(prevWeekStart);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartIso = toIso(monthStart);
+    const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const prevMonthStartIso = toIso(prevMonthStart);
+    const prevMonthEndIso = monthStartIso; // exclusive
 
     const erledigte = rows.filter((r) => r.status === "erledigt" && r.erledigt_datum);
-    // EUR: realer Wert wenn eingetragen, sonst Pauschale pro HA
     const sumUmsatz = (rs: FinRow[]) =>
       rs.reduce((s, r) => {
         const real = Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0);
@@ -143,8 +162,11 @@ export default function FinanzTab() {
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
+    const gestern = erledigte.filter((r) => r.erledigt_datum === yesterdayIso);
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
+    const vorwoche = erledigte.filter((r) => r.erledigt_datum! >= prevWeekStartIso && r.erledigt_datum! < weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
+    const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
 
 
     // Pipeline-Stände (Buchhaltung)
@@ -198,6 +220,7 @@ export default function FinanzTab() {
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
     const samstageRest = saturdaysRemainingInMonth(today);
+    const samstageDates = saturdayDatesRemaining(today);
     const tagesziel = zielMonat / arbeitstageMonat;
     const wochenziel = tagesziel * 5; // Mo-Fr
     const sollHeute = tagesziel * arbeitstagePassed;
@@ -217,6 +240,22 @@ export default function FinanzTab() {
     const haSollHeute = haTagesziel * arbeitstagePassed;
     const haSollIst = monat.length - haSollHeute;
 
+    // Samstag-Szenarien: nutze 0..N der verbleibenden Samstage als Zusatz-Arbeitstage
+    const samstagSzenarien = samstageDates.map((d, i) => {
+      const extra = i + 1;
+      const tageGesamt = arbeitstageRest + extra;
+      const eurProTag = tageGesamt > 0 ? fehlendEur / tageGesamt : 0;
+      const haProTag = haPreis > 0 ? eurProTag / haPreis : 0;
+      return {
+        datum: d,
+        label: `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`,
+        anzahl: extra,
+        tageGesamt,
+        eurProTag,
+        haProTag,
+      };
+    });
+
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
 
@@ -224,10 +263,15 @@ export default function FinanzTab() {
       umsatzHeute, umsatzWoche, umsatzMonat,
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
+      // Vergleichswerte (Vorperiode)
+      umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
+      umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
+      umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
       arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
+      samstagSzenarien,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
@@ -240,6 +284,7 @@ export default function FinanzTab() {
       trend, trendWoche, teamData,
     };
   }, [rows, ziel, haPreis]);
+
 
   async function saveZiel() {
     const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
@@ -337,6 +382,25 @@ export default function FinanzTab() {
         <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, opacity: 0.95, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
           📈 Benötigt ab jetzt: <b>{data.benoetigtProTagHa.toFixed(1)} HA/Tag</b> ({EUR(data.benoetigtProTagEur)}) · noch {data.arbeitstageRest} Arbeitstage
         </div>
+        {data.samstagSzenarien.length > 0 && (
+          <div style={{ marginTop: 8, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.9, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>
+              🗓️ Samstags-Puffer aktivieren
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {data.samstagSzenarien.map((s) => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, background: "rgba(255,255,255,0.12)", borderRadius: 6, padding: "5px 8px" }}>
+                  <span style={{ fontWeight: 600 }}>
+                    +{s.anzahl} Sa {s.anzahl === 1 ? `(${s.label})` : `(bis ${s.label})`}
+                  </span>
+                  <span>
+                    <b>{s.haProTag.toFixed(1)} HA/Tag</b> · {EUR(s.eurProTag)} · {s.tageGesamt} Tage
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {editingZiel && (
@@ -373,11 +437,26 @@ export default function FinanzTab() {
         </div>
       )}
 
-      {/* KPI-Cards: Heute / Woche / Monat */}
+      {/* KPI-Cards: Heute / Woche / Monat (mit Vorperiode-Vergleich) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <KpiCard title="Heute" eur={data.umsatzHeute} ziel={data.tagesziel} haZiel={data.haTagesziel} meter={data.meterHeute} count={data.countHeute} color="#3b82f6" />
-        <KpiCard title="Woche" eur={data.umsatzWoche} ziel={data.wochenziel} haZiel={data.haWochenziel} meter={data.meterWoche} count={data.countWoche} color="#8b5cf6" />
-        <KpiCard title="Monat" eur={data.umsatzMonat} ziel={data.zielMonat} haZiel={data.haZielMonat} meter={data.meterMonat} count={data.countMonat} color="#22c55e" />
+        <KpiCard
+          title="Heute" prevTitle="Gestern" showPrev={showPrevHeute} onToggle={() => setShowPrevHeute((v) => !v)}
+          eur={data.umsatzHeute} meter={data.meterHeute} count={data.countHeute}
+          prevEur={data.umsatzGestern} prevMeter={data.meterGestern} prevCount={data.countGestern}
+          ziel={data.tagesziel} haZiel={data.haTagesziel} color="#3b82f6"
+        />
+        <KpiCard
+          title="Woche" prevTitle="Vorwoche" showPrev={showPrevWoche} onToggle={() => setShowPrevWoche((v) => !v)}
+          eur={data.umsatzWoche} meter={data.meterWoche} count={data.countWoche}
+          prevEur={data.umsatzVorwoche} prevMeter={data.meterVorwoche} prevCount={data.countVorwoche}
+          ziel={data.wochenziel} haZiel={data.haWochenziel} color="#8b5cf6"
+        />
+        <KpiCard
+          title="Monat" prevTitle="Vormonat" showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
+          eur={data.umsatzMonat} meter={data.meterMonat} count={data.countMonat}
+          prevEur={data.umsatzVormonat} prevMeter={data.meterVormonat} prevCount={data.countVormonat}
+          ziel={data.zielMonat} haZiel={data.haZielMonat} color="#22c55e"
+        />
       </div>
 
 
@@ -466,18 +545,43 @@ export default function FinanzTab() {
   );
 }
 
-function KpiCard({ title, eur, ziel, haZiel, meter, count, color }: { title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string }) {
-  const pct = ziel > 0 ? (eur / ziel) * 100 : 0;
+function KpiCard({
+  title, eur, ziel, haZiel, meter, count, color,
+  prevTitle, showPrev, onToggle, prevEur, prevMeter, prevCount,
+}: {
+  title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string;
+  prevTitle: string; showPrev: boolean; onToggle: () => void;
+  prevEur: number; prevMeter: number; prevCount: number;
+}) {
+  const dispEur = showPrev ? prevEur : eur;
+  const dispCount = showPrev ? prevCount : count;
+  const dispMeter = showPrev ? prevMeter : meter;
+  const pct = ziel > 0 ? (dispEur / ziel) * 100 : 0;
+  const dispTitle = showPrev ? prevTitle : title;
   return (
-    <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.3 }}>{title}</div>
-      <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2, lineHeight: 1.1 }}>{EUR(eur)}</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginTop: 2 }}>{count} <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>HA</span></div>
+    <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", position: "relative" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 10, color: showPrev ? "#9333ea" : "#6b7280", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.3 }}>{dispTitle}</div>
+        <button
+          onClick={onToggle}
+          title={showPrev ? `Zurück zu ${title}` : `Zeige ${prevTitle}`}
+          style={{
+            background: showPrev ? "#9333ea" : "#f3f4f6",
+            color: showPrev ? "white" : "#6b7280",
+            border: "none", borderRadius: 4, padding: "1px 5px",
+            fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1.2,
+          }}
+        >
+          {showPrev ? "↻" : "⟲"}
+        </button>
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2, lineHeight: 1.1 }}>{EUR(dispEur)}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginTop: 2 }}>{dispCount} <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>HA</span></div>
       <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>Ziel {EUR(ziel)} · {haZiel.toFixed(1)} HA</div>
       <div style={{ height: 4, background: "#f3f4f6", borderRadius: 2, marginTop: 5, overflow: "hidden" }}>
         <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: color }} />
       </div>
-      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{meter} m Graben</div>
+      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{dispMeter} m Graben</div>
     </div>
   );
 }
