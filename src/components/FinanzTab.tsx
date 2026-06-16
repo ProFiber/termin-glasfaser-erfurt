@@ -545,18 +545,43 @@ export default function FinanzTab() {
   );
 }
 
-function KpiCard({ title, eur, ziel, haZiel, meter, count, color }: { title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string }) {
-  const pct = ziel > 0 ? (eur / ziel) * 100 : 0;
+function KpiCard({
+  title, eur, ziel, haZiel, meter, count, color,
+  prevTitle, showPrev, onToggle, prevEur, prevMeter, prevCount,
+}: {
+  title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string;
+  prevTitle: string; showPrev: boolean; onToggle: () => void;
+  prevEur: number; prevMeter: number; prevCount: number;
+}) {
+  const dispEur = showPrev ? prevEur : eur;
+  const dispCount = showPrev ? prevCount : count;
+  const dispMeter = showPrev ? prevMeter : meter;
+  const pct = ziel > 0 ? (dispEur / ziel) * 100 : 0;
+  const dispTitle = showPrev ? prevTitle : title;
   return (
-    <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.3 }}>{title}</div>
-      <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2, lineHeight: 1.1 }}>{EUR(eur)}</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginTop: 2 }}>{count} <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>HA</span></div>
+    <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", position: "relative" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 10, color: showPrev ? "#9333ea" : "#6b7280", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.3 }}>{dispTitle}</div>
+        <button
+          onClick={onToggle}
+          title={showPrev ? `Zurück zu ${title}` : `Zeige ${prevTitle}`}
+          style={{
+            background: showPrev ? "#9333ea" : "#f3f4f6",
+            color: showPrev ? "white" : "#6b7280",
+            border: "none", borderRadius: 4, padding: "1px 5px",
+            fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1.2,
+          }}
+        >
+          {showPrev ? "↻" : "⟲"}
+        </button>
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2, lineHeight: 1.1 }}>{EUR(dispEur)}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#111", marginTop: 2 }}>{dispCount} <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>HA</span></div>
       <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>Ziel {EUR(ziel)} · {haZiel.toFixed(1)} HA</div>
       <div style={{ height: 4, background: "#f3f4f6", borderRadius: 2, marginTop: 5, overflow: "hidden" }}>
         <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: color }} />
       </div>
-      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{meter} m Graben</div>
+      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{dispMeter} m Graben</div>
     </div>
   );
 }
