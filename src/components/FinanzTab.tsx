@@ -137,13 +137,19 @@ export default function FinanzTab() {
   const data = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayIso = toIso(today);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const yesterdayIso = toIso(yesterday);
     const weekStart = startOfWeek(today);
     const weekStartIso = toIso(weekStart);
+    const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate() - 7);
+    const prevWeekStartIso = toIso(prevWeekStart);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartIso = toIso(monthStart);
+    const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const prevMonthStartIso = toIso(prevMonthStart);
+    const prevMonthEndIso = monthStartIso; // exclusive
 
     const erledigte = rows.filter((r) => r.status === "erledigt" && r.erledigt_datum);
-    // EUR: realer Wert wenn eingetragen, sonst Pauschale pro HA
     const sumUmsatz = (rs: FinRow[]) =>
       rs.reduce((s, r) => {
         const real = Number(r.umsatz_eur || 0) + Number(r.zusatz_eur || 0);
@@ -153,8 +159,11 @@ export default function FinanzTab() {
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
+    const gestern = erledigte.filter((r) => r.erledigt_datum === yesterdayIso);
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
+    const vorwoche = erledigte.filter((r) => r.erledigt_datum! >= prevWeekStartIso && r.erledigt_datum! < weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
+    const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
 
 
     // Pipeline-Stände (Buchhaltung)
@@ -208,6 +217,7 @@ export default function FinanzTab() {
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
     const arbeitstagePassed = workdaysPassedInMonth(today, satBuffer);
     const samstageRest = saturdaysRemainingInMonth(today);
+    const samstageDates = saturdayDatesRemaining(today);
     const tagesziel = zielMonat / arbeitstageMonat;
     const wochenziel = tagesziel * 5; // Mo-Fr
     const sollHeute = tagesziel * arbeitstagePassed;
@@ -227,6 +237,22 @@ export default function FinanzTab() {
     const haSollHeute = haTagesziel * arbeitstagePassed;
     const haSollIst = monat.length - haSollHeute;
 
+    // Samstag-Szenarien: nutze 0..N der verbleibenden Samstage als Zusatz-Arbeitstage
+    const samstagSzenarien = samstageDates.map((d, i) => {
+      const extra = i + 1;
+      const tageGesamt = arbeitstageRest + extra;
+      const eurProTag = tageGesamt > 0 ? fehlendEur / tageGesamt : 0;
+      const haProTag = haPreis > 0 ? eurProTag / haPreis : 0;
+      return {
+        datum: d,
+        label: `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`,
+        anzahl: extra,
+        tageGesamt,
+        eurProTag,
+        haProTag,
+      };
+    });
+
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
 
@@ -234,10 +260,15 @@ export default function FinanzTab() {
       umsatzHeute, umsatzWoche, umsatzMonat,
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
+      // Vergleichswerte (Vorperiode)
+      umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
+      umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
+      umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
       arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
+      samstagSzenarien,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
@@ -250,6 +281,7 @@ export default function FinanzTab() {
       trend, trendWoche, teamData,
     };
   }, [rows, ziel, haPreis]);
+
 
   async function saveZiel() {
     const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
