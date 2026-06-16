@@ -171,6 +171,209 @@ export default function FinanzTab() {
     }
   }
 
+  async function exportBauleiterPDF() {
+    setExporting(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+
+      // Daten holen: Kontakte + Status (alle = aktuelles Projekt)
+      const [{ data: contacts }, { data: states }] = await Promise.all([
+        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort"),
+        supabase
+          .from("call_states")
+          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,umsatz_eur,zusatz_eur"),
+      ]);
+
+      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string };
+      type S = {
+        bid: string; status: string; team: string; team_status: string;
+        termin_datum: string | null; erledigt_datum: string | null;
+        grabenlaenge: number; umsatz_eur: number | string; zusatz_eur: number | string;
+      };
+      const stateMap = new Map<string, S>();
+      ((states as S[]) || []).forEach((s) => stateMap.set(s.bid, s));
+
+      // Status-Klassifizierung
+      const klass = (s?: S): "erledigt" | "in_arbeit" | "offen" => {
+        if (!s) return "offen";
+        if (s.status === "erledigt") return "erledigt";
+        if ((s.team && s.team.trim()) || (s.team_status && s.team_status.trim()) || s.termin_datum) return "in_arbeit";
+        return "offen";
+      };
+
+      // Gruppierung nach NVT
+      const nvtMap = new Map<string, { offen: number; in_arbeit: number; erledigt: number; total: number }>();
+      ((contacts as C[]) || []).forEach((c) => {
+        const nvt = (c.nvt || "ohne NVT").trim() || "ohne NVT";
+        const k = klass(stateMap.get(c.bid));
+        const cur = nvtMap.get(nvt) || { offen: 0, in_arbeit: 0, erledigt: 0, total: 0 };
+        cur[k]++; cur.total++;
+        nvtMap.set(nvt, cur);
+      });
+      const nvtList = Array.from(nvtMap.entries())
+        .map(([nvt, v]) => ({ nvt, ...v, pct: v.total > 0 ? (v.erledigt / v.total) * 100 : 0 }))
+        .sort((a, b) => a.nvt.localeCompare(b.nvt));
+
+      // Diese Woche erledigt
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const weekStart = startOfWeek(today);
+      const wsIso = toIso(weekStart);
+      const contactMap = new Map<string, C>();
+      ((contacts as C[]) || []).forEach((c) => contactMap.set(c.bid, c));
+      const wocheErledigt = ((states as S[]) || [])
+        .filter((s) => s.status === "erledigt" && s.erledigt_datum && s.erledigt_datum >= wsIso)
+        .map((s) => {
+          const c = contactMap.get(s.bid);
+          const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
+          const eur = Number(s.umsatz_eur || 0) + Number(s.zusatz_eur || 0) || haPreis;
+          return {
+            datum: s.erledigt_datum!, adresse: adr, nvt: c?.nvt || "—",
+            team: s.team || "—", graben: Number(s.grabenlaenge || 0), eur,
+          };
+        })
+        .sort((a, b) => a.datum.localeCompare(b.datum));
+
+      // PDF aufbauen
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 14;
+      let y = margin;
+
+      const datumStr = today.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+      const uhrzeit = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+
+      const ensureSpace = (need: number) => {
+        if (y + need > pageH - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      // Titel
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.setTextColor(20);
+      pdf.text("Bauleiter-Bericht", margin, y); y += 7;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(90);
+      pdf.text(`Projekt: An der Schmücke · Stand: ${datumStr}, ${uhrzeit} Uhr`, margin, y); y += 8;
+      // Trennlinie
+      pdf.setDrawColor(226, 0, 116); pdf.setLineWidth(0.8);
+      pdf.line(margin, y, pageW - margin, y); y += 8;
+
+      // Gesamt-Kennzahlen
+      const totals = nvtList.reduce(
+        (a, n) => ({ offen: a.offen + n.offen, in_arbeit: a.in_arbeit + n.in_arbeit, erledigt: a.erledigt + n.erledigt, total: a.total + n.total }),
+        { offen: 0, in_arbeit: 0, erledigt: 0, total: 0 },
+      );
+      const gesPct = totals.total > 0 ? (totals.erledigt / totals.total) * 100 : 0;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(20);
+      pdf.text("Gesamtstand", margin, y); y += 5;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(50);
+      pdf.text(
+        `${totals.total} Hausanschlüsse insgesamt · ${totals.erledigt} erledigt (${gesPct.toFixed(1)}%) · ${totals.in_arbeit} in Arbeit · ${totals.offen} offen`,
+        margin, y,
+      ); y += 8;
+
+      // Status-Übersicht je NVT
+      ensureSpace(20);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      pdf.text("Status-Übersicht je NVT", margin, y); y += 6;
+
+      // Tabellen-Header
+      const colX = { nvt: margin, ges: margin + 35, off: margin + 60, arb: margin + 85, erl: margin + 110, pct: margin + 140, bar: margin + 165 };
+      pdf.setFontSize(9); pdf.setTextColor(110);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("NVT", colX.nvt, y);
+      pdf.text("Gesamt", colX.ges, y);
+      pdf.text("Offen", colX.off, y);
+      pdf.text("In Arbeit", colX.arb, y);
+      pdf.text("Erledigt", colX.erl, y);
+      pdf.text("%", colX.pct, y);
+      pdf.text("Fortschritt", colX.bar, y);
+      y += 2;
+      pdf.setDrawColor(200); pdf.setLineWidth(0.2);
+      pdf.line(margin, y, pageW - margin, y); y += 3;
+
+      pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
+      nvtList.forEach((n) => {
+        ensureSpace(7);
+        pdf.text(n.nvt, colX.nvt, y);
+        pdf.text(String(n.total), colX.ges, y);
+        pdf.text(String(n.offen), colX.off, y);
+        pdf.text(String(n.in_arbeit), colX.arb, y);
+        pdf.text(String(n.erledigt), colX.erl, y);
+        pdf.text(`${n.pct.toFixed(0)}%`, colX.pct, y);
+        // Mini-Bar
+        const barW = pageW - margin - colX.bar;
+        pdf.setDrawColor(220); pdf.setFillColor(240, 240, 240);
+        pdf.rect(colX.bar, y - 3, barW, 3, "F");
+        pdf.setFillColor(34, 197, 94);
+        pdf.rect(colX.bar, y - 3, (barW * Math.min(100, n.pct)) / 100, 3, "F");
+        y += 6;
+      });
+      y += 4;
+
+      // Diese Woche erledigt
+      ensureSpace(20);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      const kw = getWeek(today);
+      pdf.text(`Diese Woche erledigt (KW ${kw})`, margin, y); y += 6;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(90);
+      const summeEur = wocheErledigt.reduce((s, r) => s + r.eur, 0);
+      const summeMeter = wocheErledigt.reduce((s, r) => s + r.graben, 0);
+      pdf.text(`${wocheErledigt.length} HA · ${summeMeter} m Graben · ${summeEur.toLocaleString("de-DE")} €`, margin, y); y += 6;
+
+      if (wocheErledigt.length === 0) {
+        pdf.setFont("helvetica", "italic"); pdf.setTextColor(140);
+        pdf.text("Diese Woche wurden noch keine Hausanschlüsse abgeschlossen.", margin, y);
+        y += 6;
+      } else {
+        // Header
+        const wX = { dat: margin, adr: margin + 22, nvt: margin + 92, team: margin + 115, gra: margin + 145, eur: margin + 168 };
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(110);
+        pdf.text("Datum", wX.dat, y);
+        pdf.text("Adresse", wX.adr, y);
+        pdf.text("NVT", wX.nvt, y);
+        pdf.text("Team", wX.team, y);
+        pdf.text("Graben", wX.gra, y);
+        pdf.text("Betrag", wX.eur, y);
+        y += 2;
+        pdf.setDrawColor(200); pdf.line(margin, y, pageW - margin, y); y += 3;
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
+        wocheErledigt.forEach((r) => {
+          ensureSpace(6);
+          const d = new Date(r.datum);
+          const dStr = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+          pdf.text(dStr, wX.dat, y);
+          // Adresse kürzen falls zu lang
+          const adr = r.adresse.length > 38 ? r.adresse.slice(0, 36) + "…" : r.adresse;
+          pdf.text(adr, wX.adr, y);
+          pdf.text(r.nvt, wX.nvt, y);
+          const team = (r.team || "—").length > 12 ? r.team.slice(0, 11) + "…" : (r.team || "—");
+          pdf.text(team, wX.team, y);
+          pdf.text(`${r.graben} m`, wX.gra, y);
+          pdf.text(`${Math.round(r.eur).toLocaleString("de-DE")} €`, wX.eur, y);
+          y += 5;
+        });
+      }
+
+      // Footer auf jeder Seite
+      const totalPages = pdf.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(140);
+        pdf.text(`Bauleiter-Bericht · ${datumStr} · Seite ${p}/${totalPages}`, margin, pageH - 6);
+      }
+
+      const fn = `Bauleiter-Bericht_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.pdf`;
+      pdf.save(fn);
+    } catch (e) {
+      console.error("Bauleiter-PDF Fehler", e);
+      alert("Export fehlgeschlagen. Bitte erneut versuchen.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       const [{ data: cs }, { data: zList }] = await Promise.all([
@@ -384,7 +587,21 @@ export default function FinanzTab() {
   return (
     <div style={{ padding: "12px 12px 80px", background: "#f7f8fa", minHeight: "100%" }}>
       {/* Export-Leiste (wird beim PDF-Export ausgeblendet) */}
-      <div data-no-export style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+      <div data-no-export style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+        <button
+          onClick={exportBauleiterPDF}
+          disabled={exporting}
+          style={{
+            background: exporting ? "#94a3b8" : "#e20074",
+            color: "white", border: "none", borderRadius: 8,
+            padding: "8px 14px", fontSize: 12, fontWeight: 700,
+            cursor: exporting ? "wait" : "pointer",
+            boxShadow: "0 2px 6px rgba(226,0,116,0.25)",
+            display: "inline-flex", alignItems: "center", gap: 6,
+          }}
+        >
+          🏗️ Bauleiter-Bericht
+        </button>
         <button
           onClick={exportPDF}
           disabled={exporting}
@@ -397,7 +614,7 @@ export default function FinanzTab() {
             display: "inline-flex", alignItems: "center", gap: 6,
           }}
         >
-          {exporting ? "⏳ Erzeuge PDF…" : "📄 PDF Export"}
+          {exporting ? "⏳ Erzeuge PDF…" : "📄 Finanz-PDF"}
         </button>
       </div>
 
