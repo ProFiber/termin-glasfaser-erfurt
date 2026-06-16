@@ -587,7 +587,21 @@ export default function FinanzTab() {
   return (
     <div style={{ padding: "12px 12px 80px", background: "#f7f8fa", minHeight: "100%" }}>
       {/* Export-Leiste (wird beim PDF-Export ausgeblendet) */}
-      <div data-no-export style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+      <div data-no-export style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+        <button
+          onClick={exportBauleiterPDF}
+          disabled={exporting}
+          style={{
+            background: exporting ? "#94a3b8" : "#e20074",
+            color: "white", border: "none", borderRadius: 8,
+            padding: "8px 14px", fontSize: 12, fontWeight: 700,
+            cursor: exporting ? "wait" : "pointer",
+            boxShadow: "0 2px 6px rgba(226,0,116,0.25)",
+            display: "inline-flex", alignItems: "center", gap: 6,
+          }}
+        >
+          🏗️ Bauleiter-Bericht
+        </button>
         <button
           onClick={exportPDF}
           disabled={exporting}
@@ -600,7 +614,7 @@ export default function FinanzTab() {
             display: "inline-flex", alignItems: "center", gap: 6,
           }}
         >
-          {exporting ? "⏳ Erzeuge PDF…" : "📄 PDF Export"}
+          {exporting ? "⏳ Erzeuge PDF…" : "📄 Finanz-PDF"}
         </button>
       </div>
 
