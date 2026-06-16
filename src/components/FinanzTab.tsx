@@ -129,21 +129,25 @@ export default function FinanzTab() {
 
       // KPI-Kacheln (Heute / Woche / Monat)
       const tileW = (pageW - margin * 2 - 8) / 3;
-      const tileH = 26;
-      const drawTile = (x: number, title: string, big: string, sub: string, color: [number, number, number]) => {
+      const tileH = 30;
+      const drawTile = (x: number, title: string, big: string, sub: string, tempo: string, color: [number, number, number]) => {
         pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.3);
         pdf.roundedRect(x, y, tileW, tileH, 2, 2, "FD");
         pdf.setFillColor(...color); pdf.rect(x, y, 2.5, tileH, "F");
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
         pdf.text(title, x + 5, y + 5);
         pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(15, 23, 42);
-        pdf.text(big, x + 5, y + 14);
+        pdf.text(big, x + 5, y + 13);
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
-        pdf.text(sub, x + 5, y + 21);
+        pdf.text(sub, x + 5, y + 19);
+        if (tempo) {
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.setTextColor(70);
+          pdf.text(tempo, x + 5, y + 26);
+        }
       };
-      drawTile(margin, "Heute", `${data.countHeute} HA`, `${data.meterHeute} m · ${Math.round(data.umsatzHeute).toLocaleString("de-DE")} €`, [34, 197, 94]);
-      drawTile(margin + tileW + 4, "Diese Woche", `${data.countWoche} HA`, `${data.meterWoche} m · ${Math.round(data.umsatzWoche).toLocaleString("de-DE")} €`, [59, 130, 246]);
-      drawTile(margin + (tileW + 4) * 2, "Dieser Monat", `${data.countMonat} HA`, `${data.meterMonat} m · ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €`, [226, 0, 116]);
+      drawTile(margin, "Heute", `${data.countHeute} HA`, `${data.meterHeute} m · ${Math.round(data.umsatzHeute).toLocaleString("de-DE")} €`, "", [34, 197, 94]);
+      drawTile(margin + tileW + 4, "Diese Woche", `${data.countWoche} HA`, `${data.meterWoche} m · ${Math.round(data.umsatzWoche).toLocaleString("de-DE")} €`, data.tatsaechlicheWocheTage > 0 ? `Ø ${data.haProArbeitstagWoche.toFixed(1)} HA/Tag  (${data.tatsaechlicheWocheTage} Tage gearbeitet)` : "", [59, 130, 246]);
+      drawTile(margin + (tileW + 4) * 2, "Dieser Monat", `${data.countMonat} HA`, `${data.meterMonat} m · ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €`, data.tatsaechlicheMonatTage > 0 ? `Ø ${data.haProArbeitstagMonat.toFixed(1)} HA/Tag  (${data.tatsaechlicheMonatTage} Tage gearbeitet)` : "", [226, 0, 116]);
       y += tileH + 8;
 
       // Ziel-Block
@@ -556,6 +560,16 @@ export default function FinanzTab() {
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
     const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
 
+    // Tatsächliche Arbeitstage = Tage mit mindestens 1 erledigtem HA
+    const uniqueDays = (rs: FinRow[]) => new Set(rs.map((r) => r.erledigt_datum)).size;
+    const tatsaechlicheWocheTage = uniqueDays(woche);
+    const tatsaechlicheMonatTage = uniqueDays(monat);
+    const tatsaechlicheVorwocheTage = uniqueDays(vorwoche);
+    const tatsaechlicheVormonatTage = uniqueDays(vormonat);
+    const haProArbeitstagWoche = tatsaechlicheWocheTage > 0 ? woche.length / tatsaechlicheWocheTage : 0;
+    const haProArbeitstagMonat = tatsaechlicheMonatTage > 0 ? monat.length / tatsaechlicheMonatTage : 0;
+    const haProArbeitstagVorwoche = tatsaechlicheVorwocheTage > 0 ? vorwoche.length / tatsaechlicheVorwocheTage : 0;
+    const haProArbeitstagVormonat = tatsaechlicheVormonatTage > 0 ? vormonat.length / tatsaechlicheVormonatTage : 0;
 
     // Pipeline-Stände (Buchhaltung)
     const fertig = rows.filter((r) => r.status === "erledigt");
@@ -655,6 +669,11 @@ export default function FinanzTab() {
       umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
       umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
       umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
+      // Tatsächliche Arbeitstage / Tempo
+      tatsaechlicheWocheTage, tatsaechlicheMonatTage,
+      tatsaechlicheVorwocheTage, tatsaechlicheVormonatTage,
+      haProArbeitstagWoche, haProArbeitstagMonat,
+      haProArbeitstagVorwoche, haProArbeitstagVormonat,
       zielMonat, tagesziel, wochenziel, sollHeute, fortschritt, sollIst,
       haZielMonat, haTagesziel, haWochenziel, haSollHeute, haSollIst,
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
@@ -871,12 +890,20 @@ export default function FinanzTab() {
           eur={data.umsatzWoche} meter={data.meterWoche} count={data.countWoche}
           prevEur={data.umsatzVorwoche} prevMeter={data.meterVorwoche} prevCount={data.countVorwoche}
           ziel={data.wochenziel} haZiel={data.haWochenziel} color="#8b5cf6"
+          workdays={data.tatsaechlicheWocheTage}
+          prevWorkdays={data.tatsaechlicheVorwocheTage}
+          haPerWorkday={data.haProArbeitstagWoche}
+          prevHaPerWorkday={data.haProArbeitstagVorwoche}
         />
         <KpiCard
           title="Monat" prevTitle="Vormonat" showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
           eur={data.umsatzMonat} meter={data.meterMonat} count={data.countMonat}
           prevEur={data.umsatzVormonat} prevMeter={data.meterVormonat} prevCount={data.countVormonat}
           ziel={data.zielMonat} haZiel={data.haZielMonat} color="#22c55e"
+          workdays={data.tatsaechlicheMonatTage}
+          prevWorkdays={data.tatsaechlicheVormonatTage}
+          haPerWorkday={data.haProArbeitstagMonat}
+          prevHaPerWorkday={data.haProArbeitstagVormonat}
         />
       </div>
 
@@ -970,16 +997,22 @@ export default function FinanzTab() {
 function KpiCard({
   title, eur, ziel, haZiel, meter, count, color,
   prevTitle, showPrev, onToggle, prevEur, prevMeter, prevCount,
+  workdays, prevWorkdays, haPerWorkday, prevHaPerWorkday,
 }: {
   title: string; eur: number; ziel: number; haZiel: number; meter: number; count: number; color: string;
   prevTitle: string; showPrev: boolean; onToggle: () => void;
   prevEur: number; prevMeter: number; prevCount: number;
+  workdays?: number; prevWorkdays?: number;
+  haPerWorkday?: number; prevHaPerWorkday?: number;
 }) {
   const dispEur = showPrev ? prevEur : eur;
   const dispCount = showPrev ? prevCount : count;
   const dispMeter = showPrev ? prevMeter : meter;
+  const dispWorkdays = showPrev ? prevWorkdays : workdays;
+  const dispHaPerWorkday = showPrev ? prevHaPerWorkday : haPerWorkday;
   const pct = ziel > 0 ? (dispEur / ziel) * 100 : 0;
   const dispTitle = showPrev ? prevTitle : title;
+  const hasWorkdayInfo = dispWorkdays != null && dispWorkdays > 0 && dispHaPerWorkday != null;
   return (
     <div style={{ background: "white", borderRadius: 10, padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1004,6 +1037,12 @@ function KpiCard({
         <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: color }} />
       </div>
       <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, textAlign: "right" }}>{dispMeter} m Graben</div>
+      {hasWorkdayInfo && (
+        <div style={{ marginTop: 4, paddingTop: 4, borderTop: "1px solid #f3f4f6", fontSize: 10, color: "#475569", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Ø <b>{dispHaPerWorkday!.toFixed(1)} HA</b>/Tag</span>
+          <span style={{ color: "#9ca3af" }}>{dispWorkdays} Arbeitst{dispWorkdays === 1 ? "ag" : "age"}</span>
+        </div>
+      )}
     </div>
   );
 }
