@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getNvtPriority, priorityStars } from "@/lib/priority";
 import {
   ResponsiveContainer,
   BarChart, Bar,
