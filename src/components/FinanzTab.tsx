@@ -629,6 +629,7 @@ export default function FinanzTab() {
       <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 10, marginTop: 16 }}>
         Live-Daten · Samstag = Puffertag
       </div>
+      </div>
     </div>
   );
 }
