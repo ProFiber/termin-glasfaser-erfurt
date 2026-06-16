@@ -1,25 +1,49 @@
+## Bauleiter-Bericht überarbeiten + Finanz-PDF reparieren
 
-## Glasfaser Call-Liste – Störmer Bau
+### 1) Finanz-PDF Export reparieren
+Der Button nutzt `html2canvas`. Vermutliche Ursache: moderne CSS-Farbfunktionen (oklch / color-mix aus Tailwind v4 bzw. neue Browser-Defaults) lassen html2canvas crashen → kein Download, evtl. nur Konsolenfehler.
 
-A mobile-optimized call list app for managing fiber optic installation appointments with 46 customer contacts on Hauptstr. and Lange Str.
+**Fix:** `exportPDF()` umstellen auf reines `jsPDF` (Vektor, gleicher Ansatz wie Bauleiter-Bericht). Das ist robuster, leichter, und sieht sauberer aus. Inhalt:
+- Kopfzeile (Datum/Uhrzeit, Projekt)
+- KPI-Block: Heute / Diese Woche / Dieser Monat (HA, m, €)
+- Ziel-Kachel: Monatsziel, Ist, Δ, benötigt/Tag
+- Tabelle "Letzte Erledigungen" (kompakt)
+- Footer mit Seitenzahlen
 
-### Features
-- **Sticky header** in Telekom magenta (#e20074) with live counter "X / 4 ✓" appointments and save indicator
-- **Filter bar**: by street (Alle / Hauptstr. / Lange Str.) and by status (Alle / Offen / Nicht erreicht / Termin / Abgelehnt)
-- **Contact cards** showing address, building type (EFH/MFH), units (WE), name, and booked appointment slot — color-coded border + background by status
-- **Expandable card** with:
-  - German call script ("Leitfaden") personalized with last name and street
-  - One-tap call buttons for mobile and landline (auto-marks "Angerufen")
-  - Status buttons: Nicht erreicht / Abgelehnt
-  - Appointment grid: Tue–Sat × Vormittag/Nachmittag (10 slots) — selecting auto-sets status to "Termin"
-  - Free-text note field
-- **Bottom status bar** with running tallies
-- **Persistence**: all status, appointments, and notes saved to localStorage (`schmucke_callliste_v1`) with brief "💾 gespeichert" flash on each change
+### 2) Bauleiter-Bericht anpassen
+**Entfernen:**
+- Alle €-Spalten/Werte (Gesamt-Summe, "Betrag"-Spalte, Wochensumme €)
+- Spalte "Team" in "Diese Woche erledigt"
 
-### Implementation
-- Replace the placeholder in `src/routes/index.tsx` with the `CallListe` component
-- Embed the 46 contacts, slot definitions, and status metadata as constants in the file
-- Mobile-first layout, max-width 480px, system font stack — matches the design exactly as provided
-- Update page `<title>` and meta description in the route's `head()` to "Glasfaser Call-Liste · Störmer Bau"
+**Neu hinzufügen:**
 
-No backend, no auth — pure client-side tool for field use.
+**a) Priorisierte NVT-Übersicht (oben, prominent)**
+Sternchen je NVT aus `src/lib/priority.ts` (3 = ⭐⭐⭐, 2 = ⭐⭐, 1 = ⭐).
+NVT-Tabelle wird nach Priorität sortiert (höchste oben) und Stern-Spalte vor NVT-Name. Priorität-3 NVTs zusätzlich farblich hervorgehoben (rosa Hintergrund-Balken).
+
+**b) Klärfälle-Sektion**
+Neue Sektion zwischen NVT-Tabelle und Wochenliste. Pro Klärfall:
+- Adresse + NVT (mit Sternen falls priorisiert)
+- Bau-Datum (= `erledigt_datum`, "seit X Tagen offen")
+- Notiz (`klarfall_notiz`)
+Sortiert: älteste zuerst. Daten aus `call_states` (`klarfall = true`).
+
+**c) Visuelle KPIs (oben unter Titel)**
+Vier Kacheln im Stil der Finanz-KPIs (mit jsPDF gezeichnete farbige Boxen):
+- ✅ Erledigt gesamt (Anzahl + %)
+- 🔧 In Arbeit
+- 📋 Offen
+- ⚠️ Klärfälle (Anzahl + ältester seit X Tagen)
+
+Zusätzlich: horizontaler Gesamt-Fortschrittsbalken (groß) unter den Kacheln.
+
+**d) Wochenliste — angepasste Spalten**
+Datum · Adresse · NVT (mit Sternen) · Graben m
+(keine Team-, keine €-Spalte mehr)
+
+### Technische Details
+- Datei: `src/components/FinanzTab.tsx` — nur `exportPDF()` und `exportBauleiterPDF()` ersetzen
+- Import: `getNvtPriority`, `priorityStars` aus `@/lib/priority`
+- `call_states` Select erweitern um `klarfall, klarfall_notiz`
+- html2canvas-Dependency bleibt vorerst (falls woanders genutzt — sonst später entfernbar)
+- Keine Schema-/Backend-Änderungen nötig
