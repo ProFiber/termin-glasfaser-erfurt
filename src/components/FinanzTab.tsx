@@ -80,6 +80,16 @@ function saturdaysRemainingInMonth(now: Date) {
   return count;
 }
 
+function saturdayDatesRemaining(now: Date): Date[] {
+  const list: Date[] = [];
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  for (let day = now.getDate() + 1; day <= last; day++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), day);
+    if (d.getDay() === 6) list.push(d);
+  }
+  return list;
+}
+
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
