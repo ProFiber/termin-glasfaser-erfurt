@@ -101,6 +101,75 @@ export default function FinanzTab() {
   const [showPrevHeute, setShowPrevHeute] = useState(false);
   const [showPrevWoche, setShowPrevWoche] = useState(false);
   const [showPrevMonat, setShowPrevMonat] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  async function exportPDF() {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      // kurze Pause, damit ausgeblendete Buttons gerendert sind
+      await new Promise((r) => setTimeout(r, 50));
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        backgroundColor: "#f7f8fa",
+        useCORS: true,
+        logging: false,
+      });
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      // Header
+      const today = new Date();
+      const datum = today.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const uhrzeit = today.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+
+      if (imgH <= pageH - margin * 2 - 10) {
+        pdf.setFontSize(9); pdf.setTextColor(120);
+        pdf.text(`Finanzübersicht · ${datum} ${uhrzeit}`, margin, margin + 3);
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin + 6, imgW, imgH);
+      } else {
+        // mehrseitig: über sliced Canvas-Bereiche aufteilen
+        const pxPerMm = canvas.width / imgW;
+        const pageContentHmm = pageH - margin * 2 - 8;
+        const sliceHpx = Math.floor(pageContentHmm * pxPerMm);
+        let y = 0;
+        let pageNum = 1;
+        while (y < canvas.height) {
+          const h = Math.min(sliceHpx, canvas.height - y);
+          const slice = document.createElement("canvas");
+          slice.width = canvas.width;
+          slice.height = h;
+          const ctx = slice.getContext("2d");
+          if (!ctx) break;
+          ctx.fillStyle = "#f7f8fa";
+          ctx.fillRect(0, 0, slice.width, slice.height);
+          ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+          if (pageNum > 1) pdf.addPage();
+          pdf.setFontSize(9); pdf.setTextColor(120);
+          pdf.text(`Finanzübersicht · ${datum} ${uhrzeit} · Seite ${pageNum}`, margin, margin + 3);
+          pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin + 6, imgW, (h / pxPerMm));
+          y += h;
+          pageNum++;
+        }
+      }
+      const fn = `Finanzen_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.pdf`;
+      pdf.save(fn);
+    } catch (e) {
+      console.error("PDF Export Fehler", e);
+      alert("PDF-Export fehlgeschlagen. Bitte erneut versuchen.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     (async () => {
