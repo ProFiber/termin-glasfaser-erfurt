@@ -382,6 +382,25 @@ export default function FinanzTab() {
         <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, opacity: 0.95, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
           📈 Benötigt ab jetzt: <b>{data.benoetigtProTagHa.toFixed(1)} HA/Tag</b> ({EUR(data.benoetigtProTagEur)}) · noch {data.arbeitstageRest} Arbeitstage
         </div>
+        {data.samstagSzenarien.length > 0 && (
+          <div style={{ marginTop: 8, borderTop: `1px solid ${overUnder ? "#86efac" : "#fecaca"}`, paddingTop: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.9, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>
+              🗓️ Samstags-Puffer aktivieren
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {data.samstagSzenarien.map((s) => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, background: "rgba(255,255,255,0.12)", borderRadius: 6, padding: "5px 8px" }}>
+                  <span style={{ fontWeight: 600 }}>
+                    +{s.anzahl} Sa {s.anzahl === 1 ? `(${s.label})` : `(bis ${s.label})`}
+                  </span>
+                  <span>
+                    <b>{s.haProTag.toFixed(1)} HA/Tag</b> · {EUR(s.eurProTag)} · {s.tageGesamt} Tage
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {editingZiel && (
