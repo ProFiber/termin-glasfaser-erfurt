@@ -383,6 +383,25 @@ export default function FinanzTab() {
 
   return (
     <div style={{ padding: "12px 12px 80px", background: "#f7f8fa", minHeight: "100%" }}>
+      {/* Export-Leiste (wird beim PDF-Export ausgeblendet) */}
+      <div data-no-export style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <button
+          onClick={exportPDF}
+          disabled={exporting}
+          style={{
+            background: exporting ? "#94a3b8" : "#0f172a",
+            color: "white", border: "none", borderRadius: 8,
+            padding: "8px 14px", fontSize: 12, fontWeight: 700,
+            cursor: exporting ? "wait" : "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+            display: "inline-flex", alignItems: "center", gap: 6,
+          }}
+        >
+          {exporting ? "⏳ Erzeuge PDF…" : "📄 PDF Export"}
+        </button>
+      </div>
+
+      <div ref={exportRef}>
       {/* Hero: Monatsziel */}
       <div style={{
         background: "linear-gradient(135deg, #e20074 0%, #b8005c 100%)",
