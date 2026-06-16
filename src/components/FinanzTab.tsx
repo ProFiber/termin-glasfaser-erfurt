@@ -129,21 +129,25 @@ export default function FinanzTab() {
 
       // KPI-Kacheln (Heute / Woche / Monat)
       const tileW = (pageW - margin * 2 - 8) / 3;
-      const tileH = 26;
-      const drawTile = (x: number, title: string, big: string, sub: string, color: [number, number, number]) => {
+      const tileH = 30;
+      const drawTile = (x: number, title: string, big: string, sub: string, tempo: string, color: [number, number, number]) => {
         pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.3);
         pdf.roundedRect(x, y, tileW, tileH, 2, 2, "FD");
         pdf.setFillColor(...color); pdf.rect(x, y, 2.5, tileH, "F");
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
         pdf.text(title, x + 5, y + 5);
         pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(15, 23, 42);
-        pdf.text(big, x + 5, y + 14);
+        pdf.text(big, x + 5, y + 13);
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
-        pdf.text(sub, x + 5, y + 21);
+        pdf.text(sub, x + 5, y + 19);
+        if (tempo) {
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.setTextColor(70);
+          pdf.text(tempo, x + 5, y + 26);
+        }
       };
-      drawTile(margin, "Heute", `${data.countHeute} HA`, `${data.meterHeute} m · ${Math.round(data.umsatzHeute).toLocaleString("de-DE")} €`, [34, 197, 94]);
-      drawTile(margin + tileW + 4, "Diese Woche", `${data.countWoche} HA`, `${data.meterWoche} m · ${Math.round(data.umsatzWoche).toLocaleString("de-DE")} €`, [59, 130, 246]);
-      drawTile(margin + (tileW + 4) * 2, "Dieser Monat", `${data.countMonat} HA`, `${data.meterMonat} m · ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €`, [226, 0, 116]);
+      drawTile(margin, "Heute", `${data.countHeute} HA`, `${data.meterHeute} m · ${Math.round(data.umsatzHeute).toLocaleString("de-DE")} €`, "", [34, 197, 94]);
+      drawTile(margin + tileW + 4, "Diese Woche", `${data.countWoche} HA`, `${data.meterWoche} m · ${Math.round(data.umsatzWoche).toLocaleString("de-DE")} €`, data.tatsaechlicheWocheTage > 0 ? `Ø ${data.haProArbeitstagWoche.toFixed(1)} HA/Tag  (${data.tatsaechlicheWocheTage} Tage gearbeitet)` : "", [59, 130, 246]);
+      drawTile(margin + (tileW + 4) * 2, "Dieser Monat", `${data.countMonat} HA`, `${data.meterMonat} m · ${Math.round(data.umsatzMonat).toLocaleString("de-DE")} €`, data.tatsaechlicheMonatTage > 0 ? `Ø ${data.haProArbeitstagMonat.toFixed(1)} HA/Tag  (${data.tatsaechlicheMonatTage} Tage gearbeitet)` : "", [226, 0, 116]);
       y += tileH + 8;
 
       // Ziel-Block
