@@ -98,6 +98,9 @@ export default function FinanzTab() {
   const [editingZiel, setEditingZiel] = useState(false);
   const [zielInput, setZielInput] = useState("70000");
   const [haPreisInput, setHaPreisInput] = useState("1200");
+  const [showPrevHeute, setShowPrevHeute] = useState(false);
+  const [showPrevWoche, setShowPrevWoche] = useState(false);
+  const [showPrevMonat, setShowPrevMonat] = useState(false);
 
   useEffect(() => {
     (async () => {
