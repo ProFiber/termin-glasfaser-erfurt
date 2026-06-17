@@ -741,8 +741,8 @@ function Index() {
         const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
         if (!(fertig && offen)) return false;
       } else if (filter === "offen") {
-        // "Ausstehend": pending work — not done, not cancelled, not scheduled
-        const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
+        // "Ausstehend": pending work — alles außer erledigt/abgelehnt (Termine zählen mit)
+        const isPending = st !== "erledigt" && st !== "abgelehnt";
         if (!isPending) return false;
       } else if (filter !== "alle" && st !== filter) return false;
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
