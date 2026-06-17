@@ -18,6 +18,10 @@ export type Contact = {
   auskundung_von: string | null;
   auskundung_bis: string | null;
   nvt: string;
+  auskundung_erforderlich?: boolean;
+  auskundung_status?: string;
+  auskundung_erfolgt?: boolean;
+  auskundung_ergebnis?: string;
 };
 
 export type CallStatus =

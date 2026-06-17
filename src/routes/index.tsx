@@ -461,6 +461,29 @@ function fmtAuskundung(von: string | null, bis: string | null): string | null {
   }
 }
 
+// "Zugestimmt" wenn AGREED / Zugestimmt / ja – sonst keine Zustimmung
+function zustimmungStatus(z: string | null | undefined): "ok" | "fehlt" {
+  const v = (z ?? "").trim().toLowerCase();
+  if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
+  return "fehlt";
+}
+
+function auskundungInfo(c: Contact): {
+  required: boolean;
+  done: boolean;
+  status: string;
+  ergebnis: string;
+  plan: string | null;
+} {
+  return {
+    required: !!c.auskundung_erforderlich,
+    done: !!c.auskundung_erfolgt,
+    status: c.auskundung_status ?? "",
+    ergebnis: c.auskundung_ergebnis ?? "",
+    plan: fmtAuskundung(c.auskundung_von, c.auskundung_bis),
+  };
+}
+
 function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
@@ -1315,13 +1338,32 @@ function Index() {
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
-                    const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
-                    return a ? (
-                      <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
-                        🔍 Auskundung: {a}
+                    const zSt = zustimmungStatus(c.zustimmung);
+                    const ai = auskundungInfo(c);
+                    return (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        {zSt === "fehlt" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#dc2626", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            ⚠ KEINE ZUSTIMMUNG
+                          </span>
+                        )}
+                        {ai.required && !ai.done && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#ea580c", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🔍 AUSKUNDUNG NÖTIG{ai.plan ? ` · ${ai.plan}` : ""}
+                          </span>
+                        )}
+                        {ai.required && ai.done && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "2px 7px", borderRadius: 6 }}>
+                            ✓ Auskundung erfolgt
+                          </span>
+                        )}
+                        {!ai.required && ai.plan && (
+                          <span style={{ fontSize: 11, color: "#0891b2", fontWeight: 700 }}>🔍 Auskundung: {ai.plan}</span>
+                        )}
                       </div>
-                    ) : null;
+                    );
                   })()}
+
                 </div>
                 <div style={{ color: "#bbb", fontSize: 14 }}>{open ? "▲" : "▼"}</div>
               </div>
@@ -1335,6 +1377,43 @@ function Index() {
                     plz={c.plz}
                     ort={c.ort}
                   />
+                  {(() => {
+                    const zSt = zustimmungStatus(c.zustimmung);
+                    const ai = auskundungInfo(c);
+                    const showZ = zSt === "fehlt";
+                    const showA = ai.required;
+                    if (!showZ && !showA) return null;
+                    return (
+                      <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                        {showZ && (
+                          <div style={{ background: "#fee2e2", border: "2px solid #dc2626", borderRadius: 10, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 11, fontWeight: 900, color: "#991b1b", letterSpacing: 1, marginBottom: 2 }}>
+                              ⚠ KEINE EIGENTÜMER-ZUSTIMMUNG
+                            </div>
+                            <div style={{ fontSize: 12, color: "#7f1d1d" }}>
+                              Status laut Datenbank: <strong>{c.zustimmung || "(leer)"}</strong>. Bau ohne Zustimmung nicht möglich.
+                            </div>
+                          </div>
+                        )}
+                        {showA && (
+                          <div style={{ background: ai.done ? "#d1fae5" : "#ffedd5", border: `2px solid ${ai.done ? "#059669" : "#ea580c"}`, borderRadius: 10, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 11, fontWeight: 900, color: ai.done ? "#065f46" : "#9a3412", letterSpacing: 1, marginBottom: 2 }}>
+                              🔍 AUSKUNDUNG {ai.done ? "ERFOLGT" : "ERFORDERLICH"}
+                            </div>
+                            <div style={{ fontSize: 12, color: ai.done ? "#065f46" : "#7c2d12", lineHeight: 1.5 }}>
+                              {ai.status && <div>Status: <strong>{ai.status}</strong></div>}
+                              {ai.plan && <div>Termin: <strong>{ai.plan}</strong></div>}
+                              {ai.ergebnis && <div>Ergebnis: <strong>{ai.ergebnis}</strong></div>}
+                              {!ai.status && !ai.plan && !ai.ergebnis && (
+                                <div>{ai.done ? "Auskundung wurde durchgeführt." : "Auskundung muss noch durchgeführt werden."}</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <details style={{ background: "#eef2ff", borderRadius: 9, padding: "9px 12px", marginBottom: 12, fontSize: 13, lineHeight: 1.7, color: "#1e293b" }}>
                     <summary style={{ fontSize: 9, fontWeight: 800, color: "#6366f1", letterSpacing: 1.2, cursor: "pointer", listStyle: "none" }}>LEITFADEN ▾</summary>
                     <div style={{ marginTop: 6 }}>
