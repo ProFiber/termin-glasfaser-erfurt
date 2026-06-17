@@ -155,6 +155,125 @@ function Admin() {
     }
   }
 
+  async function importMasterCsv(file: File) {
+    setBusy(true);
+    setLog([]);
+    try {
+      append(`Lese ${file.name} …`);
+      const text = await file.text();
+      // remove BOM
+      const clean = text.replace(/^\uFEFF/, "");
+      const lines = clean.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length < 2) { append("❌ Datei hat keine Zeilen"); setBusy(false); return; }
+      const headers = lines[0].split(";").map((h) => h.trim());
+      const idx = (name: string) => headers.findIndex((h) => h.toLowerCase() === name.toLowerCase());
+      const iStr = idx("Straße");
+      const iHnr = idx("Hausnummer");
+      const iHnrZ = idx("Hausnummer Z.");
+      const iZust = idx("Eigentümerentscheidung");
+      const iAErf = idx("Auskundung erforderlich");
+      const iAStat = idx("Auskundungs-Status");
+      const iABeg = idx("Auskundung Beginn");
+      const iAEnd = idx("Auskundung Ende");
+      const iADone = idx("Auskundung erfolgt");
+      const iAErg = idx("Auskundungs-Ergebnis");
+      if (iStr < 0 || iHnr < 0 || iZust < 0) {
+        append("❌ Pflicht-Spalten fehlen (Straße, Hausnummer, Eigentümerentscheidung)");
+        setBusy(false); return;
+      }
+
+      const parseDate = (s: string): string | null => {
+        const t = (s || "").trim();
+        if (!t) return null;
+        const d = new Date(t);
+        return isNaN(d.getTime()) ? null : d.toISOString();
+      };
+
+      type MasterRow = {
+        strasse: string; hnr: string; hnr_zusatz: string;
+        zustimmung: string;
+        auskundung_erforderlich: boolean;
+        auskundung_status: string;
+        auskundung_von: string | null;
+        auskundung_bis: string | null;
+        auskundung_erfolgt: boolean;
+        auskundung_ergebnis: string;
+      };
+      const rows: MasterRow[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].split(";");
+        rows.push({
+          strasse: (cells[iStr] ?? "").trim(),
+          hnr: (cells[iHnr] ?? "").trim(),
+          hnr_zusatz: iHnrZ >= 0 ? (cells[iHnrZ] ?? "").trim() : "",
+          zustimmung: (cells[iZust] ?? "").trim(),
+          auskundung_erforderlich: iAErf >= 0 ? (cells[iAErf] ?? "").trim().toLowerCase() === "true" : false,
+          auskundung_status: iAStat >= 0 ? (cells[iAStat] ?? "").trim() : "",
+          auskundung_von: iABeg >= 0 ? parseDate(cells[iABeg] ?? "") : null,
+          auskundung_bis: iAEnd >= 0 ? parseDate(cells[iAEnd] ?? "") : null,
+          auskundung_erfolgt: iADone >= 0 ? (cells[iADone] ?? "").trim().toLowerCase() === "true" : false,
+          auskundung_ergebnis: iAErg >= 0 ? (cells[iAErg] ?? "").trim() : "",
+        });
+      }
+      append(`✓ ${rows.length} Zeilen aus Master gelesen`);
+
+      const { data: contacts, error: cErr } = await supabase
+        .from("contacts")
+        .select("bid,strasse,hnr,hnr_zusatz")
+        .range(0, 9999);
+      if (cErr) { append(`❌ ${cErr.message}`); setBusy(false); return; }
+      const norm = (s: string) => (s ?? "").trim().toLowerCase();
+      const key = (s: string, h: string, z: string) => `${norm(s)}|${norm(h)}|${norm(z)}`;
+      const map = new Map<string, string>();
+      for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+        map.set(key(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
+      }
+
+      let matched = 0, missing = 0;
+      const payload: Record<string, unknown>[] = [];
+      const missingRows: MasterRow[] = [];
+      for (const r of rows) {
+        const bid = map.get(key(r.strasse, r.hnr, r.hnr_zusatz));
+        if (!bid) { missing++; missingRows.push(r); continue; }
+        matched++;
+        payload.push({
+          bid,
+          strasse: r.strasse,
+          hnr: r.hnr,
+          hnr_zusatz: r.hnr_zusatz,
+          zustimmung: r.zustimmung,
+          auskundung_erforderlich: r.auskundung_erforderlich,
+          auskundung_status: r.auskundung_status,
+          auskundung_von: r.auskundung_von,
+          auskundung_bis: r.auskundung_bis,
+          auskundung_erfolgt: r.auskundung_erfolgt,
+          auskundung_ergebnis: r.auskundung_ergebnis,
+        });
+      }
+      append(`✓ ${matched} Adress-Treffer · ${missing} ohne Match`);
+      if (missing > 0) {
+        append("Ohne Match (max 15):");
+        for (const m of missingRows.slice(0, 15)) {
+          append(`  • ${m.strasse} ${m.hnr}${m.hnr_zusatz ? " " + m.hnr_zusatz : ""}`);
+        }
+      }
+
+      let ok = 0, fail = 0;
+      const chunk = 60;
+      for (let i = 0; i < payload.length; i += chunk) {
+        const part = payload.slice(i, i + chunk);
+        const { error } = await supabase.rpc("bulk_import_contacts", { payload: part as never });
+        if (error) { fail += part.length; append(`  ⚠ Chunk ${i / chunk + 1}: ${error.message}`); }
+        else { ok += part.length; append(`  ✓ Chunk ${i / chunk + 1}: ${part.length} aktualisiert`); }
+      }
+      append(`✅ Fertig: ${ok} aktualisiert, ${fail} fehlgeschlagen`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function importGrabenlaengen() {
     setBusy(true);
     setLog([]);
