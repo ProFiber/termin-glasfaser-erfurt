@@ -1338,13 +1338,32 @@ function Index() {
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
-                    const a = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
-                    return a ? (
-                      <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
-                        🔍 Auskundung: {a}
+                    const zSt = zustimmungStatus(c.zustimmung);
+                    const ai = auskundungInfo(c);
+                    return (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        {zSt === "fehlt" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#dc2626", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            ⚠ KEINE ZUSTIMMUNG
+                          </span>
+                        )}
+                        {ai.required && !ai.done && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#ea580c", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🔍 AUSKUNDUNG NÖTIG{ai.plan ? ` · ${ai.plan}` : ""}
+                          </span>
+                        )}
+                        {ai.required && ai.done && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "2px 7px", borderRadius: 6 }}>
+                            ✓ Auskundung erfolgt
+                          </span>
+                        )}
+                        {!ai.required && ai.plan && (
+                          <span style={{ fontSize: 11, color: "#0891b2", fontWeight: 700 }}>🔍 Auskundung: {ai.plan}</span>
+                        )}
                       </div>
-                    ) : null;
+                    );
                   })()}
+
                 </div>
                 <div style={{ color: "#bbb", fontSize: 14 }}>{open ? "▲" : "▼"}</div>
               </div>
