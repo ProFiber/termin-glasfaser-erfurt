@@ -103,6 +103,10 @@ export type Database = {
       contacts: {
         Row: {
           auskundung_bis: string | null
+          auskundung_erfolgt: boolean
+          auskundung_erforderlich: boolean
+          auskundung_ergebnis: string
+          auskundung_status: string
           auskundung_von: string | null
           bid: string
           created_at: string
@@ -125,6 +129,10 @@ export type Database = {
         }
         Insert: {
           auskundung_bis?: string | null
+          auskundung_erfolgt?: boolean
+          auskundung_erforderlich?: boolean
+          auskundung_ergebnis?: string
+          auskundung_status?: string
           auskundung_von?: string | null
           bid: string
           created_at?: string
@@ -147,6 +155,10 @@ export type Database = {
         }
         Update: {
           auskundung_bis?: string | null
+          auskundung_erfolgt?: boolean
+          auskundung_erforderlich?: boolean
+          auskundung_ergebnis?: string
+          auskundung_status?: string
           auskundung_von?: string | null
           bid?: string
           created_at?: string
