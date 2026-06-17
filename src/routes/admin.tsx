@@ -422,6 +422,21 @@ function Admin() {
         <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
           5️⃣ Grabenlängen importieren (37 Objekte · 04.–06.05.)
         </button>
+
+        <label style={{ ...btn("#0891b2"), display: "block" }}>
+          6️⃣ Master-CSV (Schmücke) hochladen · Zustimmung + Auskundung aktualisieren
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            disabled={busy}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importMasterCsv(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
