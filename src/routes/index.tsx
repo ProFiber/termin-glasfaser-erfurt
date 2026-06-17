@@ -743,7 +743,7 @@ function Index() {
       } else if (filter === "offen") {
         // "Ausstehend": pending work — not done, not cancelled, not scheduled
         const isPending = st !== "erledigt" && st !== "abgelehnt" && st !== "termin";
-        if (!isPending && !kf) return false;
+        if (!isPending) return false;
       } else if (filter !== "alle" && st !== filter) return false;
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
       if (teamFilter === "team2" && states[c.bid]?.team !== "team2") return false;
