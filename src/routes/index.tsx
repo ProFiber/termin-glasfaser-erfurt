@@ -461,6 +461,29 @@ function fmtAuskundung(von: string | null, bis: string | null): string | null {
   }
 }
 
+// "Zugestimmt" wenn AGREED / Zugestimmt / ja – sonst keine Zustimmung
+function zustimmungStatus(z: string | null | undefined): "ok" | "fehlt" {
+  const v = (z ?? "").trim().toLowerCase();
+  if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
+  return "fehlt";
+}
+
+function auskundungInfo(c: Contact): {
+  required: boolean;
+  done: boolean;
+  status: string;
+  ergebnis: string;
+  plan: string | null;
+} {
+  return {
+    required: !!c.auskundung_erforderlich,
+    done: !!c.auskundung_erfolgt,
+    status: c.auskundung_status ?? "",
+    ergebnis: c.auskundung_ergebnis ?? "",
+    plan: fmtAuskundung(c.auskundung_von, c.auskundung_bis),
+  };
+}
+
 function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
