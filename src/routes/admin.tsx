@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact } from "@/lib/types";
 
@@ -393,6 +394,120 @@ function Admin() {
     }
   }
 
+  async function importDatabaseXlsx(file: File) {
+    setBusy(true);
+    setLog([]);
+    try {
+      append(`Lese ${file.name} …`);
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      const sheetName = wb.SheetNames.find((n) => n.toLowerCase().includes("alle gf")) ?? wb.SheetNames[0];
+      append(`Sheet: ${sheetName}`);
+      const sh = wb.Sheets[sheetName];
+      const raw = XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, defval: null, raw: true });
+      // Data rows start at index 4 (header row at 3)
+      const dataRows = raw.slice(4) as unknown[][];
+      append(`${dataRows.length} Rohzeilen`);
+
+      const statusMap: Record<string, string> = {
+        erledigt: "erledigt", terminiert: "termin", "nicht erreicht": "nichtErreicht",
+        SMS: "angerufen", "SMS + AB": "angerufen", "Rückruf": "angerufen", "Ruft zurück": "angerufen",
+        "Klärung": "offen", Extern: "offen", Storno: "abgelehnt",
+        "bereits verbaut": "erledigt", "falsche Nr": "offen",
+      };
+      const toDate = (v: unknown): string => {
+        if (!v) return "";
+        if (v instanceof Date) return v.toISOString().slice(0, 10);
+        const d = new Date(String(v));
+        return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+      };
+      const truthy = (v: unknown) => {
+        if (!v) return false;
+        const s = String(v).trim().toLowerCase();
+        return s === "ja" || s === "true" || s === "1" || s === "x" || s === "yes";
+      };
+      const num = (v: unknown) => {
+        if (v === null || v === undefined || v === "") return 0;
+        const n = Number(v);
+        return isNaN(n) ? 0 : n;
+      };
+      const str = (v: unknown) => {
+        if (v === null || v === undefined) return "";
+        let s = String(v).trim();
+        if (/^\d+\.0$/.test(s)) s = s.slice(0, -2);
+        return s;
+      };
+
+      // Load all contacts for address matching
+      const { data: contacts, error: cErr } = await supabase
+        .from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+      if (cErr) { append(`❌ ${cErr.message}`); setBusy(false); return; }
+      const map = new Map<string, string>();
+      for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+        map.set(`${(c.strasse ?? "").trim().toLowerCase()}|${(c.hnr ?? "").trim().toLowerCase()}|${(c.hnr_zusatz ?? "").trim().toLowerCase()}`, c.bid);
+      }
+      append(`${map.size} Kontakte geladen`);
+
+      const payload: Record<string, unknown>[] = [];
+      let unmatched = 0;
+      const unmatchedSample: string[] = [];
+      let noStatus = 0;
+      for (const row of dataRows) {
+        const strasse = str(row[1]);
+        const nr = str(row[2]);
+        const abc = str(row[3]);
+        const statusRaw = str(row[5]);
+        if (!strasse || !nr) continue;
+        if (!statusRaw) { noStatus++; continue; }
+        const bid = map.get(`${strasse.toLowerCase()}|${nr.toLowerCase()}|${abc.toLowerCase()}`);
+        if (!bid) {
+          unmatched++;
+          if (unmatchedSample.length < 15) unmatchedSample.push(`${strasse} ${nr}${abc ? " " + abc : ""} (${statusRaw})`);
+          continue;
+        }
+        payload.push({
+          bid,
+          strasse, hnr: nr,
+          status: statusMap[statusRaw] ?? "offen",
+          erledigt_datum: toDate(row[6]),
+          grabenlaenge: Math.round(num(row[8])),
+          umsatz_eur: num(row[7]),
+          zusatz_eur: num(row[9]),
+          foto: truthy(row[12]),
+          protokoll: truthy(row[13]),
+          sharepoint: truthy(row[14]),
+          aufmass_am: toDate(row[15]),
+          gutschrift_nr: str(row[16]),
+          avis_am: toDate(row[17]),
+          verguetet_am: toDate(row[18]),
+          bemerkung: str(row[19]),
+        });
+      }
+      append(`✓ ${payload.length} Zeilen für Import · ${unmatched} ohne Match · ${noStatus} ohne Status`);
+      if (unmatchedSample.length) {
+        append("Nicht gefunden (max 15):");
+        for (const u of unmatchedSample) append(`  • ${u}`);
+      }
+
+      // Send in chunks via RPC
+      let ok = 0, fail = 0;
+      const CHUNK = 100;
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const part = payload.slice(i, i + CHUNK);
+        const { data, error } = await supabase.rpc("bulk_import_call_states_from_excel", {
+          payload: { rows: part } as never,
+        });
+        if (error) { fail += part.length; append(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`); }
+        else { ok += part.length; append(`  ✓ Chunk ${i / CHUNK + 1}: ${JSON.stringify(data)}`); }
+      }
+      append(`✅ Fertig: ${ok} importiert, ${fail} fehlgeschlagen`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function counts() {
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
       supabase.from("contacts").select("*", { count: "exact", head: true }),
@@ -433,6 +548,21 @@ function Admin() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) importMasterCsv(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
+
+        <label style={{ ...btn("#7c3aed"), display: "block" }}>
+          7️⃣ Pro-Fiber Database.xlsx hochladen · Status/Umsatz/Doku komplett aktualisieren
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            disabled={busy}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importDatabaseXlsx(f);
               e.target.value = "";
             }}
           />
