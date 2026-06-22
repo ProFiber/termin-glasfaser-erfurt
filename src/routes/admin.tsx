@@ -552,6 +552,21 @@ function Admin() {
             }}
           />
         </label>
+
+        <label style={{ ...btn("#7c3aed"), display: "block" }}>
+          7️⃣ Pro-Fiber Database.xlsx hochladen · Status/Umsatz/Doku komplett aktualisieren
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            disabled={busy}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importDatabaseXlsx(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
