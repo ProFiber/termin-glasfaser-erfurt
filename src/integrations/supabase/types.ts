@@ -26,6 +26,7 @@ export type Database = {
           gutschrift_nr: string
           klarfall: boolean
           klarfall_notiz: string
+          kurz_kandidat: boolean
           notiz: string
           priority_override: number | null
           protokoll_erhalten: boolean
@@ -51,6 +52,7 @@ export type Database = {
           gutschrift_nr?: string
           klarfall?: boolean
           klarfall_notiz?: string
+          kurz_kandidat?: boolean
           notiz?: string
           priority_override?: number | null
           protokoll_erhalten?: boolean
@@ -76,6 +78,7 @@ export type Database = {
           gutschrift_nr?: string
           klarfall?: boolean
           klarfall_notiz?: string
+          kurz_kandidat?: boolean
           notiz?: string
           priority_override?: number | null
           protokoll_erhalten?: boolean
