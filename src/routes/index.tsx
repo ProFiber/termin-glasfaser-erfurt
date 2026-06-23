@@ -960,6 +960,11 @@ function Index() {
     [contacts, states],
   );
 
+  const kurzKandidatCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.kurz_kandidat ? 1 : 0), 0),
+    [contacts, states],
+  );
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
