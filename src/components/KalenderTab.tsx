@@ -630,6 +630,14 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               <span>Termin verschieben</span>
             </button>
 
+            <button
+              style={{ ...menuRow, color: "#dc2626" }}
+              onClick={() => doPatch(c, { status: "offen", termin_slot: "", termin_datum: null, termin_zeit: "", team_status: "" })}
+            >
+              <span style={{ ...iconStyle, color: "#dc2626" }}>🗑</span>
+              <span>Termin löschen</span>
+            </button>
+
             <a
               style={menuRow}
               href={`https://www.google.com/maps/dir/?api=1&destination=${addrQuery(c)}`}
