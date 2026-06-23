@@ -763,6 +763,8 @@ function Index() {
         const fertig = cs?.team_status === "fertig";
         const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
         if (!(fertig && offen)) return false;
+      } else if (filter === "kurzKandidat") {
+        if (!states[c.bid]?.kurz_kandidat) return false;
       } else if (filter === "offen") {
         // "Ausstehend": pending work — alles außer erledigt/abgelehnt (Termine zählen mit)
         const isPending = st !== "erledigt" && st !== "abgelehnt";
