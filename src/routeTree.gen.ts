@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CallsRouteImport } from './routes/calls'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicMapsImageRouteImport } from './routes/api/public/maps-image'
 
+const CallsRoute = CallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -32,35 +38,46 @@ const ApiPublicMapsImageRoute = ApiPublicMapsImageRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/api/public/maps-image': typeof ApiPublicMapsImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/api/public/maps-image': typeof ApiPublicMapsImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/api/public/maps-image': typeof ApiPublicMapsImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/api/public/maps-image'
+  fullPaths: '/' | '/admin' | '/calls' | '/api/public/maps-image'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/api/public/maps-image'
-  id: '__root__' | '/' | '/admin' | '/api/public/maps-image'
+  to: '/' | '/admin' | '/calls' | '/api/public/maps-image'
+  id: '__root__' | '/' | '/admin' | '/calls' | '/api/public/maps-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CallsRoute: typeof CallsRoute
   ApiPublicMapsImageRoute: typeof ApiPublicMapsImageRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/calls': {
+      id: '/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof CallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CallsRoute: CallsRoute,
   ApiPublicMapsImageRoute: ApiPublicMapsImageRoute,
 }
 export const routeTree = rootRouteImport
