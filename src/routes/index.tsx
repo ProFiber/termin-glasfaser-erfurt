@@ -1179,8 +1179,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "angerufen", "nichtErreicht"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "angerufen" || f === "nichtErreicht";
+          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht";
             const baseStyle = f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f);
             const style = secondary
               ? { ...baseStyle, fontSize: 11, borderColor: filter === f ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
@@ -1188,6 +1188,7 @@ function Index() {
             const label =
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
+              : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
