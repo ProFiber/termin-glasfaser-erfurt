@@ -1542,6 +1542,15 @@ function Index() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: "#888", letterSpacing: 1 }}>TERMIN</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {appt && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); patch(c.bid, { status: "offen", termin_slot: "", termin_datum: null, termin_zeit: "", team_status: "" }); }}
+                          style={{ background: "#fee2e2", border: "1px solid #fecaca", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#dc2626" }}
+                          title="Termin löschen"
+                        >
+                          🗑 Löschen
+                        </button>
+                      )}
                       <button onClick={(e) => { e.stopPropagation(); setWeekStart((d) => { const x = new Date(d); x.setDate(d.getDate() - 7); return x; }); }}
                         style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#475569" }}>‹</button>
                       <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 105, textAlign: "center" }}>{weekRangeLabel}</span>
