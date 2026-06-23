@@ -1,0 +1,2 @@
+ALTER TABLE public.call_states ADD COLUMN IF NOT EXISTS kurz_kandidat boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_call_states_kurz ON public.call_states(kurz_kandidat) WHERE kurz_kandidat = true;
