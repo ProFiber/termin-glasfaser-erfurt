@@ -48,6 +48,7 @@ export type CallState = {
   fotos_erhalten: boolean;
   protokoll_erhalten: boolean;
   priority_override: number | null;
+  kurz_kandidat?: boolean;
   updated_at: string;
 };
 

@@ -489,7 +489,7 @@ function Index() {
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | CallStatus>("alle");
+  const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | "kurzKandidat" | CallStatus>("alle");
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
@@ -763,6 +763,8 @@ function Index() {
         const fertig = cs?.team_status === "fertig";
         const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
         if (!(fertig && offen)) return false;
+      } else if (filter === "kurzKandidat") {
+        if (!states[c.bid]?.kurz_kandidat) return false;
       } else if (filter === "offen") {
         // "Ausstehend": pending work — alles außer erledigt/abgelehnt (Termine zählen mit)
         const isPending = st !== "erledigt" && st !== "abgelehnt";
@@ -955,6 +957,11 @@ function Index() {
 
   const klarfallCount = useMemo(
     () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
+    [contacts, states],
+  );
+
+  const kurzKandidatCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.kurz_kandidat ? 1 : 0), 0),
     [contacts, states],
   );
 
@@ -1172,8 +1179,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "angerufen", "nichtErreicht"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "angerufen" || f === "nichtErreicht";
+          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht";
             const baseStyle = f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f);
             const style = secondary
               ? { ...baseStyle, fontSize: 11, borderColor: filter === f ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
@@ -1181,6 +1188,7 @@ function Index() {
             const label =
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
+              : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
