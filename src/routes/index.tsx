@@ -251,18 +251,20 @@ function ExportMenu({
             </div>
 
             <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-                <input type="checkbox" checked={onlyPriority} onChange={(e) => setOnlyPriority(e.target.checked)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: isAktuell ? "not-allowed" : "pointer", opacity: isAktuell ? 0.5 : 1 }}>
+                <input type="checkbox" checked={onlyPriority} disabled={isAktuell} onChange={(e) => setOnlyPriority(e.target.checked)} />
                 ⭐ Nur Priorität
               </label>
             </div>
 
             <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-              <div style={{ fontSize: 11, color: "#666", fontWeight: 600, marginBottom: 4 }}>STATUS</div>
+              <div style={{ fontSize: 11, color: "#666", fontWeight: 600, marginBottom: 4 }}>UMFANG</div>
+              {radio("aktuell", "🔎 Aktuell gefilterte Ansicht", aktuellCount, !filteredView)}
               {radio("alle", "Beide", baseList.length)}
               {radio("offen", "Nur offene", offenCount)}
               {radio("erledigt", "Nur erledigte", erlCount)}
             </div>
+
 
             <div style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
