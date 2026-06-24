@@ -15,7 +15,7 @@ import FinanzTab from "@/components/FinanzTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 
-type StatusFilter = "alle" | "offen" | "erledigt";
+type StatusFilter = "alle" | "offen" | "erledigt" | "abgelehnt";
 
 type FieldKey =
   | "Status"
@@ -94,7 +94,7 @@ const DEFAULT_FIELDS: FieldKey[] = [
 function buildRow(c: Contact, st: CallState | undefined, fields: FieldKey[]): Record<string, unknown> {
   const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
   const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
-  const status = st?.status === "erledigt" ? "erledigt" : "offen";
+  const status = st?.status === "erledigt" ? "erledigt" : st?.status === "abgelehnt" ? "abgelehnt" : "offen";
   const all: Record<FieldKey, unknown> = {
     Status: status,
     Adresse: adresse,
@@ -150,8 +150,10 @@ function exportHausanschluesseXlsx(
     list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
     if (statusFilter !== "alle") {
       list = list.filter((c) => {
-        const isErl = callStates[c.bid]?.status === "erledigt";
-        return statusFilter === "erledigt" ? isErl : !isErl;
+        const st = callStates[c.bid]?.status;
+        if (statusFilter === "erledigt") return st === "erledigt";
+        if (statusFilter === "abgelehnt") return st === "abgelehnt";
+        return st !== "erledigt" && st !== "abgelehnt";
       });
       suffix = `_${statusFilter}`;
     }
@@ -187,11 +189,14 @@ function ExportMenu({
   const isAktuell = statusFilter === "aktuell";
   const baseList = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
   const erlCount = baseList.filter((c) => callStates[c.bid]?.status === "erledigt").length;
-  const offenCount = baseList.length - erlCount;
+  const abgCount = baseList.filter((c) => callStates[c.bid]?.status === "abgelehnt").length;
+  const offenCount = baseList.length - erlCount - abgCount;
   const aktuellCount = filteredView?.length ?? 0;
   const filteredCount =
     isAktuell ? aktuellCount :
-    statusFilter === "alle" ? baseList.length : statusFilter === "erledigt" ? erlCount : offenCount;
+    statusFilter === "alle" ? baseList.length :
+    statusFilter === "erledigt" ? erlCount :
+    statusFilter === "abgelehnt" ? abgCount : offenCount;
 
   const doExport = () => {
     if (fields.length === 0) return;
@@ -262,6 +267,7 @@ function ExportMenu({
               {radio("aktuell", "🔎 Aktuell gefilterte Ansicht", aktuellCount, !filteredView)}
               {radio("alle", "Beide", baseList.length)}
               {radio("offen", "Nur offene", offenCount)}
+              {radio("abgelehnt", "Nur abgelehnte (Storno)", abgCount)}
               {radio("erledigt", "Nur erledigte", erlCount)}
             </div>
 
