@@ -170,36 +170,42 @@ function exportHausanschluesseXlsx(
 function ExportMenu({
   contacts,
   callStates,
+  filteredView,
 }: {
   contacts: Contact[];
   callStates: Record<string, CallState>;
+  filteredView?: Contact[];
 }) {
   const [open, setOpen] = useState(false);
   const [onlyPriority, setOnlyPriority] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
+  const [statusFilter, setStatusFilter] = useState<ScopeFilter>("alle");
   const [fields, setFields] = useState<FieldKey[]>(DEFAULT_FIELDS);
 
   const toggleField = (f: FieldKey) =>
     setFields((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...ALL_FIELDS.filter((x) => prev.includes(x) || x === f)]));
 
+  const isAktuell = statusFilter === "aktuell";
   const baseList = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
   const erlCount = baseList.filter((c) => callStates[c.bid]?.status === "erledigt").length;
   const offenCount = baseList.length - erlCount;
+  const aktuellCount = filteredView?.length ?? 0;
   const filteredCount =
+    isAktuell ? aktuellCount :
     statusFilter === "alle" ? baseList.length : statusFilter === "erledigt" ? erlCount : offenCount;
 
   const doExport = () => {
     if (fields.length === 0) return;
-    exportHausanschluesseXlsx(contacts, callStates, onlyPriority, statusFilter, fields);
+    exportHausanschluesseXlsx(contacts, callStates, onlyPriority, statusFilter, fields, filteredView);
     setOpen(false);
   };
 
-  const radio = (val: StatusFilter, label: string, count: number) => (
-    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer", padding: "4px 0" }}>
+  const radio = (val: ScopeFilter, label: string, count: number, disabled = false) => (
+    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", padding: "4px 0", opacity: disabled ? 0.5 : 1 }}>
       <input
         type="radio"
         checked={statusFilter === val}
         onChange={() => setStatusFilter(val)}
+        disabled={disabled}
       />
       {label} <span style={{ color: "#666" }}>({count})</span>
     </label>
