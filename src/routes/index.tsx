@@ -1029,14 +1029,14 @@ function Index() {
         <NvtTab
           contacts={contacts}
           states={states}
-          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
+          onOpenKlarfaelle={() => { setFilter(new Set(["klarfall"])); setActiveTab("objekte"); }}
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
-          onOpenTeamDokuOffen={() => { setFilter("dokuOffen"); setActiveTab("objekte"); }}
+          onOpenTeamDokuOffen={() => { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }}
           onTeamAction={(team, action) => {
             setTeamFilter(team);
-            if (action === "auftraege") { setFilter("alle"); setActiveTab("objekte"); }
+            if (action === "auftraege") { setFilter(new Set()); setActiveTab("objekte"); }
             else if (action === "karte") { setActiveTab("karte"); }
-            else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
+            else if (action === "doku") { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }
           }}
           onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
           onOpenPlan={() => setShowPlan(true)}
