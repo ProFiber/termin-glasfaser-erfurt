@@ -150,8 +150,10 @@ function exportHausanschluesseXlsx(
     list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
     if (statusFilter !== "alle") {
       list = list.filter((c) => {
-        const isErl = callStates[c.bid]?.status === "erledigt";
-        return statusFilter === "erledigt" ? isErl : !isErl;
+        const st = callStates[c.bid]?.status;
+        if (statusFilter === "erledigt") return st === "erledigt";
+        if (statusFilter === "abgelehnt") return st === "abgelehnt";
+        return st !== "erledigt" && st !== "abgelehnt";
       });
       suffix = `_${statusFilter}`;
     }
