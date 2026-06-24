@@ -489,7 +489,7 @@ function Index() {
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | "kurzKandidat" | CallStatus>("alle");
+  const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
@@ -756,20 +756,27 @@ function Index() {
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       const kf = !!states[c.bid]?.klarfall;
-      if (filter === "klarfall") {
-        if (!kf) return false;
-      } else if (filter === "dokuOffen") {
-        const cs = states[c.bid];
-        const fertig = cs?.team_status === "fertig";
-        const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
-        if (!(fertig && offen)) return false;
-      } else if (filter === "kurzKandidat") {
-        if (!states[c.bid]?.kurz_kandidat) return false;
-      } else if (filter === "offen") {
-        // "Ausstehend": pending work — alles außer erledigt/abgelehnt (Termine zählen mit)
-        const isPending = st !== "erledigt" && st !== "abgelehnt";
-        if (!isPending) return false;
-      } else if (filter !== "alle" && st !== filter) return false;
+      if (filter.size > 0) {
+        let matchesAny = false;
+        if (filter.has("klarfall") && kf) matchesAny = true;
+        if (filter.has("dokuOffen")) {
+          const cs = states[c.bid];
+          const fertig = cs?.team_status === "fertig";
+          const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
+          if (fertig && offen) matchesAny = true;
+        }
+        if (filter.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
+        if (filter.has("offen")) {
+          const isPending = st !== "erledigt" && st !== "abgelehnt";
+          if (isPending) matchesAny = true;
+        }
+        if (filter.has("termin") && st === "termin") matchesAny = true;
+        if (filter.has("erledigt") && st === "erledigt") matchesAny = true;
+        if (filter.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
+        if (filter.has("angerufen") && st === "angerufen") matchesAny = true;
+        if (filter.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
+        if (!matchesAny) return false;
+      }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
       if (teamFilter === "team2" && states[c.bid]?.team !== "team2") return false;
       if (teamFilter === "dokuOffen") {
@@ -800,7 +807,7 @@ function Index() {
     });
     return list.sort((a, b) => {
       // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
-      if (filter === "termin") {
+      if (filter.size === 1 && filter.has("termin")) {
         const da = states[a.bid]?.termin_datum ?? "";
         const db = states[b.bid]?.termin_datum ?? "";
         // leere Daten ans Ende
@@ -1022,14 +1029,14 @@ function Index() {
         <NvtTab
           contacts={contacts}
           states={states}
-          onOpenKlarfaelle={() => { setFilter("klarfall"); setActiveTab("objekte"); }}
+          onOpenKlarfaelle={() => { setFilter(new Set(["klarfall"])); setActiveTab("objekte"); }}
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
-          onOpenTeamDokuOffen={() => { setFilter("dokuOffen"); setActiveTab("objekte"); }}
+          onOpenTeamDokuOffen={() => { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }}
           onTeamAction={(team, action) => {
             setTeamFilter(team);
-            if (action === "auftraege") { setFilter("alle"); setActiveTab("objekte"); }
+            if (action === "auftraege") { setFilter(new Set()); setActiveTab("objekte"); }
             else if (action === "karte") { setActiveTab("karte"); }
-            else if (action === "doku") { setFilter("dokuOffen"); setActiveTab("objekte"); }
+            else if (action === "doku") { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }
           }}
           onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
           onOpenPlan={() => setShowPlan(true)}
@@ -1181,9 +1188,10 @@ function Index() {
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
           {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
             const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht";
-            const baseStyle = f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f);
+            const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
+            const baseStyle = f === "klarfall" ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
-              ? { ...baseStyle, fontSize: 11, borderColor: filter === f ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
+              ? { ...baseStyle, fontSize: 11, borderColor: isActive ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
               : baseStyle;
             const label =
               f === "alle" ? "Alle"
@@ -1194,7 +1202,17 @@ function Index() {
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
               : STATUS_META[f as CallStatus].label;
             return (
-              <button key={f} onClick={() => setFilter(f)} style={style}>{label}</button>
+              <button key={f} onClick={() => {
+                if (f === "alle") {
+                  setFilter(new Set());
+                } else {
+                  setFilter((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(f)) next.delete(f); else next.add(f);
+                    return next;
+                  });
+                }
+              }} style={style}>{label}</button>
             );
           })}
         </div>
@@ -1227,7 +1245,7 @@ function Index() {
           <button
             type="button"
             onClick={() => {
-              setFilter("alle");
+              setFilter(new Set());
               setTeamFilter("alle");
               setOrtSel("alle");
               setStreetSel(new Set());
@@ -1701,7 +1719,7 @@ function Index() {
               onClick={() => {
                 const c = longPressContact;
                 setFocusBid(null);
-                setFilter("alle");
+                setFilter(new Set());
                 setSearch("");
                 setPriorityOnly(false);
                 setUrgentOnly(false);
@@ -1720,7 +1738,7 @@ function Index() {
               onClick={() => {
                 const c = longPressContact;
                 setFocusBid(null);
-                setFilter("alle");
+                setFilter(new Set());
                 setSearch("");
                 setPriorityOnly(false);
                 setUrgentOnly(false);
