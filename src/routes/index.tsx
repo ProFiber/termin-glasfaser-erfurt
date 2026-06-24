@@ -794,6 +794,11 @@ function Index() {
         if (filter.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
         if (filter.has("angerufen") && st === "angerufen") matchesAny = true;
         if (filter.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
+        if (filter.has("terminVergangen") && st === "termin") {
+          const today = new Date().toISOString().slice(0, 10);
+          const d = states[c.bid]?.termin_datum ?? "";
+          if (d && d < today) matchesAny = true;
+        }
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
@@ -986,6 +991,15 @@ function Index() {
     [contacts, states],
   );
 
+  const terminVergangenCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return contacts.reduce((n, c) => {
+      const cs = states[c.bid];
+      if (!cs || cs.status !== "termin") return n;
+      const d = cs.termin_datum ?? "";
+      return n + (d && d < today ? 1 : 0);
+    }, 0);
+  }, [contacts, states]);
   const kurzKandidatCount = useMemo(
     () => contacts.reduce((n, c) => n + (states[c.bid]?.kurz_kandidat ? 1 : 0), 0),
     [contacts, states],
@@ -1205,10 +1219,10 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
-            const baseStyle = f === "klarfall" ? klarfallPill(isActive) : pill(isActive);
+            const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
               ? { ...baseStyle, fontSize: 11, borderColor: isActive ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
               : baseStyle;
@@ -1216,6 +1230,7 @@ function Index() {
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
+              : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
