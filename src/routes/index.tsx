@@ -15,7 +15,7 @@ import FinanzTab from "@/components/FinanzTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 
-type StatusFilter = "alle" | "offen" | "erledigt";
+type StatusFilter = "alle" | "offen" | "erledigt" | "abgelehnt";
 
 type FieldKey =
   | "Status"
