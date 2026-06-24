@@ -794,6 +794,11 @@ function Index() {
         if (filter.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
         if (filter.has("angerufen") && st === "angerufen") matchesAny = true;
         if (filter.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
+        if (filter.has("terminVergangen") && st === "termin") {
+          const today = new Date().toISOString().slice(0, 10);
+          const d = states[c.bid]?.termin_datum ?? "";
+          if (d && d < today) matchesAny = true;
+        }
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
