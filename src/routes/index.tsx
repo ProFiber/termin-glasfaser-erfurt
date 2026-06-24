@@ -805,6 +805,7 @@ function Index() {
           const d = states[c.bid]?.termin_datum ?? "";
           if (d && d < today) matchesAny = true;
         }
+        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung) === "fehlt") matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
