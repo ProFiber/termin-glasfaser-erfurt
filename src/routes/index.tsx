@@ -131,28 +131,39 @@ function buildRow(c: Contact, st: CallState | undefined, fields: FieldKey[]): Re
   return row;
 }
 
+type ScopeFilter = StatusFilter | "aktuell";
+
 function exportHausanschluesseXlsx(
   contacts: Contact[],
   callStates: Record<string, CallState>,
   onlyPriority: boolean,
-  statusFilter: StatusFilter,
+  statusFilter: ScopeFilter,
   fields: FieldKey[],
+  filteredView?: Contact[],
 ) {
-  let list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
-  if (statusFilter !== "alle") {
-    list = list.filter((c) => {
-      const isErl = callStates[c.bid]?.status === "erledigt";
-      return statusFilter === "erledigt" ? isErl : !isErl;
-    });
+  let list: Contact[];
+  let suffix = "";
+  if (statusFilter === "aktuell" && filteredView) {
+    list = filteredView;
+    suffix = "_ansicht";
+  } else {
+    list = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
+    if (statusFilter !== "alle") {
+      list = list.filter((c) => {
+        const isErl = callStates[c.bid]?.status === "erledigt";
+        return statusFilter === "erledigt" ? isErl : !isErl;
+      });
+      suffix = `_${statusFilter}`;
+    }
   }
   const rows = list.map((c) => buildRow(c, callStates[c.bid], fields));
   const ws = XLSX.utils.json_to_sheet(rows, { header: fields });
   ws["!cols"] = fields.map(() => ({ wch: 18 }));
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
+  const sheetName = statusFilter === "aktuell" ? "Aktuelle Ansicht" : (onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const date = new Date().toISOString().slice(0, 10);
-  const statusSuffix = statusFilter === "alle" ? "" : `_${statusFilter}`;
-  const fname = `hausanschluesse_${onlyPriority ? "prio_" : ""}${date}${statusSuffix}.xlsx`;
+  const fname = `hausanschluesse_${onlyPriority && statusFilter !== "aktuell" ? "prio_" : ""}${date}${suffix}.xlsx`;
   XLSX.writeFile(wb, fname);
 }
 
