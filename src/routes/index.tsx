@@ -1188,9 +1188,10 @@ function Index() {
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
           {(["alle", "offen", "termin", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht"] as const).map((f) => {
             const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht";
-            const baseStyle = f === "klarfall" ? klarfallPill(filter === f) : pill(filter === f);
+            const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
+            const baseStyle = f === "klarfall" ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
-              ? { ...baseStyle, fontSize: 11, borderColor: filter === f ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
+              ? { ...baseStyle, fontSize: 11, borderColor: isActive ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
               : baseStyle;
             const label =
               f === "alle" ? "Alle"
@@ -1201,7 +1202,17 @@ function Index() {
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
               : STATUS_META[f as CallStatus].label;
             return (
-              <button key={f} onClick={() => setFilter(f)} style={style}>{label}</button>
+              <button key={f} onClick={() => {
+                if (f === "alle") {
+                  setFilter(new Set());
+                } else {
+                  setFilter((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(f)) next.delete(f); else next.add(f);
+                    return next;
+                  });
+                }
+              }} style={style}>{label}</button>
             );
           })}
         </div>
@@ -1234,7 +1245,7 @@ function Index() {
           <button
             type="button"
             onClick={() => {
-              setFilter("alle");
+              setFilter(new Set());
               setTeamFilter("alle");
               setOrtSel("alle");
               setStreetSel(new Set());
@@ -1708,7 +1719,7 @@ function Index() {
               onClick={() => {
                 const c = longPressContact;
                 setFocusBid(null);
-                setFilter("alle");
+                setFilter(new Set());
                 setSearch("");
                 setPriorityOnly(false);
                 setUrgentOnly(false);
@@ -1727,7 +1738,7 @@ function Index() {
               onClick={() => {
                 const c = longPressContact;
                 setFocusBid(null);
-                setFilter("alle");
+                setFilter(new Set());
                 setSearch("");
                 setPriorityOnly(false);
                 setUrgentOnly(false);
