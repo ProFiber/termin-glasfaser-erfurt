@@ -94,7 +94,7 @@ const DEFAULT_FIELDS: FieldKey[] = [
 function buildRow(c: Contact, st: CallState | undefined, fields: FieldKey[]): Record<string, unknown> {
   const adresse = `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim();
   const auskundung = c.auskundung_von || c.auskundung_bis ? "ja" : "nein";
-  const status = st?.status === "erledigt" ? "erledigt" : "offen";
+  const status = st?.status === "erledigt" ? "erledigt" : st?.status === "abgelehnt" ? "abgelehnt" : "offen";
   const all: Record<FieldKey, unknown> = {
     Status: status,
     Adresse: adresse,
