@@ -756,20 +756,27 @@ function Index() {
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       const kf = !!states[c.bid]?.klarfall;
-      if (filter === "klarfall") {
-        if (!kf) return false;
-      } else if (filter === "dokuOffen") {
-        const cs = states[c.bid];
-        const fertig = cs?.team_status === "fertig";
-        const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
-        if (!(fertig && offen)) return false;
-      } else if (filter === "kurzKandidat") {
-        if (!states[c.bid]?.kurz_kandidat) return false;
-      } else if (filter === "offen") {
-        // "Ausstehend": pending work — alles außer erledigt/abgelehnt (Termine zählen mit)
-        const isPending = st !== "erledigt" && st !== "abgelehnt";
-        if (!isPending) return false;
-      } else if (filter !== "alle" && st !== filter) return false;
+      if (filter.size > 0) {
+        let matchesAny = false;
+        if (filter.has("klarfall") && kf) matchesAny = true;
+        if (filter.has("dokuOffen")) {
+          const cs = states[c.bid];
+          const fertig = cs?.team_status === "fertig";
+          const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
+          if (fertig && offen) matchesAny = true;
+        }
+        if (filter.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
+        if (filter.has("offen")) {
+          const isPending = st !== "erledigt" && st !== "abgelehnt";
+          if (isPending) matchesAny = true;
+        }
+        if (filter.has("termin") && st === "termin") matchesAny = true;
+        if (filter.has("erledigt") && st === "erledigt") matchesAny = true;
+        if (filter.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
+        if (filter.has("angerufen") && st === "angerufen") matchesAny = true;
+        if (filter.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
+        if (!matchesAny) return false;
+      }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
       if (teamFilter === "team2" && states[c.bid]?.team !== "team2") return false;
       if (teamFilter === "dokuOffen") {
@@ -800,7 +807,7 @@ function Index() {
     });
     return list.sort((a, b) => {
       // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
-      if (filter === "termin") {
+      if (filter.size === 1 && filter.has("termin")) {
         const da = states[a.bid]?.termin_datum ?? "";
         const db = states[b.bid]?.termin_datum ?? "";
         // leere Daten ans Ende
