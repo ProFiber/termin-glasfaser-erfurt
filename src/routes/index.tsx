@@ -267,6 +267,7 @@ function ExportMenu({
               {radio("aktuell", "🔎 Aktuell gefilterte Ansicht", aktuellCount, !filteredView)}
               {radio("alle", "Beide", baseList.length)}
               {radio("offen", "Nur offene", offenCount)}
+              {radio("abgelehnt", "Nur abgelehnte (Storno)", abgCount)}
               {radio("erledigt", "Nur erledigte", erlCount)}
             </div>
 
