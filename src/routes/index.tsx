@@ -489,7 +489,7 @@ function Index() {
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"alle" | "klarfall" | "dokuOffen" | "kurzKandidat" | CallStatus>("alle");
+  const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
   const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
