@@ -532,7 +532,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
-      if (filter !== "alle" && (states[c.bid]?.status ?? "offen") !== filter) return false;
+      if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       return true;
     }),
