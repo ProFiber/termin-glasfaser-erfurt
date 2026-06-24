@@ -23,26 +23,51 @@ function buildAddress(c: Contact) {
   return `${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}, Germany`;
 }
 
-function buildWaMessage(c: Contact, cs: CallState | undefined) {
-  const teamLabel = cs?.team ? TEAM_COLORS[cs.team]?.label ?? "" : "";
-  const adr = encodeURIComponent(buildAddress(c));
-  // Kürzere Maps-URL (statt /dir/?api=1&destination=…)
-  const mapsUrl = `https://www.google.com/maps?q=${adr}`;
+function formatTerminLine(cs: CallState | undefined): string | null {
+  if (!cs?.termin_datum) return null;
+  const d = new Date(cs.termin_datum);
+  const wdays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const wd = wdays[d.getDay()] ?? "";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const slotMap: Record<string, string> = {
+    vormittag: "VM",
+    nachmittag: "NM",
+  };
+  const slot = slotMap[cs.termin_slot?.toLowerCase() ?? ""] ?? cs.termin_slot ?? "";
+  const zeit = cs.termin_zeit?.trim() ?? "";
+  const zeitPart = zeit ? ` ab ${zeit}` : "";
+  return `🗓 *${wd} ${day}.${month}. ${slot}${zeitPart}*`;
+}
 
+function buildWaMessage(c: Contact, cs: CallState | undefined) {
   const lines: string[] = [];
-  lines.push("👷 *Neuer Auftrag*");
+  lines.push("📅 *Neuer Termin · Hausanschluss*");
   lines.push("");
-  lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}*`);
-  if (c.name?.trim()) lines.push(c.name.trim());
-  if (c.nvt?.trim()) lines.push(`🔌 NVT: ${c.nvt}`);
-  lines.push("");
-  lines.push(`🗺️ ${mapsUrl}`);
-  lines.push("");
-  lines.push("⚠️ Bitte Fotos + Protokoll gemeinsam hochladen wenn fertig.");
-  if (teamLabel) {
+
+  const termin = formatTerminLine(cs);
+  if (termin) {
+    lines.push(termin);
     lines.push("");
-    lines.push(`_${teamLabel} · Pro-Fiber GmbH_`);
   }
+
+  lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}*`);
+  lines.push("");
+
+  if (c.name?.trim()) {
+    lines.push(c.name.trim());
+    lines.push("");
+  }
+
+  if (c.typ?.trim()) {
+    lines.push(`🏠 ${c.typ.trim()} · ${c.we ?? 1} WE`);
+    lines.push("");
+  }
+
+  if (c.nvt?.trim()) {
+    lines.push(`🔌 NVT: ${c.nvt.trim()}`);
+  }
+
   return lines.join("\n");
 }
 
