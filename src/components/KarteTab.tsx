@@ -168,7 +168,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [ready, setReady] = useState(false);
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number }>>({});
   const [geocoding, setGeocoding] = useState(false);
-  const [filter, setFilter] = useState<"alle" | CallStatus>("alle");
+  const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
@@ -532,7 +532,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
-      if (filter !== "alle" && (states[c.bid]?.status ?? "offen") !== filter) return false;
+      if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       return true;
     }),
@@ -644,12 +644,20 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           }}
         >🔥 Nur Priorität</button>
         {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
-          const active = filter === k;
+          const active = k === "alle" ? filter.size === 0 : filter.has(k as CallStatus);
           const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];
           return (
             <button
               key={k}
-              onClick={() => setFilter(k)}
+              onClick={() => {
+                if (k === "alle") { setFilter(new Set()); return; }
+                setFilter((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(k as CallStatus)) next.delete(k as CallStatus);
+                  else next.add(k as CallStatus);
+                  return next;
+                });
+              }}
               style={{
                 padding: "5px 10px", borderRadius: 999,
                 border: `1.5px solid ${active ? color : "#e5e7eb"}`,
