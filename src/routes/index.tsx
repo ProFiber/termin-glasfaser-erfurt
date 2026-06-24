@@ -1003,7 +1003,7 @@ function Index() {
             {flash === "saved" && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 8px" }}>☁️ gespeichert</span>}
             {flash === "error" && <span style={{ fontSize: 11, background: "#dc2626", borderRadius: 8, padding: "2px 8px" }}>⚠️ Fehler</span>}
             <a href="/calls" title="Kurz-Objekte abtelefonieren" style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "4px 8px", color: "white", textDecoration: "none" }}>📞 Kurz</a>
-            <ExportMenu contacts={contacts} callStates={states} />
+            <ExportMenu contacts={contacts} callStates={states} filteredView={filtered} />
 
           </div>
         </div>
