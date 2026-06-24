@@ -986,6 +986,15 @@ function Index() {
     [contacts, states],
   );
 
+  const terminVergangenCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return contacts.reduce((n, c) => {
+      const cs = states[c.bid];
+      if (!cs || cs.status !== "termin") return n;
+      const d = cs.termin_datum ?? "";
+      return n + (d && d < today ? 1 : 0);
+    }, 0);
+  }, [contacts, states]);
   const kurzKandidatCount = useMemo(
     () => contacts.reduce((n, c) => n + (states[c.bid]?.kurz_kandidat ? 1 : 0), 0),
     [contacts, states],
