@@ -166,20 +166,22 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   }
 
   const payload: Record<string, unknown>[] = [];
-  let unmatched = 0, skipProj = 0;
+  let unmatched = 0, skipProj = 0, skipStatus = 0;
   for (const row of dataRows) {
     const projekt = str(row[0]);
-    if (projekt && !/schm[uü]cke/i.test(projekt)) { skipProj++; continue; }
+    if (!/schm[uü]cke/i.test(projekt)) { skipProj++; continue; }
     const strasse = str(row[1]);
     const nr = str(row[2]);
     const abc = str(row[3]);
     const statusRaw = str(row[5]);
     if (!strasse || !nr || !statusRaw) continue;
+    const mapped = statusMap[statusRaw] ?? "";
+    if (mapped !== "erledigt") { skipStatus++; continue; }
     const bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
     if (!bid) { unmatched++; continue; }
     payload.push({
       bid, strasse, hnr: nr,
-      status: statusMap[statusRaw] ?? "offen",
+      status: "erledigt",
       erledigt_datum: toDate(row[6]),
       grabenlaenge: Math.round(num(row[8])),
       umsatz_eur: num(row[7]),
@@ -194,7 +196,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       bemerkung: str(row[19]),
     });
   }
-  log(`  → ${payload.length} Schmücke-Zeilen · ${skipProj} andere Projekte ignoriert · ${unmatched} ohne Match`);
+  log(`  → ${payload.length} erledigte Schmücke-Zeilen · ${skipProj} andere Projekte · ${skipStatus} andere Status · ${unmatched} ohne Match`);
 
   let ok = 0;
   const CHUNK = 100;
