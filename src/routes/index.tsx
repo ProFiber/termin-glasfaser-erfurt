@@ -170,6 +170,57 @@ function exportHausanschluesseXlsx(
   XLSX.writeFile(wb, fname);
 }
 
+function ImportButton() {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string>("");
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setBusy(true);
+    setMsg("Importiere…");
+    try {
+      const res = await runFullProFiberImport(f, () => {});
+      const parts: string[] = [];
+      if (res.contactsOk) parts.push(`${res.contactsOk} Kontakte (${res.contactsNew} neu)`);
+      if (res.statesOk) parts.push(`${res.statesOk} Status`);
+      if (res.statesUnmatched) parts.push(`${res.statesUnmatched} ohne Match`);
+      setMsg(parts.length ? `✅ ${parts.join(" · ")}` : "✅ Fertig");
+      if (res.errors.length) setMsg(`⚠ ${res.errors[0]}`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setMsg(`❌ ${(err as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={onFile} />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        title={msg || "Pro-Fiber Database (.xlsx) importieren · nur Schmücke"}
+        style={{
+          fontSize: 11, background: busy ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.22)",
+          borderRadius: 8, padding: "4px 8px", color: "white", border: "none", cursor: busy ? "wait" : "pointer",
+        }}
+      >
+        {busy ? "⏳" : "📥 Import"}
+      </button>
+      {msg && !busy && (
+        <span style={{ position: "absolute", top: 56, right: 8, background: "#1f2937", color: "white", fontSize: 11, padding: "6px 10px", borderRadius: 8, maxWidth: 320, zIndex: 50 }}>
+          {msg}
+        </span>
+      )}
+    </>
+  );
+}
+
 function ExportMenu({
   contacts,
   callStates,
