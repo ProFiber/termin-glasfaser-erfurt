@@ -1457,7 +1457,7 @@ function Index() {
                   </div>
                   <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.name}
-                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}</span>}
+                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}{c.auftrag_erstellt_am ? ` · 📅 ${new Date(c.auftrag_erstellt_am).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}` : ""}</span>}
                   </div>
                   {cs?.team && cs?.team_status && (
                     <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>

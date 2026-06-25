@@ -99,6 +99,7 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
       auskundung_bis: parseGermanDate(r["Auskundung Ende"] ?? ""),
       auskundung_erfolgt: (r["Auskundung erfolgt"] ?? "").trim().toLowerCase() === "true",
       auskundung_ergebnis: (r["Auskundungs-Ergebnis"] ?? "").trim(),
+      auftrag_erstellt_am: parseGermanDate(r["Erstellungsdatum"] ?? ""),
     });
   }
   log(`  → ${payload.length} Kontakte (${neu} neu · ${upd} update)`);

@@ -22,6 +22,7 @@ export type Contact = {
   auskundung_status?: string;
   auskundung_erfolgt?: boolean;
   auskundung_ergebnis?: string;
+  auftrag_erstellt_am?: string | null;
 };
 
 export type CallStatus =
