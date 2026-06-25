@@ -1,0 +1,226 @@
+import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
+
+type Log = (s: string) => void;
+
+export type ImportResult = {
+  contactsNew: number;
+  contactsUpd: number;
+  contactsOk: number;
+  statesOk: number;
+  statesUnmatched: number;
+  errors: string[];
+};
+
+const norm = (s: string) => (s ?? "").trim().toLowerCase();
+
+function parseGermanDate(s: string): string | null {
+  const t = (s || "").trim();
+  if (!t) return null;
+  const monate: Record<string, number> = {
+    januar: 0, februar: 1, märz: 2, maerz: 2, april: 3, mai: 4, juni: 5,
+    juli: 6, august: 7, september: 8, oktober: 9, november: 10, dezember: 11,
+  };
+  const m = t.match(/(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s*(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m) {
+    const mo = monate[m[2].toLowerCase()];
+    if (mo !== undefined) {
+      const d = new Date(Date.UTC(+m[3], mo, +m[1], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)));
+      return d.toISOString();
+    }
+  }
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+const zustMap = (v: string): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  if (s.includes("zugestimmt")) return "AGREED";
+  if (s.includes("abgelehnt")) return "REJECTED";
+  if (s.includes("offen") || s === "" || s === "initial") return "PENDING";
+  return v ?? "";
+};
+
+const auskStatusMap = (v: string): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  if (s.includes("abgeschlossen") || s.includes("erfolgt")) return "erfolgt";
+  if (s.includes("plan") || s.includes("offen")) return "geplant";
+  if (s.includes("initial")) return "geplant";
+  return v ?? "";
+};
+
+/**
+ * Pass 1: Lese Schmücke_<date>-Sheet und lege neue Objekte an / aktualisiere
+ * Eigentümer-Felder (Zustimmung, Auskundung, NVT, Typ, WE/GE).
+ */
+async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; neu: number; upd: number }> {
+  const sheetName = wb.SheetNames.find((n) => /schm[uü]cke/i.test(n));
+  if (!sheetName) {
+    log("⚠ Kein Schmücke-Sheet gefunden – Pass 1 übersprungen");
+    return { ok: 0, neu: 0, upd: 0 };
+  }
+  log(`📋 Pass 1 · Property-Sheet: ${sheetName}`);
+  type Row = Record<string, string>;
+  const rows = XLSX.utils.sheet_to_json<Row>(wb.Sheets[sheetName], { defval: "", raw: false });
+  log(`  ${rows.length} Zeilen gelesen`);
+
+  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const byBid = new Set<string>();
+  const addrMap = new Map<string, string>();
+  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+    byBid.add(c.bid);
+    addrMap.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+  }
+
+  const payload: Record<string, unknown>[] = [];
+  let neu = 0, upd = 0;
+  for (const r of rows) {
+    const kls = String(r["KLS ID"] ?? "").trim();
+    const strasse = (r["Straße"] ?? "").trim();
+    const hnr = String(r["Hausnummer"] ?? "").trim();
+    const hnr_z = (r["Hausnummer Z."] ?? "").trim();
+    if (!kls || !strasse || !hnr) continue;
+    const addrBid = addrMap.get(`${norm(strasse)}|${norm(hnr)}|${norm(hnr_z)}`);
+    const bid = addrBid ?? `KLS-${kls}`;
+    if (byBid.has(bid)) upd++; else neu++;
+    payload.push({
+      bid,
+      strasse, hnr, hnr_zusatz: hnr_z,
+      plz: (r["Postleitzahl"] ?? "").trim(),
+      ort: (r["Ort"] ?? "").trim(),
+      typ: (r["Typ"] ?? "").trim(),
+      we: Number(r["WE"] ?? 0) || 0,
+      ge: Number(r["GE"] ?? 0) || 0,
+      nvt: (r["NVT Gebiet"] ?? "").trim(),
+      zustimmung: zustMap(r["Eigentümerentscheidung"] ?? ""),
+      auskundung_erforderlich: (r["Auskundung erforderlich"] ?? "").trim().toLowerCase() === "true",
+      auskundung_status: auskStatusMap(r["Auskundungs-Status"] ?? ""),
+      auskundung_von: parseGermanDate(r["Auskundung Beginn"] ?? ""),
+      auskundung_bis: parseGermanDate(r["Auskundung Ende"] ?? ""),
+      auskundung_erfolgt: (r["Auskundung erfolgt"] ?? "").trim().toLowerCase() === "true",
+      auskundung_ergebnis: (r["Auskundungs-Ergebnis"] ?? "").trim(),
+    });
+  }
+  log(`  → ${payload.length} Kontakte (${neu} neu · ${upd} update)`);
+
+  let ok = 0;
+  const CHUNK = 60;
+  for (let i = 0; i < payload.length; i += CHUNK) {
+    const part = payload.slice(i, i + CHUNK);
+    const { error } = await supabase.rpc("bulk_import_contacts", { payload: part as never });
+    if (error) log(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`);
+    else ok += part.length;
+  }
+  log(`  ✅ ${ok} Kontakte gespeichert`);
+  return { ok, neu, upd };
+}
+
+/**
+ * Pass 2: Lese "Alle GF+ HA"-Sheet (nur Projekt = An der Schmücke!) und
+ * aktualisiere Status, Grabenlänge, Umsatz, Doku, Buchhaltung.
+ */
+async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; unmatched: number }> {
+  const sheetName = wb.SheetNames.find((n) => n.toLowerCase().includes("alle gf"));
+  if (!sheetName) {
+    log("⚠ Kein 'Alle GF+ HA'-Sheet gefunden – Pass 2 übersprungen");
+    return { ok: 0, unmatched: 0 };
+  }
+  log(`📊 Pass 2 · Status-Sheet: ${sheetName} (nur Projekt 'An der Schmücke')`);
+  const sh = wb.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, defval: null, raw: true });
+  const dataRows = raw.slice(4) as unknown[][];
+
+  const statusMap: Record<string, string> = {
+    erledigt: "erledigt", terminiert: "termin", "nicht erreicht": "nichtErreicht",
+    SMS: "angerufen", "SMS + AB": "angerufen", "Rückruf": "angerufen", "Ruft zurück": "angerufen",
+    "Klärung": "offen", Extern: "offen", Storno: "abgelehnt",
+    "bereits verbaut": "erledigt", "falsche Nr": "offen",
+  };
+  const toDate = (v: unknown): string => {
+    if (!v) return "";
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    const d = new Date(String(v));
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+  const truthy = (v: unknown) => {
+    if (!v) return false;
+    const s = String(v).trim().toLowerCase();
+    return s === "ja" || s === "true" || s === "1" || s === "x" || s === "yes";
+  };
+  const num = (v: unknown) => {
+    if (v === null || v === undefined || v === "") return 0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
+  const str = (v: unknown) => {
+    if (v === null || v === undefined) return "";
+    let s = String(v).trim();
+    if (/^\d+\.0$/.test(s)) s = s.slice(0, -2);
+    return s;
+  };
+
+  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const map = new Map<string, string>();
+  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+    map.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+  }
+
+  const payload: Record<string, unknown>[] = [];
+  let unmatched = 0, skipProj = 0;
+  for (const row of dataRows) {
+    const projekt = str(row[0]);
+    if (projekt && !/schm[uü]cke/i.test(projekt)) { skipProj++; continue; }
+    const strasse = str(row[1]);
+    const nr = str(row[2]);
+    const abc = str(row[3]);
+    const statusRaw = str(row[5]);
+    if (!strasse || !nr || !statusRaw) continue;
+    const bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
+    if (!bid) { unmatched++; continue; }
+    payload.push({
+      bid, strasse, hnr: nr,
+      status: statusMap[statusRaw] ?? "offen",
+      erledigt_datum: toDate(row[6]),
+      grabenlaenge: Math.round(num(row[8])),
+      umsatz_eur: num(row[7]),
+      zusatz_eur: num(row[9]),
+      foto: truthy(row[12]),
+      protokoll: truthy(row[13]),
+      sharepoint: truthy(row[14]),
+      aufmass_am: toDate(row[15]),
+      gutschrift_nr: str(row[16]),
+      avis_am: toDate(row[17]),
+      verguetet_am: toDate(row[18]),
+      bemerkung: str(row[19]),
+    });
+  }
+  log(`  → ${payload.length} Schmücke-Zeilen · ${skipProj} andere Projekte ignoriert · ${unmatched} ohne Match`);
+
+  let ok = 0;
+  const CHUNK = 100;
+  for (let i = 0; i < payload.length; i += CHUNK) {
+    const part = payload.slice(i, i + CHUNK);
+    const { error } = await supabase.rpc("bulk_import_call_states_from_excel", { payload: { rows: part } as never });
+    if (error) log(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`);
+    else ok += part.length;
+  }
+  log(`  ✅ ${ok} Status-Einträge aktualisiert`);
+  return { ok, unmatched };
+}
+
+export async function runFullProFiberImport(file: File, log: Log = () => {}): Promise<ImportResult> {
+  log(`Lese ${file.name} …`);
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array", cellDates: true });
+
+  const errors: string[] = [];
+  let c = { ok: 0, neu: 0, upd: 0 };
+  let s = { ok: 0, unmatched: 0 };
+  try { c = await importSchmueckeContacts(wb, log); } catch (e) { errors.push(`Pass 1: ${(e as Error).message}`); }
+  try { s = await importAlleGfStates(wb, log); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
+
+  return {
+    contactsNew: c.neu, contactsUpd: c.upd, contactsOk: c.ok,
+    statesOk: s.ok, statesUnmatched: s.unmatched, errors,
+  };
+}
