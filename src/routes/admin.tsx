@@ -508,7 +508,147 @@ function Admin() {
     }
   }
 
+  async function importPropertyFile(file: File) {
+    setBusy(true);
+    setLog([]);
+    try {
+      append(`Lese ${file.name} …`);
+      const name = file.name.toLowerCase();
+      type Row = Record<string, string>;
+      let rows: Row[] = [];
+
+      if (name.endsWith(".csv")) {
+        const text = (await file.text()).replace(/^\uFEFF/, "");
+        const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (lines.length < 2) { append("❌ Datei hat keine Zeilen"); setBusy(false); return; }
+        const headers = lines[0].split(";").map((h) => h.trim());
+        for (let i = 1; i < lines.length; i++) {
+          const cells = lines[i].split(";");
+          const obj: Row = {};
+          headers.forEach((h, idx) => { obj[h] = (cells[idx] ?? "").trim(); });
+          rows.push(obj);
+        }
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array", cellDates: false });
+        // Find a sheet with the property layout: prefer schmücke_<date>, else any sheet with "KLS ID" header
+        let sheetName = wb.SheetNames.find((n) => /schm[uü]cke/i.test(n));
+        if (!sheetName) {
+          for (const n of wb.SheetNames) {
+            const sh = wb.Sheets[n];
+            const r0 = XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, defval: null, raw: true })[0] as unknown[] | undefined;
+            if (r0 && r0.some((c) => String(c ?? "").trim() === "KLS ID")) { sheetName = n; break; }
+          }
+        }
+        if (!sheetName) { append("❌ Kein passendes Sheet gefunden (Schmücke_… oder mit Spalte 'KLS ID')"); setBusy(false); return; }
+        append(`Sheet: ${sheetName}`);
+        rows = XLSX.utils.sheet_to_json<Row>(wb.Sheets[sheetName], { defval: "", raw: false });
+      }
+      append(`${rows.length} Property-Zeilen gelesen`);
+
+      // Load existing contacts → match by FoL-ID (bid) or address
+      const { data: contacts, error: cErr } = await supabase
+        .from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+      if (cErr) { append(`❌ ${cErr.message}`); setBusy(false); return; }
+      const byBid = new Set<string>();
+      const norm = (s: string) => (s ?? "").trim().toLowerCase();
+      const addrMap = new Map<string, string>();
+      for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+        byBid.add(c.bid);
+        addrMap.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+      }
+
+      const zustMap = (v: string): string => {
+        const s = (v ?? "").trim().toLowerCase();
+        if (s.includes("zugestimmt")) return "AGREED";
+        if (s.includes("abgelehnt")) return "REJECTED";
+        if (s.includes("offen") || s === "" || s === "initial") return "PENDING";
+        return v ?? "";
+      };
+      const auskStatusMap = (v: string): string => {
+        const s = (v ?? "").trim().toLowerCase();
+        if (s.includes("abgeschlossen") || s.includes("erfolgt")) return "erfolgt";
+        if (s.includes("plan") || s.includes("offen")) return "geplant";
+        if (s.includes("initial")) return "geplant";
+        return v ?? "";
+      };
+      const parseDate = (s: string): string | null => {
+        const t = (s || "").trim();
+        if (!t) return null;
+        // try german "19. Juni 2026, 21:05:37"
+        const monate: Record<string, number> = { januar:0,februar:1,märz:2,maerz:2,april:3,mai:4,juni:5,juli:6,august:7,september:8,oktober:9,november:10,dezember:11 };
+        const m = t.match(/(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s*(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+        if (m) {
+          const mo = monate[m[2].toLowerCase()];
+          if (mo !== undefined) {
+            const d = new Date(Date.UTC(+m[3], mo, +m[1], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)));
+            return d.toISOString();
+          }
+        }
+        const d = new Date(t);
+        return isNaN(d.getTime()) ? null : d.toISOString();
+      };
+
+      const payload: Record<string, unknown>[] = [];
+      let newCount = 0, updCount = 0, skip = 0;
+      for (const r of rows) {
+        const kls = (r["KLS ID"] ?? "").toString().trim();
+        const fol = (r["FoL-ID"] ?? "").toString().trim();
+        const strasse = (r["Straße"] ?? "").trim();
+        const hnr = (r["Hausnummer"] ?? "").toString().trim();
+        const hnr_z = (r["Hausnummer Z."] ?? "").trim();
+        if (!kls || !strasse || !hnr) { skip++; continue; }
+
+        // Determine bid: prefer FoL-ID (legacy), else address match, else new KLS-{id}
+        let bid = "";
+        if (fol && byBid.has(fol)) bid = fol;
+        else {
+          const addrBid = addrMap.get(`${norm(strasse)}|${norm(hnr)}|${norm(hnr_z)}`);
+          if (addrBid) bid = addrBid;
+          else if (fol) bid = fol;
+          else bid = `KLS-${kls}`;
+        }
+
+        if (byBid.has(bid)) updCount++; else newCount++;
+
+        payload.push({
+          bid,
+          strasse, hnr, hnr_zusatz: hnr_z,
+          plz: (r["Postleitzahl"] ?? "").trim(),
+          ort: (r["Ort"] ?? "").trim(),
+          typ: (r["Typ"] ?? "").trim(),
+          we: Number(r["WE"] ?? 0) || 0,
+          ge: Number(r["GE"] ?? 0) || 0,
+          nvt: (r["NVT Gebiet"] ?? "").trim(),
+          zustimmung: zustMap(r["Eigentümerentscheidung"] ?? ""),
+          auskundung_erforderlich: (r["Auskundung erforderlich"] ?? "").trim().toLowerCase() === "true",
+          auskundung_status: auskStatusMap(r["Auskundungs-Status"] ?? ""),
+          auskundung_von: parseDate(r["Auskundung Beginn"] ?? ""),
+          auskundung_bis: parseDate(r["Auskundung Ende"] ?? ""),
+          auskundung_erfolgt: (r["Auskundung erfolgt"] ?? "").trim().toLowerCase() === "true",
+          auskundung_ergebnis: (r["Auskundungs-Ergebnis"] ?? "").trim(),
+        });
+      }
+      append(`✓ ${payload.length} zu importieren · ${newCount} neu · ${updCount} update · ${skip} übersprungen`);
+
+      let ok = 0, fail = 0;
+      const CHUNK = 60;
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const part = payload.slice(i, i + CHUNK);
+        const { error } = await supabase.rpc("bulk_import_contacts", { payload: part as never });
+        if (error) { fail += part.length; append(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`); }
+        else { ok += part.length; append(`  ✓ Chunk ${i / CHUNK + 1}: ${part.length} ok`); }
+      }
+      append(`✅ Fertig: ${ok} importiert, ${fail} fehlgeschlagen (${newCount} neu angelegt)`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function counts() {
+
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
       supabase.from("contacts").select("*", { count: "exact", head: true }),
       supabase.from("call_states").select("*", { count: "exact", head: true }),
