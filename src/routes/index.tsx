@@ -14,6 +14,7 @@ import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
+import { runFullProFiberImport } from "@/lib/proFiberImport";
 
 type StatusFilter = "alle" | "offen" | "erledigt" | "abgelehnt";
 
