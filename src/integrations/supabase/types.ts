@@ -105,6 +105,7 @@ export type Database = {
       }
       contacts: {
         Row: {
+          auftrag_erstellt_am: string | null
           auskundung_bis: string | null
           auskundung_erfolgt: boolean
           auskundung_erforderlich: boolean
@@ -131,6 +132,7 @@ export type Database = {
           zustimmung: string
         }
         Insert: {
+          auftrag_erstellt_am?: string | null
           auskundung_bis?: string | null
           auskundung_erfolgt?: boolean
           auskundung_erforderlich?: boolean
@@ -157,6 +159,7 @@ export type Database = {
           zustimmung?: string
         }
         Update: {
+          auftrag_erstellt_am?: string | null
           auskundung_bis?: string | null
           auskundung_erfolgt?: boolean
           auskundung_erforderlich?: boolean
