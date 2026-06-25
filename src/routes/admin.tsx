@@ -707,6 +707,22 @@ function Admin() {
             }}
           />
         </label>
+
+        <label style={{ ...btn("#db2777"), display: "block" }}>
+          8️⃣ Property-CSV/XLSX nachziehen · neue Objekte anlegen + Zustimmung/Auskundung
+          <input
+            type="file"
+            accept=".csv,.xlsx,.xls,text/csv"
+            disabled={busy}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importPropertyFile(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
+
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
