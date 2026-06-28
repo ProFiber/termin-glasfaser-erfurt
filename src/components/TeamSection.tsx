@@ -65,7 +65,9 @@ function buildWaMessage(c: Contact, cs: CallState | undefined) {
   }
 
   if (c.nvt?.trim()) {
-    lines.push(`🔌 NVT: ${c.nvt.trim()}`);
+    // NVT-Code im Telekom-Export ist z.B. "2V8035" – für den Bauleiter nur die Ziffern ("8035")
+    const nvtShort = c.nvt.trim().replace(/^[A-Za-z0-9]*?(\d{3,})$/, "$1");
+    lines.push(`🔌 NVT: ${nvtShort}`);
   }
 
   return lines.join("\n");

@@ -165,6 +165,51 @@ function exportHausanschluesseXlsx(
   const wb = XLSX.utils.book_new();
   const sheetName = statusFilter === "aktuell" ? "Aktuelle Ansicht" : (onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  // 📑 Zusatz-Blatt: Objekte ohne Eigentümerzustimmung
+  const ohneZust = contacts
+    .filter((c) => {
+      const z = (c.zustimmung ?? "").toUpperCase();
+      return z !== "AGREED";
+    })
+    .map((c) => ({
+      Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
+      PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
+      Eigentümer: c.name, Mobil: c.mobil, Festnetz: c.festnetz, Email: c.email,
+      Zustimmung: c.zustimmung || "—",
+      Status: callStates[c.bid]?.status ?? "offen",
+      BID: c.bid,
+    }));
+  if (ohneZust.length) {
+    const wsZ = XLSX.utils.json_to_sheet(ohneZust);
+    wsZ["!cols"] = Object.keys(ohneZust[0]).map(() => ({ wch: 18 }));
+    XLSX.utils.book_append_sheet(wb, wsZ, "Ohne Zustimmung");
+  }
+
+  // 📑 Zusatz-Blatt: Aufträge / gebaute Objekte ohne Telekom-Exporteintrag
+  // Heuristik: manuell angelegte Objekte (BID-Präfix "MAN-") sind nicht im
+  // Telekom-Property-Export enthalten.
+  const ohneTelekom = contacts
+    .filter((c) => /^MAN-/i.test(c.bid))
+    .map((c) => {
+      const st = callStates[c.bid];
+      return {
+        Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
+        PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
+        Eigentümer: c.name, Mobil: c.mobil, Festnetz: c.festnetz,
+        Status: st?.status ?? "offen",
+        Gebaut_am: st?.erledigt_datum ?? "",
+        Grabenlänge_m: st?.grabenlaenge ?? 0,
+        Notiz: st?.notiz ?? "",
+        BID: c.bid,
+      };
+    });
+  if (ohneTelekom.length) {
+    const wsT = XLSX.utils.json_to_sheet(ohneTelekom);
+    wsT["!cols"] = Object.keys(ohneTelekom[0]).map(() => ({ wch: 18 }));
+    XLSX.utils.book_append_sheet(wb, wsT, "Ohne Telekom-Auftrag");
+  }
+
   const date = new Date().toISOString().slice(0, 10);
   const fname = `hausanschluesse_${onlyPriority && statusFilter !== "aktuell" ? "prio_" : ""}${date}${suffix}.xlsx`;
   XLSX.writeFile(wb, fname);
