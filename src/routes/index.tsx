@@ -1096,7 +1096,7 @@ function Index() {
         lines.push(`  📍 ${c.plz} ${c.ort}`);
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
-        lines.push(`  🔌 NVT: ${c.bid}`);
+        lines.push(`  🔌 NVT: ${shortNvt(c.nvt)}`);
         const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
         if (auskInfo) lines.push(`  🔍 Auskundung: ${auskInfo}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
