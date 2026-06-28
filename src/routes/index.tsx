@@ -174,6 +174,7 @@ function ImportButton() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>("");
+  const [report, setReport] = useState<Awaited<ReturnType<typeof runFullProFiberImport>> | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -189,13 +190,25 @@ function ImportButton() {
       if (res.statesUnmatched) parts.push(`${res.statesUnmatched} ohne Match`);
       setMsg(parts.length ? `✅ ${parts.join(" · ")}` : "✅ Fertig");
       if (res.errors.length) setMsg(`⚠ ${res.errors[0]}`);
-      setTimeout(() => window.location.reload(), 1500);
+      setReport(res);
     } catch (err) {
       setMsg(`❌ ${(err as Error).message}`);
     } finally {
       setBusy(false);
     }
   }
+
+  function closeReport() {
+    setReport(null);
+    window.location.reload();
+  }
+
+  const badFmt = report?.dokuIssues.filter(i => i.foto === "format" || i.protokoll === "format" || i.sharepoint === "format") ?? [];
+  const missing = report?.dokuIssues.filter(i => !(i.foto === "format" || i.protokoll === "format" || i.sharepoint === "format")) ?? [];
+  const cell = (s: "ok" | "fehlt" | "format", raw: string) =>
+    s === "ok" ? <span style={{ color: "#16a34a" }}>✓</span>
+    : s === "format" ? <span style={{ color: "#dc2626" }} title={`„${raw}"`}>⚠ {raw || "?"}</span>
+    : <span style={{ color: "#6b7280" }}>—</span>;
 
   return (
     <>
@@ -212,10 +225,81 @@ function ImportButton() {
       >
         {busy ? "⏳" : "📥 Import"}
       </button>
-      {msg && !busy && (
+      {msg && !busy && !report && (
         <span style={{ position: "absolute", top: 56, right: 8, background: "#1f2937", color: "white", fontSize: 11, padding: "6px 10px", borderRadius: 8, maxWidth: 320, zIndex: 50 }}>
           {msg}
         </span>
+      )}
+      {report && (
+        <div onClick={closeReport} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: 12, maxWidth: 760, width: "100%", maxHeight: "85vh", overflow: "auto", padding: 16, color: "#111" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>📋 Import-Bericht</h3>
+              <button onClick={closeReport} style={{ background: "#111", color: "white", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}>Schließen & neu laden</button>
+            </div>
+            <div style={{ fontSize: 12, color: "#374151", marginBottom: 12 }}>
+              {report.contactsOk} Kontakte ({report.contactsNew} neu · {report.contactsUpd} update) · {report.statesOk} Status aktualisiert
+              {report.statesUnmatched ? ` · ${report.statesUnmatched} ohne Match` : ""}
+            </div>
+            {report.errors.length > 0 && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", padding: 8, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
+                {report.errors.map((e, i) => <div key={i}>⚠ {e}</div>)}
+              </div>
+            )}
+
+            <h4 style={{ margin: "12px 0 6px", fontSize: 13, color: "#dc2626" }}>
+              Format-Fehler ({badFmt.length}) – Wert konnte nicht als „Ja/Nein" gelesen werden
+            </h4>
+            {badFmt.length === 0 ? (
+              <div style={{ fontSize: 12, color: "#6b7280" }}>Keine Format-Probleme 🎉</div>
+            ) : (
+              <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                <thead><tr style={{ background: "#f3f4f6" }}>
+                  <th style={{ textAlign: "left", padding: 4 }}>Adresse</th>
+                  <th style={{ padding: 4 }}>FotoGIS</th>
+                  <th style={{ padding: 4 }}>Protokoll</th>
+                  <th style={{ padding: 4 }}>SharePoint</th>
+                </tr></thead>
+                <tbody>
+                  {badFmt.map(i => (
+                    <tr key={i.bid} style={{ borderTop: "1px solid #e5e7eb" }}>
+                      <td style={{ padding: 4 }}>{i.adresse}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.foto, i.rawFoto)}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.protokoll, i.rawProtokoll)}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.sharepoint, i.rawSharepoint)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <h4 style={{ margin: "16px 0 6px", fontSize: 13, color: "#b45309" }}>
+              Doku unvollständig ({missing.length}) – fehlende FotoGIS / Protokoll / SharePoint
+            </h4>
+            {missing.length === 0 ? (
+              <div style={{ fontSize: 12, color: "#6b7280" }}>Alle erledigten Objekte haben vollständige Doku 🎉</div>
+            ) : (
+              <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                <thead><tr style={{ background: "#f3f4f6" }}>
+                  <th style={{ textAlign: "left", padding: 4 }}>Adresse</th>
+                  <th style={{ padding: 4 }}>FotoGIS</th>
+                  <th style={{ padding: 4 }}>Protokoll</th>
+                  <th style={{ padding: 4 }}>SharePoint</th>
+                </tr></thead>
+                <tbody>
+                  {missing.map(i => (
+                    <tr key={i.bid} style={{ borderTop: "1px solid #e5e7eb" }}>
+                      <td style={{ padding: 4 }}>{i.adresse}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.foto, i.rawFoto)}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.protokoll, i.rawProtokoll)}</td>
+                      <td style={{ padding: 4, textAlign: "center" }}>{cell(i.sharepoint, i.rawSharepoint)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       )}
     </>
   );
