@@ -3,6 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Log = (s: string) => void;
 
+export type DokuIssue = {
+  bid: string;
+  adresse: string;
+  foto: "ok" | "fehlt" | "format";
+  protokoll: "ok" | "fehlt" | "format";
+  sharepoint: "ok" | "fehlt" | "format";
+  rawFoto: string;
+  rawProtokoll: string;
+  rawSharepoint: string;
+};
+
 export type ImportResult = {
   contactsNew: number;
   contactsUpd: number;
@@ -10,6 +21,7 @@ export type ImportResult = {
   statesOk: number;
   statesUnmatched: number;
   errors: string[];
+  dokuIssues: DokuIssue[];
 };
 
 const norm = (s: string) => (s ?? "").trim().toLowerCase();
