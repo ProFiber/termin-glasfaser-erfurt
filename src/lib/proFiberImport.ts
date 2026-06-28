@@ -132,11 +132,11 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
  * Pass 2: Lese "Alle GF+ HA"-Sheet (nur Projekt = An der Schmücke!) und
  * aktualisiere Status, Grabenlänge, Umsatz, Doku, Buchhaltung.
  */
-async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; unmatched: number }> {
+async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; unmatched: number; dokuIssues: DokuIssue[] }> {
   const sheetName = wb.SheetNames.find((n) => n.toLowerCase().includes("alle gf"));
   if (!sheetName) {
     log("⚠ Kein 'Alle GF+ HA'-Sheet gefunden – Pass 2 übersprungen");
-    return { ok: 0, unmatched: 0 };
+    return { ok: 0, unmatched: 0, dokuIssues: [] };
   }
   log(`📊 Pass 2 · Status-Sheet: ${sheetName} (nur Projekt 'An der Schmücke')`);
   const sh = wb.Sheets[sheetName];
@@ -155,10 +155,16 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     const d = new Date(String(v));
     return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
   };
-  const truthy = (v: unknown) => {
-    if (!v) return false;
-    const s = String(v).trim().toLowerCase();
-    return s === "ja" || s === "true" || s === "1" || s === "x" || s === "yes";
+  const TRUE_SET = new Set(["ja", "true", "1", "x", "yes", "y", "✓", "✔"]);
+  const FALSE_SET = new Set(["", "nein", "false", "0", "no", "n", "-", "–"]);
+  const classify = (v: unknown): { val: boolean; state: "ok" | "fehlt" | "format"; raw: string } => {
+    if (v === null || v === undefined || v === "") return { val: false, state: "fehlt", raw: "" };
+    if (typeof v === "boolean") return { val: v, state: v ? "ok" : "fehlt", raw: String(v) };
+    const raw = String(v).trim();
+    const s = raw.toLowerCase();
+    if (TRUE_SET.has(s)) return { val: true, state: "ok", raw };
+    if (FALSE_SET.has(s)) return { val: false, state: "fehlt", raw };
+    return { val: false, state: "format", raw };
   };
   const num = (v: unknown) => {
     if (v === null || v === undefined || v === "") return 0;
@@ -179,6 +185,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   }
 
   const payload: Record<string, unknown>[] = [];
+  const dokuIssues: DokuIssue[] = [];
   let unmatched = 0, skipProj = 0, skipStatus = 0;
   for (const row of dataRows) {
     const projekt = str(row[0]);
@@ -192,6 +199,17 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     if (mapped !== "erledigt") { skipStatus++; continue; }
     const bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
     if (!bid) { unmatched++; continue; }
+    const foto = classify(row[15]);
+    const proto = classify(row[16]);
+    const sp = classify(row[17]);
+    if (foto.state !== "ok" || proto.state !== "ok" || sp.state !== "ok") {
+      dokuIssues.push({
+        bid,
+        adresse: `${strasse} ${nr}${abc ? " " + abc : ""}`.trim(),
+        foto: foto.state, protokoll: proto.state, sharepoint: sp.state,
+        rawFoto: foto.raw, rawProtokoll: proto.raw, rawSharepoint: sp.raw,
+      });
+    }
     payload.push({
       bid, strasse, hnr: nr,
       status: "erledigt",
@@ -199,9 +217,9 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       grabenlaenge: Math.round(num(row[8])),
       umsatz_eur: num(row[9]),
       zusatz_eur: 0,
-      foto: truthy(row[15]),
-      protokoll: truthy(row[16]),
-      sharepoint: truthy(row[17]),
+      foto: foto.val,
+      protokoll: proto.val,
+      sharepoint: sp.val,
       aufmass_am: toDate(row[20]),
       gutschrift_nr: str(row[21]),
       avis_am: toDate(row[22]),
@@ -209,7 +227,9 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       bemerkung: str(row[25]),
     });
   }
+  const badFmt = dokuIssues.filter(i => i.foto === "format" || i.protokoll === "format" || i.sharepoint === "format").length;
   log(`  → ${payload.length} erledigte Schmücke-Zeilen · ${skipProj} andere Projekte · ${skipStatus} andere Status · ${unmatched} ohne Match`);
+  log(`  📋 Doku-Check: ${dokuIssues.length} unvollständig (${badFmt} Format-Fehler)`);
 
   let ok = 0;
   const CHUNK = 100;
@@ -220,7 +240,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     else ok += part.length;
   }
   log(`  ✅ ${ok} Status-Einträge aktualisiert`);
-  return { ok, unmatched };
+  return { ok, unmatched, dokuIssues };
 }
 
 export async function runFullProFiberImport(file: File, log: Log = () => {}): Promise<ImportResult> {
@@ -230,12 +250,14 @@ export async function runFullProFiberImport(file: File, log: Log = () => {}): Pr
 
   const errors: string[] = [];
   let c = { ok: 0, neu: 0, upd: 0 };
-  let s = { ok: 0, unmatched: 0 };
+  let s: { ok: number; unmatched: number; dokuIssues: DokuIssue[] } = { ok: 0, unmatched: 0, dokuIssues: [] };
   try { c = await importSchmueckeContacts(wb, log); } catch (e) { errors.push(`Pass 1: ${(e as Error).message}`); }
   try { s = await importAlleGfStates(wb, log); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
 
   return {
     contactsNew: c.neu, contactsUpd: c.upd, contactsOk: c.ok,
     statesOk: s.ok, statesUnmatched: s.unmatched, errors,
+    dokuIssues: s.dokuIssues,
   };
 }
+
