@@ -635,6 +635,13 @@ const NVT_ORT: Record<string, Ort> = {
 };
 const ortOf = (nvt: string): Ort | null => NVT_ORT[nvt] ?? null;
 
+// NVT-Code im Telekom-Export ist z.B. "2V8035" – intern an Bauleiter nur die Ziffern ("8035")
+const shortNvt = (nvt: string | null | undefined): string => {
+  const v = (nvt ?? "").trim();
+  if (!v) return "—";
+  return v.replace(/^[A-Za-z0-9]*?(\d{3,})$/, "$1");
+};
+
 const STATUS_META: Record<CallStatus, { label: string; dot: string }> = {
   offen:         { label: "Offen",          dot: "#9ca3af" },
   angerufen:     { label: "Angerufen",      dot: "#facc15" },
@@ -1096,7 +1103,7 @@ function Index() {
         lines.push(`  📍 ${c.plz} ${c.ort}`);
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
-        lines.push(`  🔌 NVT: ${c.bid}`);
+        lines.push(`  🔌 NVT: ${shortNvt(c.nvt)}`);
         const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
         if (auskInfo) lines.push(`  🔍 Auskundung: ${auskInfo}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
@@ -1154,7 +1161,7 @@ function Index() {
     lines.push(`📮 ${c.plz} ${c.ort}`);
     if (c.mobil) lines.push(`📱 ${c.mobil}`);
     if (c.festnetz && c.festnetz !== c.mobil) lines.push(`☎️ ${c.festnetz}`);
-    lines.push(`🔌 NVT: ${c.bid}`);
+    lines.push(`🔌 NVT: ${shortNvt(c.nvt)}`);
     const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
     if (auskInfo) lines.push(`🔍 Auskundung: ${auskInfo}`);
     if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
