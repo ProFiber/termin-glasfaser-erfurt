@@ -971,32 +971,35 @@ function Index() {
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       const kf = !!states[c.bid]?.klarfall;
-      if (filter.size > 0) {
+      // "nurGE" is a hard AND-constraint (restricts the result set), not part of OR
+      if (filter.has("nurGE") && !(c.ge > 0)) return false;
+      const orFilters = new Set(filter);
+      orFilters.delete("nurGE");
+      if (orFilters.size > 0) {
         let matchesAny = false;
-        if (filter.has("klarfall") && kf) matchesAny = true;
-        if (filter.has("dokuOffen")) {
+        if (orFilters.has("klarfall") && kf) matchesAny = true;
+        if (orFilters.has("dokuOffen")) {
           const cs = states[c.bid];
           const fertig = cs?.team_status === "fertig";
           const offen = !cs?.fotos_erhalten || !cs?.protokoll_erhalten;
           if (fertig && offen) matchesAny = true;
         }
-        if (filter.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
-        if (filter.has("offen")) {
+        if (orFilters.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
+        if (orFilters.has("offen")) {
           const isPending = st !== "erledigt" && st !== "abgelehnt";
           if (isPending) matchesAny = true;
         }
-        if (filter.has("termin") && st === "termin") matchesAny = true;
-        if (filter.has("erledigt") && st === "erledigt") matchesAny = true;
-        if (filter.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
-        if (filter.has("angerufen") && st === "angerufen") matchesAny = true;
-        if (filter.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
-        if (filter.has("terminVergangen") && st === "termin") {
+        if (orFilters.has("termin") && st === "termin") matchesAny = true;
+        if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
+        if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
+        if (orFilters.has("angerufen") && st === "angerufen") matchesAny = true;
+        if (orFilters.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
+        if (orFilters.has("terminVergangen") && st === "termin") {
           const today = new Date().toISOString().slice(0, 10);
           const d = states[c.bid]?.termin_datum ?? "";
           if (d && d < today) matchesAny = true;
         }
-        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
-        if (filter.has("nurGE") && c.ge > 0) matchesAny = true;
+        if (orFilters.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
