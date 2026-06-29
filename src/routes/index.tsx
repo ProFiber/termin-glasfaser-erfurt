@@ -714,6 +714,7 @@ function Index() {
   const [priorityFilter, setPriorityFilter] = useState<0 | 1 | 2 | 3 | "alle">("alle");
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
+  const [listSort, setListSort] = useState<"strasse" | "erstellt_asc" | "erstellt_desc">("strasse");
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
@@ -1042,6 +1043,16 @@ function Index() {
         const zb = states[b.bid]?.termin_zeit ?? "";
         if (za !== zb) return zb.localeCompare(za);
       }
+      if (listSort === "erstellt_asc") {
+        const da = (a.auftrag_erstellt_am ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? "").toString();
+        if (da !== db) return da.localeCompare(db);
+      }
+      if (listSort === "erstellt_desc") {
+        const da = (a.auftrag_erstellt_am ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? "").toString();
+        if (da !== db) return db.localeCompare(da);
+      }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
@@ -1052,7 +1063,7 @@ function Index() {
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
     });
-  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, priorityFilter, focusBid, pinnedBid]);
+  }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, priorityFilter, focusBid, pinnedBid, listSort]);
 
   const appointments = useMemo(() => {
     const slotOrder = ["mo-vm","mo-nm","di-vm","di-nm","mi-vm","mi-nm","do-vm","do-nm","fr-vm","fr-nm","sa-vm","sa-nm"];
@@ -1343,6 +1354,13 @@ function Index() {
               ✕
             </button>
           )}
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setListSort((s) => s === "strasse" ? "erstellt_desc" : s === "erstellt_desc" ? "erstellt_asc" : "strasse")}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
