@@ -1356,6 +1356,13 @@ function Index() {
           )}
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setListSort((s) => s === "strasse" ? "erstellt_desc" : s === "erstellt_desc" ? "erstellt_asc" : "strasse")}
+            title="Sortierung umschalten"
+            style={sortBtn()}
+          >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
