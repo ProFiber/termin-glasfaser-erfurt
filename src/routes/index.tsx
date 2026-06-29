@@ -714,6 +714,7 @@ function Index() {
   const [priorityFilter, setPriorityFilter] = useState<0 | 1 | 2 | 3 | "alle">("alle");
   const [streetSort, setStreetSort] = useState<"az" | "count">("az");
   const [nvtSort, setNvtSort] = useState<"az" | "count">("az");
+  const [listSort, setListSort] = useState<"strasse" | "erstellt_asc" | "erstellt_desc">("strasse");
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
