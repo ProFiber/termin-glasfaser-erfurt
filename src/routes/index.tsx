@@ -1438,8 +1438,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "nurGE"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "nurGE";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "nurGE" || f === "auskundungErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1452,6 +1452,7 @@ function Index() {
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
+              : f === "auskundungErledigt" ? `✓ Auskundung erledigt (${auskundungErledigtCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
