@@ -1209,6 +1209,11 @@ function Index() {
     [contacts],
   );
 
+  const gewerbeCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.ge > 0 ? 1 : 0), 0),
+    [contacts],
+  );
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
