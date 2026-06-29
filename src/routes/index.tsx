@@ -995,7 +995,7 @@ function Index() {
           const d = states[c.bid]?.termin_datum ?? "";
           if (d && d < today) matchesAny = true;
         }
-        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung) === "fehlt") matchesAny = true;
+        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
@@ -1205,7 +1205,7 @@ function Index() {
   );
 
   const ohneZustimmungCount = useMemo(
-    () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung) === "fehlt" ? 1 : 0), 0),
+    () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0), 0),
     [contacts],
   );
 
@@ -1606,7 +1606,7 @@ function Index() {
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
-                    const zSt = zustimmungStatus(c.zustimmung);
+                    const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
                     return (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
@@ -1646,7 +1646,7 @@ function Index() {
                     ort={c.ort}
                   />
                   {(() => {
-                    const zSt = zustimmungStatus(c.zustimmung);
+                    const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
                     const showZ = zSt === "fehlt";
                     const showA = ai.required;
