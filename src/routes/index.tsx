@@ -166,12 +166,11 @@ function exportHausanschluesseXlsx(
   const sheetName = statusFilter === "aktuell" ? "Aktuelle Ansicht" : (onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  // 📑 Zusatz-Blatt: Objekte ohne Eigentümerzustimmung
+  // 📑 Zusatz-Blatt: Objekte ohne Eigentümerzustimmung (nur Telekom-Aufträge
+  // mit Status Ausstehend/PENDING/leer – manuell/TTA-Objekte gehören in das
+  // Blatt "Ohne Telekom-Auftrag").
   const ohneZust = contacts
-    .filter((c) => {
-      const z = (c.zustimmung ?? "").toUpperCase();
-      return z !== "AGREED";
-    })
+    .filter((c) => zustimmungStatus(c.zustimmung, c.bid) === "fehlt")
     .map((c) => ({
       Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
       PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
@@ -187,16 +186,16 @@ function exportHausanschluesseXlsx(
   }
 
   // 📑 Zusatz-Blatt: Aufträge / gebaute Objekte ohne Telekom-Exporteintrag
-  // Heuristik: manuell angelegte Objekte (BID-Präfix "MAN-") sind nicht im
-  // Telekom-Property-Export enthalten.
+  // (manuell angelegte Objekte: BID-Präfix MAN-/manual-/TTA- oder Suffix -MAN).
   const ohneTelekom = contacts
-    .filter((c) => /^MAN-/i.test(c.bid))
+    .filter((c) => isOhneTelekomAuftrag(c.bid))
     .map((c) => {
       const st = callStates[c.bid];
       return {
         Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
         PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
         Eigentümer: c.name, Mobil: c.mobil, Festnetz: c.festnetz,
+        Zustimmung: c.zustimmung || "—",
         Status: st?.status ?? "offen",
         Gebaut_am: st?.erledigt_datum ?? "",
         Grabenlänge_m: st?.grabenlaenge ?? 0,
