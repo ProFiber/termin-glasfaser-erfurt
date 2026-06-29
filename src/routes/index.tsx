@@ -971,10 +971,12 @@ function Index() {
     const list = contacts.filter((c) => {
       const st = (states[c.bid]?.status ?? "offen") as CallStatus;
       const kf = !!states[c.bid]?.klarfall;
-      // "nurGE" is a hard AND-constraint (restricts the result set), not part of OR
+      // AND-Constraints (engen das Ergebnis ein, statt mit anderen Chips ODER-verknüpft zu sein)
       if (filter.has("nurGE") && !(c.ge > 0)) return false;
+      if (filter.has("offen") && !(st !== "erledigt" && st !== "abgelehnt")) return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
+      orFilters.delete("offen");
       if (orFilters.size > 0) {
         let matchesAny = false;
         if (orFilters.has("klarfall") && kf) matchesAny = true;
@@ -985,10 +987,6 @@ function Index() {
           if (fertig && offen) matchesAny = true;
         }
         if (orFilters.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
-        if (orFilters.has("offen")) {
-          const isPending = st !== "erledigt" && st !== "abgelehnt";
-          if (isPending) matchesAny = true;
-        }
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
