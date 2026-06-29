@@ -996,6 +996,7 @@ function Index() {
           if (d && d < today) matchesAny = true;
         }
         if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (filter.has("nurGE") && c.ge > 0) matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
@@ -1206,6 +1207,11 @@ function Index() {
 
   const ohneZustimmungCount = useMemo(
     () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0), 0),
+    [contacts],
+  );
+
+  const gewerbeCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.ge > 0 ? 1 : 0), 0),
     [contacts],
   );
 
@@ -1425,8 +1431,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "nurGE"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "nurGE";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1438,6 +1444,7 @@ function Index() {
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
+              : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
