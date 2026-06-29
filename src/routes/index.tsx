@@ -166,12 +166,11 @@ function exportHausanschluesseXlsx(
   const sheetName = statusFilter === "aktuell" ? "Aktuelle Ansicht" : (onlyPriority ? "Prio-Hausanschlüsse" : "Hausanschlüsse");
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  // 📑 Zusatz-Blatt: Objekte ohne Eigentümerzustimmung
+  // 📑 Zusatz-Blatt: Objekte ohne Eigentümerzustimmung (nur Telekom-Aufträge
+  // mit Status Ausstehend/PENDING/leer – manuell/TTA-Objekte gehören in das
+  // Blatt "Ohne Telekom-Auftrag").
   const ohneZust = contacts
-    .filter((c) => {
-      const z = (c.zustimmung ?? "").toUpperCase();
-      return z !== "AGREED";
-    })
+    .filter((c) => zustimmungStatus(c.zustimmung, c.bid) === "fehlt")
     .map((c) => ({
       Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
       PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
@@ -187,16 +186,16 @@ function exportHausanschluesseXlsx(
   }
 
   // 📑 Zusatz-Blatt: Aufträge / gebaute Objekte ohne Telekom-Exporteintrag
-  // Heuristik: manuell angelegte Objekte (BID-Präfix "MAN-") sind nicht im
-  // Telekom-Property-Export enthalten.
+  // (manuell angelegte Objekte: BID-Präfix MAN-/manual-/TTA- oder Suffix -MAN).
   const ohneTelekom = contacts
-    .filter((c) => /^MAN-/i.test(c.bid))
+    .filter((c) => isOhneTelekomAuftrag(c.bid))
     .map((c) => {
       const st = callStates[c.bid];
       return {
         Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz ?? ""}`.trim(),
         PLZ: c.plz, Ort: c.ort, NVT: c.nvt,
         Eigentümer: c.name, Mobil: c.mobil, Festnetz: c.festnetz,
+        Zustimmung: c.zustimmung || "—",
         Status: st?.status ?? "offen",
         Gebaut_am: st?.erledigt_datum ?? "",
         Grabenlänge_m: st?.grabenlaenge ?? 0,
@@ -668,11 +667,20 @@ function fmtAuskundung(von: string | null, bis: string | null): string | null {
   }
 }
 
-// "Zugestimmt" wenn AGREED / Zugestimmt / ja – sonst keine Zustimmung
-function zustimmungStatus(z: string | null | undefined): "ok" | "fehlt" {
+// Erkennt manuell/extern angelegte Objekte (kein Telekom-Auftrag)
+function isOhneTelekomAuftrag(bid: string): boolean {
+  return /^(MAN-|manual-|TTA-)/i.test(bid) || /-MAN$/i.test(bid);
+}
+
+// "ok" = AGREED/Zugestimmt/ja; "fehlt" nur bei echten Telekom-Aufträgen mit
+// Status ausstehend/pending/leer; "na" = manuelle/TTA-Objekte (kein Auftrag,
+// werden separat in "Ohne Telekom-Auftrag" geführt).
+function zustimmungStatus(z: string | null | undefined, bid?: string): "ok" | "fehlt" | "na" {
   const v = (z ?? "").trim().toLowerCase();
   if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
-  return "fehlt";
+  if (bid && isOhneTelekomAuftrag(bid)) return "na";
+  if (v === "" || v === "ausstehend" || v === "pending" || v === "initial" || v === "offen") return "fehlt";
+  return "na";
 }
 
 function auskundungInfo(c: Contact): {
@@ -987,7 +995,7 @@ function Index() {
           const d = states[c.bid]?.termin_datum ?? "";
           if (d && d < today) matchesAny = true;
         }
-        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung) === "fehlt") matchesAny = true;
+        if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
@@ -1197,7 +1205,7 @@ function Index() {
   );
 
   const ohneZustimmungCount = useMemo(
-    () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung) === "fehlt" ? 1 : 0), 0),
+    () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0), 0),
     [contacts],
   );
 
@@ -1598,7 +1606,7 @@ function Index() {
                   )}
                   {appt && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 700, marginTop: 2 }}>🗓 {fmtSlotDate(appt, apptDate, cs?.termin_zeit)}</div>}
                   {(() => {
-                    const zSt = zustimmungStatus(c.zustimmung);
+                    const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
                     return (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
@@ -1638,7 +1646,7 @@ function Index() {
                     ort={c.ort}
                   />
                   {(() => {
-                    const zSt = zustimmungStatus(c.zustimmung);
+                    const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
                     const showZ = zSt === "fehlt";
                     const showA = ai.required;
