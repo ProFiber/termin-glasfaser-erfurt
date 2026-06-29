@@ -635,12 +635,6 @@ const NVT_ORT: Record<string, Ort> = {
 };
 const ortOf = (nvt: string): Ort | null => NVT_ORT[nvt] ?? null;
 
-// NVT-Code im Telekom-Export ist z.B. "2V8035" – intern an Bauleiter nur die Ziffern ("8035")
-const shortNvt = (nvt: string | null | undefined): string => {
-  const v = (nvt ?? "").trim();
-  if (!v) return "—";
-  return v.replace(/^[A-Za-z0-9]*?(\d{3,})$/, "$1");
-};
 
 const STATUS_META: Record<CallStatus, { label: string; dot: string }> = {
   offen:         { label: "Offen",          dot: "#9ca3af" },
@@ -1103,7 +1097,7 @@ function Index() {
         lines.push(`  📍 ${c.plz} ${c.ort}`);
         if (c.mobil) lines.push(`  📱 ${c.mobil}`);
         if (c.festnetz && c.festnetz !== c.mobil) lines.push(`  ☎️ ${c.festnetz}`);
-        lines.push(`  🔌 NVT: ${shortNvt(c.nvt)}`);
+        if (c.nvt?.trim()) lines.push(`  🔌 NVT: ${c.nvt.trim()}`);
         const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
         if (auskInfo) lines.push(`  🔍 Auskundung: ${auskInfo}`);
         if (cs?.notiz?.trim()) lines.push(`  📝 ${cs.notiz.trim()}`);
@@ -1152,16 +1146,18 @@ function Index() {
     const slotLabel = slot ? fmtSlotDate(slot, cs?.termin_datum ?? null, cs?.termin_zeit) : "—";
     const meta = [c.typ, c.we ? `${c.we} WE` : "", c.ge ? `${c.ge} GE` : ""].filter(Boolean).join(" · ");
     const lines: string[] = [];
-    lines.push(`📅 *Neuer Termin · Glasfaser*`);
-    lines.push(`_Störmer Bau i.A. Telekom_`);
+    lines.push(`📅 *Neuer Termin · Hausanschluss*`);
     lines.push("");
     lines.push(`🗓 *${slotLabel}*`);
-    lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz}* — ${c.name}`);
+    lines.push("");
+    lines.push(`📍 *${c.strasse} ${c.hnr}${c.hnr_zusatz},`);
+    lines.push(`${c.plz} ${c.ort}*`);
+    lines.push("");
+    if (c.name?.trim()) lines.push(`👤 ${c.name.trim()}`);
     if (meta) lines.push(`🏠 ${meta}`);
-    lines.push(`📮 ${c.plz} ${c.ort}`);
+    if (c.nvt?.trim()) lines.push(`🔌 NVT: ${c.nvt.trim()}`);
     if (c.mobil) lines.push(`📱 ${c.mobil}`);
     if (c.festnetz && c.festnetz !== c.mobil) lines.push(`☎️ ${c.festnetz}`);
-    lines.push(`🔌 NVT: ${shortNvt(c.nvt)}`);
     const auskInfo = fmtAuskundung(c.auskundung_von, c.auskundung_bis);
     if (auskInfo) lines.push(`🔍 Auskundung: ${auskInfo}`);
     if (cs?.notiz?.trim()) lines.push(`📝 ${cs.notiz.trim()}`);
