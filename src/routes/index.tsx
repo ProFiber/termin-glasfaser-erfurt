@@ -1043,6 +1043,16 @@ function Index() {
         const zb = states[b.bid]?.termin_zeit ?? "";
         if (za !== zb) return zb.localeCompare(za);
       }
+      if (listSort === "erstellt_asc") {
+        const da = (a.auftrag_erstellt_am ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? "").toString();
+        if (da !== db) return da.localeCompare(db);
+      }
+      if (listSort === "erstellt_desc") {
+        const da = (a.auftrag_erstellt_am ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? "").toString();
+        if (da !== db) return db.localeCompare(da);
+      }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
