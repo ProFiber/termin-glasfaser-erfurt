@@ -668,11 +668,20 @@ function fmtAuskundung(von: string | null, bis: string | null): string | null {
   }
 }
 
-// "Zugestimmt" wenn AGREED / Zugestimmt / ja – sonst keine Zustimmung
-function zustimmungStatus(z: string | null | undefined): "ok" | "fehlt" {
+// Erkennt manuell/extern angelegte Objekte (kein Telekom-Auftrag)
+function isOhneTelekomAuftrag(bid: string): boolean {
+  return /^(MAN-|manual-|TTA-)/i.test(bid) || /-MAN$/i.test(bid);
+}
+
+// "ok" = AGREED/Zugestimmt/ja; "fehlt" nur bei echten Telekom-Aufträgen mit
+// Status ausstehend/pending/leer; "na" = manuelle/TTA-Objekte (kein Auftrag,
+// werden separat in "Ohne Telekom-Auftrag" geführt).
+function zustimmungStatus(z: string | null | undefined, bid?: string): "ok" | "fehlt" | "na" {
   const v = (z ?? "").trim().toLowerCase();
   if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
-  return "fehlt";
+  if (bid && isOhneTelekomAuftrag(bid)) return "na";
+  if (v === "" || v === "ausstehend" || v === "pending" || v === "initial" || v === "offen") return "fehlt";
+  return "na";
 }
 
 function auskundungInfo(c: Contact): {
