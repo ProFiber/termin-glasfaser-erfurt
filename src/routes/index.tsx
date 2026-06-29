@@ -996,6 +996,7 @@ function Index() {
           if (d && d < today) matchesAny = true;
         }
         if (filter.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (filter.has("nurGE") && c.ge > 0) matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
