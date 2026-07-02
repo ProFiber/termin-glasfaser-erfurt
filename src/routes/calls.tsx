@@ -81,7 +81,7 @@ function CallsPage() {
     setSaving(bid);
     const cur = rows.find((r) => r.contact.bid === bid)?.state;
     const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string } = { status, updated_at: new Date().toISOString() };
-    if (status === "erledigt" && !cur?.erledigt_datum) {
+    if (status === "erledigt") {
       if (cur?.termin_datum) {
         patch.erledigt_datum = cur.termin_datum;
       } else {

@@ -1757,12 +1757,10 @@ function Index() {
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
                       <button key={s} onClick={() => {
                         const prev = states[c.bid];
-                        const setErlDate = s === "erledigt" && !prev?.erledigt_datum;
                         const erlDate = prev?.termin_datum || toIsoDate(new Date());
                         patch(c.bid, {
                           status: s,
-                          ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "" } : {}),
-                          ...(setErlDate ? { erledigt_datum: erlDate } : {}),
+                          ...(s === "erledigt" ? { termin_slot: "", termin_datum: null, termin_zeit: "", erledigt_datum: erlDate } : {}),
                         });
                         if (s === "erledigt") setGrabenPromptFor({ contact: c, prev });
                       }}
