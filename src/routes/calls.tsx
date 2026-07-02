@@ -82,8 +82,12 @@ function CallsPage() {
     const cur = rows.find((r) => r.contact.bid === bid)?.state;
     const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string } = { status, updated_at: new Date().toISOString() };
     if (status === "erledigt" && !cur?.erledigt_datum) {
-      const d = new Date();
-      patch.erledigt_datum = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (cur?.termin_datum) {
+        patch.erledigt_datum = cur.termin_datum;
+      } else {
+        const d = new Date();
+        patch.erledigt_datum = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
     }
     await supabase.from("call_states").update(patch).eq("bid", bid);
     setRows((rs) => rs.map((r) => (r.contact.bid === bid ? { ...r, state: { ...r.state, ...patch } } : r)));
