@@ -415,20 +415,20 @@ function ExportMenu({
       </button>
       {open && (
         <>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1000 }} />
           <div
             style={{
-              position: "absolute",
-              right: 0,
-              top: "calc(100% + 6px)",
+              position: "fixed",
+              right: 8,
+              top: 56,
               background: "white",
               color: "#111",
               borderRadius: 10,
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-              width: 320,
-              maxHeight: "70vh",
+              width: "min(320px, calc(100vw - 16px))",
+              maxHeight: "calc(100vh - 72px)",
               overflowY: "auto",
-              zIndex: 31,
+              zIndex: 1001,
             }}
           >
             <div style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, borderBottom: "1px solid #eee" }}>
