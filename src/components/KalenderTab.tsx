@@ -253,6 +253,53 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     }
   };
 
+  function shareTagesliste(dateIso: string, dayLabel: string, appts: Contact[]) {
+    // Format: "02.07. Schmücke (3)\n\nTeam Jozey\n\nErnst-Thälmann-Str. 27A, 3m..."
+    const d = new Date(`${dateIso}T00:00:00`);
+    const dateShort = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+    const teamLabel = (t: string) =>
+      t === "team1" ? "Team Jozey" : t === "team2" ? "Team Adil" : "Ohne Team";
+    const groups: Record<string, Contact[]> = {};
+    appts.forEach((c) => {
+      const t = states[c.bid]?.team || "";
+      (groups[t] = groups[t] || []).push(c);
+    });
+    // Team-Reihenfolge: team1, team2, "" (ohne)
+    const order = ["team1", "team2", ""].filter((k) => groups[k]?.length);
+    const lines: string[] = [];
+    lines.push(`${dateShort} Schmücke (${appts.length})`);
+    order.forEach((t) => {
+      lines.push("");
+      lines.push(teamLabel(t));
+      lines.push("");
+      groups[t]
+        .slice()
+        .sort((a, b) => {
+          const sa = a.strasse.localeCompare(b.strasse, "de");
+          if (sa !== 0) return sa;
+          return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
+        })
+        .forEach((c) => {
+          const gl = states[c.bid]?.grabenlaenge || 0;
+          const addr = `${c.strasse} ${c.hnr}${c.hnr_zusatz}`.trim();
+          lines.push(gl > 0 ? `${addr}, ${gl}m` : addr);
+        });
+    });
+    const text = lines.join("\n");
+
+    // Nativ teilen wenn möglich, sonst WhatsApp Web + Zwischenablage
+    const nav = typeof navigator !== "undefined" ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;
+    if (nav?.share) {
+      nav.share({ text, title: `Tagesliste ${dateShort}` }).catch(() => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      });
+    } else {
+      if (nav?.clipboard) nav.clipboard.writeText(text).catch(() => {});
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+  }
+  void dayLabel;
+
   return (
     <div
       style={{ padding: 12, fontFamily: "system-ui, -apple-system, sans-serif" }}
