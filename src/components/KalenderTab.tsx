@@ -298,7 +298,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     }
   }
-  void dayLabel;
+  }
 
   return (
     <div
