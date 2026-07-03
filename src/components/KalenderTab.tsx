@@ -392,6 +392,29 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       {total} Termin{total === 1 ? "" : "e"}
                     </span>
                   )}
+                  {total > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareTagesliste(date, day, allDayContacts);
+                      }}
+                      title="Tagesliste teilen"
+                      style={{
+                        background: "#dcfce7",
+                        color: "#15803d",
+                        border: "none",
+                        borderRadius: 999,
+                        padding: "3px 8px",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      📋 Tagesliste
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {
