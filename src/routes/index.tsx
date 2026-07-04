@@ -852,7 +852,7 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override">>) {
+  
   async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override" | "erledigt_datum" | "umsatz_eur" | "zusatz_eur">>) {
     const prev = states[bid];
     // Auto-Fill beim Wechsel auf "erledigt": Datum + Umsatz-Pauschale
