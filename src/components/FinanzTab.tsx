@@ -508,10 +508,13 @@ export default function FinanzTab() {
       setRows((cs as FinRow[]) || []);
       const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
       const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
+      const zHaTag = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_pro_tag");
       if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
       if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
+      if (zHaTag) { setHaProTag(Number(zHaTag.ziel_eur)); setHaProTagInput(String(zHaTag.ziel_eur)); }
       setLoading(false);
     })();
+
 
 
     const ch = supabase
