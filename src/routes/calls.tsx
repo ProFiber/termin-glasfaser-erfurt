@@ -36,6 +36,14 @@ function CallsPage() {
   const [filter, setFilter] = useState<Filter>("offen");
   const [saving, setSaving] = useState<string | null>(null);
   const [openNotiz, setOpenNotiz] = useState<string | null>(null);
+  const [haPreis, setHaPreis] = useState<number>(390);
+
+  useEffect(() => {
+    supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle().then(({ data }) => {
+      const p = Number((data as { ziel_eur?: number } | null)?.ziel_eur);
+      if (isFinite(p) && p > 0) setHaPreis(p);
+    });
+  }, []);
 
   async function load() {
     setLoading(true);
