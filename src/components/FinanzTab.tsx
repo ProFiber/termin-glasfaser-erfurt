@@ -95,10 +95,13 @@ export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
   const [haPreis, setHaPreis] = useState<number>(1200);
+  const [haProTag, setHaProTag] = useState<number>(4);
   const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
   const [zielInput, setZielInput] = useState("70000");
   const [haPreisInput, setHaPreisInput] = useState("1200");
+  const [haProTagInput, setHaProTagInput] = useState("4");
+
   const [showPrevHeute, setShowPrevHeute] = useState(false);
   const [showPrevWoche, setShowPrevWoche] = useState(false);
   const [showPrevMonat, setShowPrevMonat] = useState(false);
