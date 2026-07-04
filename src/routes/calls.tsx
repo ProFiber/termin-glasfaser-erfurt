@@ -88,13 +88,16 @@ function CallsPage() {
   async function setStatus(bid: string, status: CallStatus) {
     setSaving(bid);
     const cur = rows.find((r) => r.contact.bid === bid)?.state;
-    const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string } = { status, updated_at: new Date().toISOString() };
+    const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string; umsatz_eur?: number } = { status, updated_at: new Date().toISOString() };
     if (status === "erledigt") {
       if (cur?.termin_datum) {
         patch.erledigt_datum = cur.termin_datum;
       } else {
         const d = new Date();
         patch.erledigt_datum = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
+      if (!cur?.umsatz_eur || cur.umsatz_eur === 0) {
+        patch.umsatz_eur = haPreis;
       }
     }
     await supabase.from("call_states").update(patch).eq("bid", bid);
