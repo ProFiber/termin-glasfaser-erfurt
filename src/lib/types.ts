@@ -50,6 +50,8 @@ export type CallState = {
   protokoll_erhalten: boolean;
   priority_override: number | null;
   kurz_kandidat?: boolean;
+  umsatz_eur?: number;
+  zusatz_eur?: number;
   updated_at: string;
 };
 
