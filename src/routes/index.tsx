@@ -785,12 +785,14 @@ function Index() {
   const flashTimer = useRef<number | null>(null);
 
   // Initial load
+  const [haPreis, setHaPreis] = useState<number>(390);
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: cs, error: e1 }, { data: ss, error: e2 }] = await Promise.all([
+      const [{ data: cs, error: e1 }, { data: ss, error: e2 }, { data: zl }] = await Promise.all([
         supabase.from("contacts").select("*").order("strasse").order("hnr"),
         supabase.from("call_states").select("*"),
+        supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle(),
       ]);
       if (cancelled) return;
       if (e1 || e2) {
@@ -802,6 +804,8 @@ function Index() {
       const map: Record<string, CallState> = {};
       (ss as CallState[] | null)?.forEach((s) => (map[s.bid] = s));
       setStates(map);
+      const p = Number((zl as { ziel_eur?: number } | null)?.ziel_eur);
+      if (isFinite(p) && p > 0) setHaPreis(p);
       setLoading(false);
     })();
     return () => { cancelled = true; };
