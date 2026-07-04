@@ -36,6 +36,14 @@ function CallsPage() {
   const [filter, setFilter] = useState<Filter>("offen");
   const [saving, setSaving] = useState<string | null>(null);
   const [openNotiz, setOpenNotiz] = useState<string | null>(null);
+  const [haPreis, setHaPreis] = useState<number>(390);
+
+  useEffect(() => {
+    supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle().then(({ data }) => {
+      const p = Number((data as { ziel_eur?: number } | null)?.ziel_eur);
+      if (isFinite(p) && p > 0) setHaPreis(p);
+    });
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -80,13 +88,16 @@ function CallsPage() {
   async function setStatus(bid: string, status: CallStatus) {
     setSaving(bid);
     const cur = rows.find((r) => r.contact.bid === bid)?.state;
-    const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string } = { status, updated_at: new Date().toISOString() };
+    const patch: { status: CallStatus; updated_at: string; erledigt_datum?: string; umsatz_eur?: number } = { status, updated_at: new Date().toISOString() };
     if (status === "erledigt") {
       if (cur?.termin_datum) {
         patch.erledigt_datum = cur.termin_datum;
       } else {
         const d = new Date();
         patch.erledigt_datum = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
+      if (!cur?.umsatz_eur || cur.umsatz_eur === 0) {
+        patch.umsatz_eur = haPreis;
       }
     }
     await supabase.from("call_states").update(patch).eq("bid", bid);

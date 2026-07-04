@@ -785,12 +785,14 @@ function Index() {
   const flashTimer = useRef<number | null>(null);
 
   // Initial load
+  const [haPreis, setHaPreis] = useState<number>(390);
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: cs, error: e1 }, { data: ss, error: e2 }] = await Promise.all([
+      const [{ data: cs, error: e1 }, { data: ss, error: e2 }, { data: zl }] = await Promise.all([
         supabase.from("contacts").select("*").order("strasse").order("hnr"),
         supabase.from("call_states").select("*"),
+        supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle(),
       ]);
       if (cancelled) return;
       if (e1 || e2) {
@@ -802,6 +804,8 @@ function Index() {
       const map: Record<string, CallState> = {};
       (ss as CallState[] | null)?.forEach((s) => (map[s.bid] = s));
       setStates(map);
+      const p = Number((zl as { ziel_eur?: number } | null)?.ziel_eur);
+      if (isFinite(p) && p > 0) setHaPreis(p);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -848,8 +852,19 @@ function Index() {
     }
   }
 
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override">>) {
+  
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override" | "erledigt_datum" | "umsatz_eur" | "zusatz_eur">>) {
     const prev = states[bid];
+    // Auto-Fill beim Wechsel auf "erledigt": Datum + Umsatz-Pauschale
+    const becomingErledigt = changes.status === "erledigt" && prev?.status !== "erledigt";
+    if (becomingErledigt) {
+      if (changes.erledigt_datum === undefined) {
+        changes.erledigt_datum = prev?.termin_datum || toIsoDate(new Date());
+      }
+      if (changes.umsatz_eur === undefined && (!prev?.umsatz_eur || prev.umsatz_eur === 0)) {
+        changes.umsatz_eur = haPreis;
+      }
+    }
     const optimistic: CallState = {
       bid,
       status: changes.status ?? prev?.status ?? "offen",
@@ -865,6 +880,9 @@ function Index() {
       fotos_erhalten: changes.fotos_erhalten !== undefined ? changes.fotos_erhalten : (prev?.fotos_erhalten ?? false),
       protokoll_erhalten: changes.protokoll_erhalten !== undefined ? changes.protokoll_erhalten : (prev?.protokoll_erhalten ?? false),
       priority_override: changes.priority_override !== undefined ? changes.priority_override : (prev?.priority_override ?? null),
+      erledigt_datum: changes.erledigt_datum !== undefined ? changes.erledigt_datum : (prev?.erledigt_datum ?? null),
+      umsatz_eur: changes.umsatz_eur !== undefined ? changes.umsatz_eur : (prev?.umsatz_eur ?? 0),
+      zusatz_eur: changes.zusatz_eur !== undefined ? changes.zusatz_eur : (prev?.zusatz_eur ?? 0),
       updated_at: new Date().toISOString(),
     };
     setStates((s) => ({ ...s, [bid]: optimistic }));
@@ -887,6 +905,9 @@ function Index() {
           fotos_erhalten: optimistic.fotos_erhalten,
           protokoll_erhalten: optimistic.protokoll_erhalten,
           priority_override: optimistic.priority_override,
+          erledigt_datum: optimistic.erledigt_datum,
+          umsatz_eur: optimistic.umsatz_eur,
+          zusatz_eur: optimistic.zusatz_eur,
         },
         { onConflict: "bid" }
       );
