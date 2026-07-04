@@ -700,12 +700,31 @@ export default function FinanzTab() {
 
 
   async function saveZiel() {
-    const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
+    const vInput = parseFloat(zielInput.replace(/[^\d.]/g, ""));
     const p = parseFloat(haPreisInput.replace(/[^\d.]/g, ""));
+    const hpt = parseFloat(haProTagInput.replace(/[^\d.]/g, ""));
+
+    // Effektiver HA-Preis (neu oder alt)
+    const effHaPreis = isFinite(p) && p > 0 ? p : haPreis;
+    const satBuffer = ziel?.saturday_buffer ?? true;
+    const today = new Date();
+    const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
+
+    // Wenn HA/Tag angegeben → Monatsziel daraus ableiten (überschreibt manuelle Eingabe)
+    let v = vInput;
+    if (isFinite(hpt) && hpt > 0) {
+      v = hpt * arbeitstageMonat * effHaPreis;
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "ha_pro_tag", ziel_eur: hpt, arbeitstage_pro_monat: arbeitstageMonat, saturday_buffer: satBuffer,
+      }, { onConflict: "scope" });
+      setHaProTag(hpt);
+      setZielInput(String(Math.round(v)));
+    }
+
     if (isFinite(v) && v > 0) {
       await supabase.from("umsatz_ziele").upsert({
         scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
-        saturday_buffer: ziel?.saturday_buffer ?? true,
+        saturday_buffer: satBuffer,
       }, { onConflict: "scope" });
       setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
     }
@@ -717,6 +736,7 @@ export default function FinanzTab() {
     }
     setEditingZiel(false);
   }
+
 
 
   if (loading) {
