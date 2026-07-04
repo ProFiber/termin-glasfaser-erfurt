@@ -95,10 +95,13 @@ export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
   const [haPreis, setHaPreis] = useState<number>(1200);
+  const [haProTag, setHaProTag] = useState<number>(4);
   const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
   const [zielInput, setZielInput] = useState("70000");
   const [haPreisInput, setHaPreisInput] = useState("1200");
+  const [haProTagInput, setHaProTagInput] = useState("4");
+
   const [showPrevHeute, setShowPrevHeute] = useState(false);
   const [showPrevWoche, setShowPrevWoche] = useState(false);
   const [showPrevMonat, setShowPrevMonat] = useState(false);
@@ -505,10 +508,13 @@ export default function FinanzTab() {
       setRows((cs as FinRow[]) || []);
       const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
       const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
+      const zHaTag = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_pro_tag");
       if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
       if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
+      if (zHaTag) { setHaProTag(Number(zHaTag.ziel_eur)); setHaProTagInput(String(zHaTag.ziel_eur)); }
       setLoading(false);
     })();
+
 
 
     const ch = supabase
@@ -694,12 +700,31 @@ export default function FinanzTab() {
 
 
   async function saveZiel() {
-    const v = parseFloat(zielInput.replace(/[^\d.]/g, ""));
+    const vInput = parseFloat(zielInput.replace(/[^\d.]/g, ""));
     const p = parseFloat(haPreisInput.replace(/[^\d.]/g, ""));
+    const hpt = parseFloat(haProTagInput.replace(/[^\d.]/g, ""));
+
+    // Effektiver HA-Preis (neu oder alt)
+    const effHaPreis = isFinite(p) && p > 0 ? p : haPreis;
+    const satBuffer = ziel?.saturday_buffer ?? true;
+    const today = new Date();
+    const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
+
+    // Wenn HA/Tag angegeben → Monatsziel daraus ableiten (überschreibt manuelle Eingabe)
+    let v = vInput;
+    if (isFinite(hpt) && hpt > 0) {
+      v = hpt * arbeitstageMonat * effHaPreis;
+      await supabase.from("umsatz_ziele").upsert({
+        scope: "ha_pro_tag", ziel_eur: hpt, arbeitstage_pro_monat: arbeitstageMonat, saturday_buffer: satBuffer,
+      }, { onConflict: "scope" });
+      setHaProTag(hpt);
+      setZielInput(String(Math.round(v)));
+    }
+
     if (isFinite(v) && v > 0) {
       await supabase.from("umsatz_ziele").upsert({
         scope: "monat", ziel_eur: v, arbeitstage_pro_monat: ziel?.arbeitstage_pro_monat ?? 22,
-        saturday_buffer: ziel?.saturday_buffer ?? true,
+        saturday_buffer: satBuffer,
       }, { onConflict: "scope" });
       setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
     }
@@ -711,6 +736,7 @@ export default function FinanzTab() {
     }
     setEditingZiel(false);
   }
+
 
 
   if (loading) {
@@ -846,6 +872,19 @@ export default function FinanzTab() {
       {editingZiel && (
         <div style={{ background: "white", borderRadius: 10, padding: 12, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ziele anpassen</div>
+          <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 8 }}>
+            Ø Hausanschlüsse pro Tag (Team-Ziel)
+            <input
+              type="number"
+              step="0.1"
+              value={haProTagInput}
+              onChange={(e) => setHaProTagInput(e.target.value)}
+              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+            />
+            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
+              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × Pauschale
+            </div>
+          </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
             <label style={{ fontSize: 11, color: "#475569" }}>
               Monatsziel (€)
@@ -866,6 +905,7 @@ export default function FinanzTab() {
               />
             </label>
           </div>
+
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={saveZiel} style={{ flex: 1, padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
               Speichern
