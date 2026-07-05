@@ -553,14 +553,11 @@ export default function FinanzTab() {
       ]);
       setRows((cs as FinRow[]) || []);
       const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
-      const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
       const zHaTag = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_pro_tag");
       if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
-      if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
       if (zHaTag) { setHaProTag(Number(zHaTag.ziel_eur)); setHaProTagInput(String(zHaTag.ziel_eur)); }
-      const zielEur = zMonat ? Number(zMonat.ziel_eur) : 70000;
-      const preisEur = zHa ? Number(zHa.ziel_eur) : 1200;
-      setHaAnzahlInput(preisEur > 0 ? String(Math.round(zielEur / preisEur)) : "0");
+      const zielEur = zMonat ? Number(zMonat.ziel_eur) : 22620;
+      setHaAnzahlInput(String(Math.round(zielEur / haPreis)));
 
       setLoading(false);
     })();
