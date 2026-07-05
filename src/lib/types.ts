@@ -34,6 +34,9 @@ export type CallStatus =
   | "abgelehnt"
   | "erledigt";
 
+export type PruefungStatus = "offen" | "eingereicht" | "nachforderung" | "freigegeben";
+export type NachforderungGrund = "foto" | "protokoll" | "aufmass" | "sonstiges";
+
 export type CallState = {
   erledigt_datum?: string | null;
   bid: string;
@@ -53,6 +56,12 @@ export type CallState = {
   kurz_kandidat?: boolean;
   umsatz_eur?: number;
   zusatz_eur?: number;
+  avis_am?: string | null;
+  verguetet_am?: string | null;
+  pruefung_status?: PruefungStatus;
+  pruefung_nachforderung?: NachforderungGrund[];
+  pruefung_notiz?: string;
+  eingereicht_am?: string | null;
   updated_at: string;
 };
 

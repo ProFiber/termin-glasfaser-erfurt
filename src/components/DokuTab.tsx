@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Contact, CallState, DokuState } from "@/lib/types";
+import type { Contact, CallState, DokuState, NachforderungGrund, PruefungStatus } from "@/lib/types";
 import GrabenStepper from "@/components/GrabenStepper";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
@@ -11,6 +11,18 @@ type Props = {
   focusBid?: string | null;
   onClearFocus?: () => void;
 };
+
+type KlarfallKey =
+  | "auskundung"    // gebaut ohne Auskundung (5 = kritischster)
+  | "ohneAuftrag"   // no_match aus import_log
+  | "fotoFehlt"
+  | "protokollFehlt"
+  | "zustimmungFehlt"
+  | "nachforderung" // AG hat zurückgewiesen
+  | "manuell";      // klarfall=true
+
+type NoMatchRow = { strasse: string; hnr: string; details: unknown };
+
 
 const PERSONEN = ["FF", "FH", "Brahim", "Sezai", "Jozey"];
 const MAGENTA = "#e20074";
@@ -57,7 +69,10 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     }
   });
   const [shareMenu, setShareMenu] = useState(false);
+  const [klarfallFilter, setKlarfallFilter] = useState<KlarfallKey | null>(null);
+  const [noMatch, setNoMatch] = useState<NoMatchRow[]>([]);
   const flashTimer = useRef<number | null>(null);
+
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
@@ -73,16 +88,24 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase.from("doku_states").select("*");
-      if (cancelled || error) return;
+      const [{ data: doku }, { data: nm }] = await Promise.all([
+        supabase.from("doku_states").select("*"),
+        supabase.from("import_log")
+          .select("strasse,hnr,details")
+          .eq("quelle", "excel_alle_gf_ha")
+          .eq("status", "no_match"),
+      ]);
+      if (cancelled) return;
       const map: Record<string, DokuState> = {};
-      (data as DokuState[] | null)?.forEach((d) => (map[d.bid] = d));
+      (doku as DokuState[] | null)?.forEach((d) => (map[d.bid] = d));
       setDokuStates(map);
+      setNoMatch((nm as NoMatchRow[]) || []);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
 
   // Realtime
   useEffect(() => {
@@ -160,6 +183,47 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     if (focusBid) setExpanded(focusBid);
   }, [focusBid]);
 
+  // Klärfall-Kategorien berechnen (live aus vorhandenen Daten)
+  const kategorien = useMemo(() => {
+    const auskundung: Contact[] = [];
+    const fotoFehlt: Contact[] = [];
+    const protokollFehlt: Contact[] = [];
+    const zustimmungFehlt: Contact[] = [];
+    const nachforderung: Contact[] = [];
+    const manuell: Contact[] = [];
+    for (const c of contacts) {
+      const cs = callStates[c.bid];
+      if (!cs) continue;
+      if (cs.status !== "erledigt") {
+        if (cs.klarfall) manuell.push(c);
+        continue;
+      }
+      const d = dokuStates[c.bid];
+      if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung.push(c);
+      if (!d?.foto) fotoFehlt.push(c);
+      if (!d?.protokoll) protokollFehlt.push(c);
+      const z = (c.zustimmung || "").trim().toLowerCase();
+      if (!z || z === "nein" || z === "offen") zustimmungFehlt.push(c);
+      if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
+      if (cs.klarfall) manuell.push(c);
+    }
+    return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell };
+  }, [contacts, callStates, dokuStates]);
+
+  const bidsInFilter = useMemo(() => {
+    if (!klarfallFilter) return null;
+    const map: Record<KlarfallKey, Contact[]> = {
+      auskundung: kategorien.auskundung,
+      ohneAuftrag: [],
+      fotoFehlt: kategorien.fotoFehlt,
+      protokollFehlt: kategorien.protokollFehlt,
+      zustimmungFehlt: kategorien.zustimmungFehlt,
+      nachforderung: kategorien.nachforderung,
+      manuell: kategorien.manuell,
+    };
+    return new Set(map[klarfallFilter].map((c) => c.bid));
+  }, [klarfallFilter, kategorien]);
+
   const visible = useMemo(() => {
     if (focusBid) {
       const c = contacts.find((x) => x.bid === focusBid);
@@ -168,7 +232,12 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     const list = contacts.filter((c) => {
       const cs = callStates[c.bid];
       const st = cs?.status;
-      if (st !== "erledigt" && st !== "termin") return false;
+      // Bei aktivem Klärfall-Filter: alle Statūs zulassen, damit z.B. manuelle Klärfälle sichtbar sind
+      if (bidsInFilter) {
+        if (!bidsInFilter.has(c.bid)) return false;
+      } else {
+        if (st !== "erledigt" && st !== "termin") return false;
+      }
       if (onlyToday) {
         const d = dokuStates[c.bid];
         const updatedToday = d?.updated_at ? d.updated_at.slice(0, 10) === todayISO : false;
@@ -176,6 +245,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
       }
       return true;
     });
+
     if (sortMode === "manual") {
       const idx = new Map(manualOrder.map((bid, i) => [bid, i]));
       return [...list].sort((a, b) => {
@@ -200,7 +270,8 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
       if (s !== 0) return s;
       return (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0);
     });
-  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder, focusBid]);
+  }, [contacts, callStates, dokuStates, onlyToday, todayISO, sortMode, manualOrder, focusBid, bidsInFilter]);
+
 
   function moveManual(bid: string, dir: -1 | 1) {
     setManualOrder((prev) => {
@@ -504,6 +575,24 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         </div>
       </div>
 
+      {/* KLÄRFÄLLE — Blocker die die Zahlung verhindern */}
+      {!focusBid && (
+        <KlaerfaelleKacheln
+          kategorien={kategorien}
+          noMatchCount={noMatch.length}
+          active={klarfallFilter}
+          onSelect={(k) => setKlarfallFilter(k === klarfallFilter ? null : k)}
+          onShowNoMatch={() => alert(
+            "Objekte ohne Auftrag (gebaut, aber kein Telekom-Match):\n\n" +
+            (noMatch.length === 0
+              ? "Keine offenen Fälle."
+              : noMatch.map((n) => `• ${n.strasse ?? "?"} ${n.hnr ?? ""}`).join("\n"))
+          )}
+        />
+      )}
+
+
+
       {focusBid && onClearFocus && (
         <button
           type="button"
@@ -768,8 +857,15 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                   </>
                 )}
 
+                {/* Prüfung / Nachforderung durch Auftraggeber */}
+                <NachforderungEditor
+                  bid={c.bid}
+                  cs={callStates[c.bid]}
+                />
+
                 {/* Action buttons */}
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+
                   <a
                     href={`https://www.google.com/maps?q=${encodeURIComponent(
                       `${c.strasse} ${c.hnr}${c.hnr_zusatz}, ${c.plz} ${c.ort}`,
@@ -817,3 +913,202 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     </div>
   );
 }
+
+// ─── Klärfall-Kacheln ─────────────────────────────────────────────
+type KacheldefProps = {
+  kategorien: {
+    auskundung: Contact[];
+    fotoFehlt: Contact[];
+    protokollFehlt: Contact[];
+    zustimmungFehlt: Contact[];
+    nachforderung: Contact[];
+    manuell: Contact[];
+  };
+  noMatchCount: number;
+  active: KlarfallKey | null;
+  onSelect: (k: KlarfallKey) => void;
+  onShowNoMatch: () => void;
+};
+
+function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch }: KacheldefProps) {
+  const tiles: Array<{
+    key: KlarfallKey;
+    icon: string;
+    label: string;
+    count: number;
+    color: string;
+    onClick: () => void;
+  }> = [
+    { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
+    { key: "ohneAuftrag", icon: "🏷️", label: "Ohne Auftrag", count: noMatchCount, color: "#ea580c", onClick: () => onShowNoMatch() },
+    { key: "nachforderung", icon: "⚠️", label: "Nachforderung AG", count: kategorien.nachforderung.length, color: "#f59e0b", onClick: () => onSelect("nachforderung") },
+    { key: "fotoFehlt", icon: "📸", label: "Foto fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
+    { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
+    { key: "zustimmungFehlt", icon: "✍️", label: "Zustimmung fehlt", count: kategorien.zustimmungFehlt.length, color: "#7c3aed", onClick: () => onSelect("zustimmungFehlt") },
+    { key: "manuell", icon: "🔧", label: "Manuelle Klärfälle", count: kategorien.manuell.length, color: "#64748b", onClick: () => onSelect("manuell") },
+  ];
+
+  const gesamt = tiles.reduce((s, t) => s + t.count, 0);
+
+  return (
+    <div style={{ background: "white", borderRadius: 11, padding: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
+          ⚠️ Klärfälle {gesamt > 0 ? `(${gesamt})` : ""}
+        </div>
+        {active && (
+          <button
+            onClick={() => onSelect(active)}
+            style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+          >Filter zurücksetzen ✕</button>
+        )}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+        {tiles.map((t) => {
+          const isActive = active === t.key;
+          const dim = t.count === 0 && t.key !== "ohneAuftrag";
+          return (
+            <button
+              key={t.key}
+              onClick={t.onClick}
+              disabled={dim}
+              style={{
+                textAlign: "left",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: `2px solid ${isActive ? t.color : "#e5e7eb"}`,
+                background: isActive ? `${t.color}15` : dim ? "#f8fafc" : "white",
+                cursor: dim ? "default" : "pointer",
+                opacity: dim ? 0.5 : 1,
+              }}
+            >
+              <div style={{ fontSize: 20 }}>{t.icon}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: t.color, lineHeight: 1.1, marginTop: 2 }}>
+                {t.count}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginTop: 2 }}>
+                {t.label}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Nachforderung-Editor (pro HA) ────────────────────────────────
+const NACHFORDERUNG_LABELS: Record<NachforderungGrund, string> = {
+  foto: "📸 Foto",
+  protokoll: "📄 Protokoll",
+  aufmass: "📐 Aufmaß",
+  sonstiges: "❓ Sonstiges",
+};
+
+function NachforderungEditor({ bid, cs }: { bid: string; cs: CallState | undefined }) {
+  const [status, setStatus] = useState<PruefungStatus>(cs?.pruefung_status ?? "offen");
+  const [gruende, setGruende] = useState<NachforderungGrund[]>(cs?.pruefung_nachforderung ?? []);
+  const [notiz, setNotiz] = useState<string>(cs?.pruefung_notiz ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setStatus(cs?.pruefung_status ?? "offen");
+    setGruende(cs?.pruefung_nachforderung ?? []);
+    setNotiz(cs?.pruefung_notiz ?? "");
+  }, [cs?.pruefung_status, cs?.pruefung_nachforderung, cs?.pruefung_notiz, bid]);
+
+  async function save(next: Partial<CallState>) {
+    setSaving(true);
+    const base = {
+      bid,
+      status: cs?.status ?? "erledigt",
+      termin_slot: cs?.termin_slot ?? "",
+      termin_datum: cs?.termin_datum ?? null,
+      termin_zeit: cs?.termin_zeit ?? "",
+      notiz: cs?.notiz ?? "",
+      klarfall: cs?.klarfall ?? false,
+      klarfall_notiz: cs?.klarfall_notiz ?? "",
+      grabenlaenge: cs?.grabenlaenge ?? 0,
+      pruefung_status: next.pruefung_status ?? status,
+      pruefung_nachforderung: next.pruefung_nachforderung ?? gruende,
+      pruefung_notiz: next.pruefung_notiz ?? notiz,
+    };
+    const { error } = await supabase.from("call_states").upsert(base, { onConflict: "bid" });
+    if (error) console.error("Nachforderung save failed", error);
+    setSaving(false);
+  }
+
+  function toggleGrund(g: NachforderungGrund) {
+    const next = gruende.includes(g) ? gruende.filter((x) => x !== g) : [...gruende, g];
+    setGruende(next);
+    save({ pruefung_nachforderung: next });
+  }
+
+  const badge =
+    status === "freigegeben" ? { txt: "✓ Freigegeben", bg: "#dcfce7", fg: "#166534" }
+    : status === "nachforderung" ? { txt: "⚠️ Nachforderung", bg: "#fef3c7", fg: "#92400e" }
+    : status === "eingereicht" ? { txt: "📤 Eingereicht", bg: "#dbeafe", fg: "#1e40af" }
+    : { txt: "Noch nicht eingereicht", bg: "#f1f5f9", fg: "#475569" };
+
+  return (
+    <div style={{ marginTop: 12, padding: "10px 12px", background: "#fafbfc", border: "1px solid #e2e8f0", borderRadius: 9 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, color: "#475569", letterSpacing: 1 }}>
+          🏦 PRÜFUNG DURCH AUFTRAGGEBER
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: badge.bg, color: badge.fg }}>
+          {badge.txt}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: status === "nachforderung" ? 10 : 0 }}>
+        {status !== "nachforderung" ? (
+          <button
+            onClick={() => { setStatus("nachforderung"); save({ pruefung_status: "nachforderung" }); }}
+            disabled={saving}
+            style={{ gridColumn: "1 / -1", padding: "8px", borderRadius: 7, border: "1px solid #f59e0b", background: "white", color: "#92400e", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+          >⚠️ AG meldet Nachforderung</button>
+        ) : (
+          <button
+            onClick={() => { setStatus("eingereicht"); setGruende([]); save({ pruefung_status: "eingereicht", pruefung_nachforderung: [] }); }}
+            disabled={saving}
+            style={{ gridColumn: "1 / -1", padding: "8px", borderRadius: 7, border: "1px solid #22c55e", background: "white", color: "#166534", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+          >✓ Nachforderung erledigt · zurück zu eingereicht</button>
+        )}
+      </div>
+
+      {status === "nachforderung" && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Was fehlt:</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+            {(Object.keys(NACHFORDERUNG_LABELS) as NachforderungGrund[]).map((g) => {
+              const active = gruende.includes(g);
+              return (
+                <button
+                  key={g}
+                  onClick={() => toggleGrund(g)}
+                  style={{
+                    padding: "6px 10px", borderRadius: 999,
+                    border: `1px solid ${active ? "#f59e0b" : "#e5e7eb"}`,
+                    background: active ? "#fef3c7" : "white",
+                    color: active ? "#92400e" : "#475569",
+                    fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}
+                >{NACHFORDERUNG_LABELS[g]}</button>
+              );
+            })}
+          </div>
+          <textarea
+            value={notiz}
+            onChange={(e) => setNotiz(e.target.value)}
+            onBlur={() => save({ pruefung_notiz: notiz })}
+            placeholder="Notiz vom AG (was genau fehlt) …"
+            style={{ width: "100%", boxSizing: "border-box", minHeight: 60, padding: 8, borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+

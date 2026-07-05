@@ -225,23 +225,30 @@ export default function FinanzTab() {
       const { default: jsPDF } = await import("jspdf");
 
       // Daten holen
-      const [{ data: contacts }, { data: states }] = await Promise.all([
-        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort"),
+      const [{ data: contacts }, { data: states }, { data: doku }] = await Promise.all([
+        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt"),
         supabase
           .from("call_states")
-          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz"),
+          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz,pruefung_status,pruefung_nachforderung,pruefung_notiz,avis_am,verguetet_am"),
+        supabase.from("doku_states").select("bid,foto,protokoll"),
       ]);
 
-      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string };
+      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean };
       type S = {
         bid: string; status: string; team: string; team_status: string;
         termin_datum: string | null; erledigt_datum: string | null;
         grabenlaenge: number; klarfall: boolean; klarfall_notiz: string;
+        pruefung_status: string | null; pruefung_nachforderung: string[] | null; pruefung_notiz: string | null;
+        avis_am: string | null; verguetet_am: string | null;
       };
+      type D = { bid: string; foto: boolean; protokoll: boolean };
       const stateMap = new Map<string, S>();
       ((states as S[]) || []).forEach((s) => stateMap.set(s.bid, s));
       const contactMap = new Map<string, C>();
       ((contacts as C[]) || []).forEach((c) => contactMap.set(c.bid, c));
+      const dokuMap = new Map<string, D>();
+      ((doku as D[]) || []).forEach((d) => dokuMap.set(d.bid, d));
+
 
       const klass = (s?: S): "erledigt" | "in_arbeit" | "offen" => {
         if (!s) return "offen";
@@ -278,17 +285,35 @@ export default function FinanzTab() {
         })
         .sort((a, b) => a.datum.localeCompare(b.datum));
 
-      // Klärfälle
+      // Klärfälle — manuell (klarfall=true) UND 5 System-Kategorien
+      function kategorienFuer(s: S, c: C | undefined): string[] {
+        const out: string[] = [];
+        if (s.status === "erledigt") {
+          if (c?.auskundung_erforderlich && !c.auskundung_erfolgt) out.push("🚫 Ohne Auskundung");
+          const d = dokuMap.get(s.bid);
+          if (!d?.foto) out.push("📸 Foto fehlt");
+          if (!d?.protokoll) out.push("📄 Protokoll fehlt");
+          const z = (c?.zustimmung || "").trim().toLowerCase();
+          if (!z || z === "nein" || z === "offen") out.push("✍️ Zustimmung fehlt");
+          if (s.pruefung_status === "nachforderung") out.push("⚠️ Nachforderung AG");
+        }
+        if (s.klarfall) out.push("🔧 Manuell");
+        return out;
+      }
+
       const klaerfaelle = ((states as S[]) || [])
-        .filter((s) => s.klarfall)
         .map((s) => {
           const c = contactMap.get(s.bid);
+          const kats = kategorienFuer(s, c);
+          if (kats.length === 0) return null;
           const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
           const nvt = c?.nvt || "—";
           const bauDatum = s.erledigt_datum;
           const tage = bauDatum ? Math.max(0, Math.round((today.getTime() - new Date(bauDatum).getTime()) / 86400000)) : null;
-          return { adresse: adr, nvt, notiz: s.klarfall_notiz || "", bauDatum, tage, prio: getNvtPriority(nvt) };
+          const notiz = [s.klarfall_notiz, s.pruefung_notiz].filter(Boolean).join(" · ");
+          return { adresse: adr, nvt, notiz, bauDatum, tage, prio: getNvtPriority(nvt), kats };
         })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
         .sort((a, b) => {
           if (a.bauDatum && b.bauDatum) return a.bauDatum.localeCompare(b.bauDatum);
           if (a.bauDatum) return -1;
@@ -296,6 +321,7 @@ export default function FinanzTab() {
           return 0;
         });
       const aeltesterKlarfall = klaerfaelle.find((k) => k.tage != null)?.tage ?? null;
+
 
       // Gesamt
       const totals = nvtList.reduce(
@@ -431,6 +457,15 @@ export default function FinanzTab() {
             ? `Gebaut am ${new Date(k.bauDatum).toLocaleDateString("de-DE")}${k.tage != null ? ` · seit ${k.tage} Tagen offen` : ""}`
             : "Bau-Datum unbekannt";
           pdf.text(bauStr, margin, y); y += 4;
+          // Kategorien-Zeile (ASCII-only für jsPDF: Emojis fallen weg)
+          const katsAscii = k.kats.map((s) => s.replace(/[^\x20-\x7E]/g, "").trim()).filter(Boolean).join(", ");
+          if (katsAscii) {
+            pdf.setTextColor(200, 60, 40); pdf.setFont("helvetica", "bold");
+            const kl = pdf.splitTextToSize(`Blocker: ${katsAscii}`, pageW - margin * 2);
+            kl.forEach((line: string) => { ensureSpace(4); pdf.text(line, margin, y); y += 4; });
+            pdf.setFont("helvetica", "normal"); pdf.setTextColor(110);
+          }
+
           if (k.notiz) {
             pdf.setTextColor(60);
             const lines = pdf.splitTextToSize(`Notiz: ${k.notiz}`, pageW - margin * 2);
@@ -489,6 +524,16 @@ export default function FinanzTab() {
 
       const fn = `Bauleiter-Bericht_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.pdf`;
       pdf.save(fn);
+
+      // Alle im Bericht enthaltenen erledigten HAs automatisch als "eingereicht" markieren
+      const bidsEinreichen = ((states as S[]) || [])
+        .filter((s) => s.status === "erledigt" && (s.pruefung_status ?? "offen") === "offen" && !s.avis_am)
+        .map((s) => s.bid);
+      if (bidsEinreichen.length > 0) {
+        const { error } = await supabase.rpc("mark_eingereicht", { bids: bidsEinreichen });
+        if (error) console.warn("mark_eingereicht fehlgeschlagen", error);
+      }
+
     } catch (e) {
       console.error("Bauleiter-PDF Fehler", e);
       alert("Export fehlgeschlagen. Bitte erneut versuchen.");
