@@ -987,13 +987,13 @@ export default function FinanzTab() {
       {/* KPI-Cards: Heute / Woche / Monat (mit Vorperiode-Vergleich) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
         <KpiCard
-          title="Heute" prevTitle="Gestern" showPrev={showPrevHeute} onToggle={() => setShowPrevHeute((v) => !v)}
+          title="Heute" prevTitle={`Letzter AT · ${data.letzterArbeitstagLabel}`} showPrev={showPrevHeute} onToggle={() => setShowPrevHeute((v) => !v)}
           eur={data.umsatzHeute} meter={data.meterHeute} count={data.countHeute}
           prevEur={data.umsatzGestern} prevMeter={data.meterGestern} prevCount={data.countGestern}
           ziel={data.tagesziel} haZiel={data.haTagesziel} color="#3b82f6"
         />
         <KpiCard
-          title="Woche" prevTitle="Vorwoche" showPrev={showPrevWoche} onToggle={() => setShowPrevWoche((v) => !v)}
+          title={`Woche · KW ${data.kwHeute}`} prevTitle={`Vorwoche · KW ${data.kwVor}`} showPrev={showPrevWoche} onToggle={() => setShowPrevWoche((v) => !v)}
           eur={data.umsatzWoche} meter={data.meterWoche} count={data.countWoche}
           prevEur={data.umsatzVorwoche} prevMeter={data.meterVorwoche} prevCount={data.countVorwoche}
           ziel={data.wochenziel} haZiel={data.haWochenziel} color="#8b5cf6"
@@ -1003,7 +1003,7 @@ export default function FinanzTab() {
           prevHaPerWorkday={data.haProArbeitstagVorwoche}
         />
         <KpiCard
-          title="Monat" prevTitle="Vormonat" showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
+          title={`Monat · ${data.monatLabel}`} prevTitle={`Vormonat · ${data.vormonatLabel}`} showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
           eur={data.umsatzMonat} meter={data.meterMonat} count={data.countMonat}
           prevEur={data.umsatzVormonat} prevMeter={data.meterVormonat} prevCount={data.countVormonat}
           ziel={data.zielMonat} haZiel={data.haZielMonat} color="#22c55e"
@@ -1012,6 +1012,7 @@ export default function FinanzTab() {
           haPerWorkday={data.haProArbeitstagMonat}
           prevHaPerWorkday={data.haProArbeitstagVormonat}
         />
+
       </div>
 
 
