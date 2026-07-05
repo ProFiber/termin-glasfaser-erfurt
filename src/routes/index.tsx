@@ -46,7 +46,7 @@ type FieldKey =
   | "Team Status"
   | "Umsatz EUR"
   | "Zusatz EUR"
-  | "BID"
+  | "KLS-ID"
   | "Priorität";
 
 const ALL_FIELDS: FieldKey[] = [
@@ -78,7 +78,7 @@ const ALL_FIELDS: FieldKey[] = [
   "Team Status",
   "Umsatz EUR",
   "Zusatz EUR",
-  "BID",
+  "KLS-ID",
 ];
 
 const DEFAULT_FIELDS: FieldKey[] = [
@@ -125,7 +125,7 @@ function buildRow(c: Contact, st: CallState | undefined, fields: FieldKey[]): Re
     "Team Status": st?.team_status || "",
     "Umsatz EUR": (st as unknown as { umsatz_eur?: number })?.umsatz_eur ?? 0,
     "Zusatz EUR": (st as unknown as { zusatz_eur?: number })?.zusatz_eur ?? 0,
-    BID: c.bid,
+    "KLS-ID": c.kls_id || "",
   };
   const row: Record<string, unknown> = {};
   for (const f of fields) row[f] = all[f];
@@ -177,7 +177,7 @@ function exportHausanschluesseXlsx(
       Eigentümer: c.name, Mobil: c.mobil, Festnetz: c.festnetz, Email: c.email,
       Zustimmung: c.zustimmung || "—",
       Status: callStates[c.bid]?.status ?? "offen",
-      BID: c.bid,
+      "KLS-ID": c.kls_id || "",
     }));
   if (ohneZust.length) {
     const wsZ = XLSX.utils.json_to_sheet(ohneZust);
@@ -200,7 +200,7 @@ function exportHausanschluesseXlsx(
         Gebaut_am: st?.erledigt_datum ?? "",
         Grabenlänge_m: st?.grabenlaenge ?? 0,
         Notiz: st?.notiz ?? "",
-        BID: c.bid,
+        "KLS-ID": c.kls_id || "",
       };
     });
   if (ohneTelekom.length) {
@@ -1951,7 +1951,7 @@ function Index() {
                   )}
 
                   <div style={{ fontSize: 9, color: "#bbb", marginTop: 8, display: "flex", justifyContent: "space-between" }}>
-                    <span>BID {c.bid}</span>
+                    <span>KLS-ID {c.kls_id || "—"}</span>
                     {cs?.updated_at && <span>geändert: {new Date(cs.updated_at).toLocaleString("de-DE")}</span>}
                   </div>
                 </div>
