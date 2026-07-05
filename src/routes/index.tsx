@@ -1372,6 +1372,8 @@ function Index() {
 
       {activeTab === "finanz" && <FinanzTab />}
 
+      {activeTab === "pipeline" && <PipelineTab contacts={contacts} states={states} />}
+
       {activeTab === "objekte" && (<>
       {/* SEARCH + FILTER */}
       <div style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
