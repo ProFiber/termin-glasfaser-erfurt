@@ -12,6 +12,7 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
+import PipelineTab from "@/components/PipelineTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 import { runFullProFiberImport } from "@/lib/proFiberImport";
