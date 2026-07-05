@@ -583,8 +583,6 @@ export default function FinanzTab() {
   const data = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayIso = toIso(today);
-    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-    const yesterdayIso = toIso(yesterday);
     const weekStart = startOfWeek(today);
     const weekStartIso = toIso(weekStart);
     const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate() - 7);
@@ -605,11 +603,33 @@ export default function FinanzTab() {
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
-    const gestern = erledigte.filter((r) => r.erledigt_datum === yesterdayIso);
+    // Letzter Arbeitstag = größtes erledigt_datum vor heute (aus tatsächlichen Daten)
+    const vergangeneDaten = Array.from(new Set(
+      erledigte.filter((r) => r.erledigt_datum! < todayIso).map((r) => r.erledigt_datum!)
+    )).sort();
+    const letzterArbeitstagIso = vergangeneDaten.length > 0 ? vergangeneDaten[vergangeneDaten.length - 1] : null;
+    const letzterArbeitstag = letzterArbeitstagIso
+      ? erledigte.filter((r) => r.erledigt_datum === letzterArbeitstagIso)
+      : [];
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
     const vorwoche = erledigte.filter((r) => r.erledigt_datum! >= prevWeekStartIso && r.erledigt_datum! < weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
     const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
+
+    // Labels
+    const kwHeute = getWeek(today);
+    const kwVor = getWeek(prevWeekStart);
+    const monatLabel = today.toLocaleString("de-DE", { month: "long" });
+    const vormonatLabel = prevMonthStart.toLocaleString("de-DE", { month: "long" });
+    const letzterArbeitstagLabel = letzterArbeitstagIso
+      ? (() => {
+          const [y, m, d] = letzterArbeitstagIso.split("-").map(Number);
+          const dt = new Date(y, m - 1, d);
+          const wd = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][dt.getDay()];
+          return `${wd} ${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.`;
+        })()
+      : "—";
+
 
     // Tatsächliche Arbeitstage = Tage mit mindestens 1 erledigtem HA
     const uniqueDays = (rs: FinRow[]) => new Set(rs.map((r) => r.erledigt_datum)).size;
@@ -717,7 +737,9 @@ export default function FinanzTab() {
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       // Vergleichswerte (Vorperiode)
-      umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
+      umsatzGestern: sumUmsatz(letzterArbeitstag), meterGestern: sumMeter(letzterArbeitstag), countGestern: letzterArbeitstag.length,
+      letzterArbeitstagLabel, kwHeute, kwVor, monatLabel, vormonatLabel,
+
       umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
       umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
       // Tatsächliche Arbeitstage / Tempo
@@ -965,13 +987,13 @@ export default function FinanzTab() {
       {/* KPI-Cards: Heute / Woche / Monat (mit Vorperiode-Vergleich) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
         <KpiCard
-          title="Heute" prevTitle="Gestern" showPrev={showPrevHeute} onToggle={() => setShowPrevHeute((v) => !v)}
+          title="Heute" prevTitle={`Letzter AT · ${data.letzterArbeitstagLabel}`} showPrev={showPrevHeute} onToggle={() => setShowPrevHeute((v) => !v)}
           eur={data.umsatzHeute} meter={data.meterHeute} count={data.countHeute}
           prevEur={data.umsatzGestern} prevMeter={data.meterGestern} prevCount={data.countGestern}
           ziel={data.tagesziel} haZiel={data.haTagesziel} color="#3b82f6"
         />
         <KpiCard
-          title="Woche" prevTitle="Vorwoche" showPrev={showPrevWoche} onToggle={() => setShowPrevWoche((v) => !v)}
+          title={`Woche · KW ${data.kwHeute}`} prevTitle={`Vorwoche · KW ${data.kwVor}`} showPrev={showPrevWoche} onToggle={() => setShowPrevWoche((v) => !v)}
           eur={data.umsatzWoche} meter={data.meterWoche} count={data.countWoche}
           prevEur={data.umsatzVorwoche} prevMeter={data.meterVorwoche} prevCount={data.countVorwoche}
           ziel={data.wochenziel} haZiel={data.haWochenziel} color="#8b5cf6"
@@ -981,7 +1003,7 @@ export default function FinanzTab() {
           prevHaPerWorkday={data.haProArbeitstagVorwoche}
         />
         <KpiCard
-          title="Monat" prevTitle="Vormonat" showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
+          title={`Monat · ${data.monatLabel}`} prevTitle={`Vormonat · ${data.vormonatLabel}`} showPrev={showPrevMonat} onToggle={() => setShowPrevMonat((v) => !v)}
           eur={data.umsatzMonat} meter={data.meterMonat} count={data.countMonat}
           prevEur={data.umsatzVormonat} prevMeter={data.meterVormonat} prevCount={data.countVormonat}
           ziel={data.zielMonat} haZiel={data.haZielMonat} color="#22c55e"
@@ -990,6 +1012,7 @@ export default function FinanzTab() {
           haPerWorkday={data.haProArbeitstagMonat}
           prevHaPerWorkday={data.haProArbeitstagVormonat}
         />
+
       </div>
 
 
