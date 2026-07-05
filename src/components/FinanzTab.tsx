@@ -225,23 +225,30 @@ export default function FinanzTab() {
       const { default: jsPDF } = await import("jspdf");
 
       // Daten holen
-      const [{ data: contacts }, { data: states }] = await Promise.all([
-        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort"),
+      const [{ data: contacts }, { data: states }, { data: doku }] = await Promise.all([
+        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt"),
         supabase
           .from("call_states")
-          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz"),
+          .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz,pruefung_status,pruefung_nachforderung,pruefung_notiz,avis_am,verguetet_am"),
+        supabase.from("doku_states").select("bid,foto,protokoll"),
       ]);
 
-      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string };
+      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean };
       type S = {
         bid: string; status: string; team: string; team_status: string;
         termin_datum: string | null; erledigt_datum: string | null;
         grabenlaenge: number; klarfall: boolean; klarfall_notiz: string;
+        pruefung_status: string | null; pruefung_nachforderung: string[] | null; pruefung_notiz: string | null;
+        avis_am: string | null; verguetet_am: string | null;
       };
+      type D = { bid: string; foto: boolean; protokoll: boolean };
       const stateMap = new Map<string, S>();
       ((states as S[]) || []).forEach((s) => stateMap.set(s.bid, s));
       const contactMap = new Map<string, C>();
       ((contacts as C[]) || []).forEach((c) => contactMap.set(c.bid, c));
+      const dokuMap = new Map<string, D>();
+      ((doku as D[]) || []).forEach((d) => dokuMap.set(d.bid, d));
+
 
       const klass = (s?: S): "erledigt" | "in_arbeit" | "offen" => {
         if (!s) return "offen";

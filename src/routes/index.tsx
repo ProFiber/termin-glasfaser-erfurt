@@ -1316,6 +1316,8 @@ function Index() {
           onOpenKlarfaelle={() => { setFilter(new Set(["klarfall"])); setActiveTab("objekte"); }}
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
           onOpenTeamDokuOffen={() => { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }}
+          onOpenDoku={() => { setActiveTab("doku"); }}
+
           onTeamAction={(team, action) => {
             setTeamFilter(team);
             if (action === "auftraege") { setFilter(new Set()); setActiveTab("objekte"); }

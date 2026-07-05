@@ -19,6 +19,7 @@ export type Database = {
           aufmass_am: string | null
           avis_am: string | null
           bid: string
+          eingereicht_am: string | null
           erledigt_datum: string | null
           fotos_erhalten: boolean
           grabenlaenge: number
@@ -30,6 +31,9 @@ export type Database = {
           notiz: string
           priority_override: number | null
           protokoll_erhalten: boolean
+          pruefung_nachforderung: string[]
+          pruefung_notiz: string
+          pruefung_status: string
           status: Database["public"]["Enums"]["call_status"]
           team: string
           team_status: string
@@ -45,6 +49,7 @@ export type Database = {
           aufmass_am?: string | null
           avis_am?: string | null
           bid: string
+          eingereicht_am?: string | null
           erledigt_datum?: string | null
           fotos_erhalten?: boolean
           grabenlaenge?: number
@@ -56,6 +61,9 @@ export type Database = {
           notiz?: string
           priority_override?: number | null
           protokoll_erhalten?: boolean
+          pruefung_nachforderung?: string[]
+          pruefung_notiz?: string
+          pruefung_status?: string
           status?: Database["public"]["Enums"]["call_status"]
           team?: string
           team_status?: string
@@ -71,6 +79,7 @@ export type Database = {
           aufmass_am?: string | null
           avis_am?: string | null
           bid?: string
+          eingereicht_am?: string | null
           erledigt_datum?: string | null
           fotos_erhalten?: boolean
           grabenlaenge?: number
@@ -82,6 +91,9 @@ export type Database = {
           notiz?: string
           priority_override?: number | null
           protokoll_erhalten?: boolean
+          pruefung_nachforderung?: string[]
+          pruefung_notiz?: string
+          pruefung_status?: string
           status?: Database["public"]["Enums"]["call_status"]
           team?: string
           team_status?: string
@@ -293,6 +305,7 @@ export type Database = {
         Returns: Json
       }
       bulk_import_contacts: { Args: { payload: Json }; Returns: number }
+      mark_eingereicht: { Args: { bids: string[] }; Returns: number }
     }
     Enums: {
       call_status:

@@ -109,6 +109,7 @@ export default function NvtTab({
   onOpenKlarfaelle,
   onOpenAuskundungHeute,
   onOpenTeamDokuOffen,
+  onOpenDoku,
   onTeamAction,
   onPickKalenderDate,
   onOpenPlan,
@@ -118,10 +119,12 @@ export default function NvtTab({
   onOpenKlarfaelle?: () => void;
   onOpenAuskundungHeute?: () => void;
   onOpenTeamDokuOffen?: () => void;
+  onOpenDoku?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
   onOpenPlan?: () => void;
 }) {
+
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
 
   useEffect(() => {
@@ -157,6 +160,31 @@ export default function NvtTab({
     () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
     [contacts, states],
   );
+
+  // Zahlungspipeline — 5 System-Klärfälle
+  const pipeline = useMemo(() => {
+    let erledigt = 0, eingereicht = 0, nachforderung = 0, freigegeben = 0, verguetet = 0;
+    let auskundung = 0, foto = 0, protokoll = 0, zustimmung = 0;
+    for (const c of contacts) {
+      const cs = states[c.bid];
+      if (!cs || cs.status !== "erledigt") continue;
+      erledigt++;
+      const ps = cs.pruefung_status ?? "offen";
+      if (cs.verguetet_am) verguetet++;
+      else if (cs.avis_am || ps === "freigegeben") freigegeben++;
+      else if (ps === "nachforderung") nachforderung++;
+      else if (ps === "eingereicht") eingereicht++;
+
+      const d = dokuStates[c.bid];
+      if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung++;
+      if (!d?.foto) foto++;
+      if (!d?.protokoll) protokoll++;
+      const z = (c.zustimmung || "").trim().toLowerCase();
+      if (!z || z === "nein" || z === "offen") zustimmung++;
+    }
+    return { erledigt, eingereicht, nachforderung, freigegeben, verguetet, auskundung, foto, protokoll, zustimmung };
+  }, [contacts, states, dokuStates]);
+
 
   const rows = useMemo<NvtRow[]>(() => {
     const map = new Map<string, NvtRow>();
@@ -411,6 +439,50 @@ export default function NvtTab({
           </div>
         </div>
       </div>
+
+      {/* ══════════════ 1b) ZAHLUNGSPIPELINE ══════════════ */}
+      {pipeline.erledigt > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={SECTION_TITLE}>💰 Zahlungspipeline</div>
+          <div
+            onClick={() => onOpenDoku?.()}
+            style={{
+              background: "white", border: "1px solid #e5e7eb", borderRadius: 12,
+              padding: "10px 12px", cursor: onOpenDoku ? "pointer" : "default",
+            }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, alignItems: "stretch" }}>
+              {[
+                { label: "Erledigt", value: pipeline.erledigt, color: "#0f172a" },
+                { label: "Eingereicht", value: pipeline.eingereicht, color: "#3b82f6" },
+                { label: "Nachforderung", value: pipeline.nachforderung, color: "#f59e0b", highlight: pipeline.nachforderung > 0 },
+                { label: "Freigegeben", value: pipeline.freigegeben, color: "#22c55e" },
+                { label: "Vergütet", value: pipeline.verguetet, color: "#059669" },
+              ].map((s, i) => (
+                <div key={s.label} style={{
+                  textAlign: "center",
+                  padding: "6px 2px",
+                  borderRadius: 8,
+                  background: s.highlight ? "#fef3c7" : "transparent",
+                  border: s.highlight ? "1px solid #f59e0b" : "1px solid transparent",
+                }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
+                  {i < 4 && <div style={{ display: "none" }}>→</div>}
+                </div>
+              ))}
+            </div>
+            {(pipeline.auskundung + pipeline.foto + pipeline.protokoll + pipeline.zustimmung) > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #f1f5f9", display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11, fontWeight: 700, color: "#475569" }}>
+                {pipeline.auskundung > 0 && <span style={{ color: "#dc2626" }}>🚫 Ohne Auskundung: {pipeline.auskundung}</span>}
+                {pipeline.foto > 0 && <span>📸 Foto: {pipeline.foto}</span>}
+                {pipeline.protokoll > 0 && <span>📄 Protokoll: {pipeline.protokoll}</span>}
+                {pipeline.zustimmung > 0 && <span>✍️ Zustimmung: {pipeline.zustimmung}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ══════════════ 2) AKTIONEN / WARNUNGEN ══════════════ */}
       {(klarfallCount > 0 || auskundungHeute.length > 0 || lowPrioNvts.length > 0) && (
