@@ -692,7 +692,12 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         const slot = cs?.termin_slot;
         const anyActive = d.foto || d.protokoll || d.sharepoint;
 
-        const borderColor = complete ? "#22c55e" : sc > 0 ? "#facc15" : "#e5e7eb";
+        const dokuStatus: DokuStatus = deriveDokuStatus({
+          foto: !!d.foto, protokoll: !!d.protokoll, sharepoint: !!d.sharepoint,
+          eingereicht_am: cs?.eingereicht_am, aufmass_am: cs?.aufmass_am,
+        });
+        const meta = DOKU_STATUS_META[dokuStatus];
+        const borderColor = meta.color;
 
         return (
           <div
@@ -732,9 +737,18 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>
-                  {c.strasse} {c.hnr}
-                  {c.hnr_zusatz}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>
+                    {c.strasse} {c.hnr}
+                    {c.hnr_zusatz}
+                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                    padding: "2px 7px", borderRadius: 999,
+                    background: meta.bg, color: meta.fg, textTransform: "uppercase",
+                  }}>
+                    {meta.label}
+                  </span>
                 </div>
                 <div style={{ fontSize: 13, color: "#475569" }}>{c.name}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
@@ -743,6 +757,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                   <span>📄 {d.protokoll ? "✓" : "—"}</span> ·{" "}
                   <span>☁️ {d.sharepoint ? "✓" : "—"}</span>
                 </div>
+
               </div>
               {sortMode === "manual" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={(e) => e.stopPropagation()}>
