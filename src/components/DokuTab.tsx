@@ -241,7 +241,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         });
       } else if (st === "inPruefung") {
         const t = tageInPruefung(cs.eingereicht_am);
-        if (t !== null && t > 14) {
+        if (t !== null && t > 7) {
           langeInPruefung.push({ contact: c, status: st, fehlend: [], tage: t });
         }
       }
@@ -1239,7 +1239,7 @@ function FokusPanel({ unvollstaendig, langeInPruefung, onOpen }: FokusPanelProps
       {langeInPruefung.length > 0 && (
         <div>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#92400e", marginBottom: 6 }}>
-            🟡 IN PRÜFUNG &gt; 14 TAGE · potenziell hängengeblieben
+            🟡 IN PRÜFUNG &gt; 7 TAGE · potenziell hängengeblieben
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {langeInPruefung.map(({ contact, tage }) => (
