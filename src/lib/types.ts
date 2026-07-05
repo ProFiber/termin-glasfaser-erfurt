@@ -23,6 +23,7 @@ export type Contact = {
   auskundung_erfolgt?: boolean;
   auskundung_ergebnis?: string;
   auftrag_erstellt_am?: string | null;
+  kls_id?: string | null;
 };
 
 export type CallStatus =
