@@ -94,12 +94,11 @@ function saturdayDatesRemaining(now: Date): Date[] {
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
-  const [haPreis, setHaPreis] = useState<number>(1200);
+  const [haPreis] = useState<number>(390);
   const [haProTag, setHaProTag] = useState<number>(4);
   const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
-  const [zielInput, setZielInput] = useState("70000");
-  const [haPreisInput, setHaPreisInput] = useState("1200");
+  const [zielInput, setZielInput] = useState("22620");
   const [haProTagInput, setHaProTagInput] = useState("4");
   const [haAnzahlInput, setHaAnzahlInput] = useState("58");
 
@@ -554,14 +553,11 @@ export default function FinanzTab() {
       ]);
       setRows((cs as FinRow[]) || []);
       const zMonat = (zList as Ziel[] | null)?.find((z) => z.scope === "monat");
-      const zHa = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_preis");
       const zHaTag = (zList as Ziel[] | null)?.find((z) => z.scope === "ha_pro_tag");
       if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
-      if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
       if (zHaTag) { setHaProTag(Number(zHaTag.ziel_eur)); setHaProTagInput(String(zHaTag.ziel_eur)); }
-      const zielEur = zMonat ? Number(zMonat.ziel_eur) : 70000;
-      const preisEur = zHa ? Number(zHa.ziel_eur) : 1200;
-      setHaAnzahlInput(preisEur > 0 ? String(Math.round(zielEur / preisEur)) : "0");
+      const zielEur = zMonat ? Number(zMonat.ziel_eur) : 22620;
+      setHaAnzahlInput(String(Math.round(zielEur / haPreis)));
 
       setLoading(false);
     })();
@@ -774,11 +770,8 @@ export default function FinanzTab() {
 
   async function saveZiel() {
     const vInput = parseFloat(zielInput.replace(/[^\d.]/g, ""));
-    const p = parseFloat(haPreisInput.replace(/[^\d.]/g, ""));
     const hpt = parseFloat(haProTagInput.replace(/[^\d.]/g, ""));
 
-    // Effektiver HA-Preis (neu oder alt)
-    const effHaPreis = isFinite(p) && p > 0 ? p : haPreis;
     const satBuffer = ziel?.saturday_buffer ?? true;
     const today = new Date();
     const arbeitstageMonat = workdaysInMonth(today.getFullYear(), today.getMonth(), satBuffer);
@@ -786,7 +779,7 @@ export default function FinanzTab() {
     // Wenn HA/Tag angegeben → Monatsziel daraus ableiten (überschreibt manuelle Eingabe)
     let v = vInput;
     if (isFinite(hpt) && hpt > 0) {
-      v = hpt * arbeitstageMonat * effHaPreis;
+      v = hpt * arbeitstageMonat * haPreis;
       await supabase.from("umsatz_ziele").upsert({
         scope: "ha_pro_tag", ziel_eur: hpt, arbeitstage_pro_monat: arbeitstageMonat, saturday_buffer: satBuffer,
       }, { onConflict: "scope" });
@@ -800,12 +793,6 @@ export default function FinanzTab() {
         saturday_buffer: satBuffer,
       }, { onConflict: "scope" });
       setZiel({ ...(ziel ?? { scope: "monat", arbeitstage_pro_monat: 22, saturday_buffer: true }), ziel_eur: v });
-    }
-    if (isFinite(p) && p > 0) {
-      await supabase.from("umsatz_ziele").upsert({
-        scope: "ha_preis", ziel_eur: p, arbeitstage_pro_monat: 22, saturday_buffer: true,
-      }, { onConflict: "scope" });
-      setHaPreis(p);
     }
     setEditingZiel(false);
   }
@@ -896,9 +883,10 @@ export default function FinanzTab() {
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"}
         </div>
       </div>
+
 
       {/* On-Time Banner */}
       <div style={{
@@ -955,7 +943,7 @@ export default function FinanzTab() {
               style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
             />
             <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × Pauschale
+              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × 390 €/HA
             </div>
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
@@ -968,9 +956,8 @@ export default function FinanzTab() {
                   const v = e.target.value;
                   setZielInput(v);
                   const eur = parseFloat(v);
-                  const preis = parseFloat(haPreisInput);
-                  if (isFinite(eur) && isFinite(preis) && preis > 0) {
-                    setHaAnzahlInput(String(Math.round((eur / preis) * 10) / 10));
+                  if (isFinite(eur) && haPreis > 0) {
+                    setHaAnzahlInput(String(Math.round((eur / haPreis) * 10) / 10));
                   }
                 }}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
@@ -986,32 +973,15 @@ export default function FinanzTab() {
                   const v = e.target.value;
                   setHaAnzahlInput(v);
                   const anz = parseFloat(v);
-                  const preis = parseFloat(haPreisInput);
-                  if (isFinite(anz) && isFinite(preis) && preis > 0) {
-                    setZielInput(String(Math.round(anz * preis)));
+                  if (isFinite(anz) && haPreis > 0) {
+                    setZielInput(String(Math.round(anz * haPreis)));
                   }
                 }}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
               />
             </label>
           </div>
-          <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 8 }}>
-            Pauschale pro HA (€)
-            <input
-              type="number"
-              value={haPreisInput}
-              onChange={(e) => {
-                const v = e.target.value;
-                setHaPreisInput(v);
-                const preis = parseFloat(v);
-                const anz = parseFloat(haAnzahlInput);
-                if (isFinite(preis) && preis > 0 && isFinite(anz)) {
-                  setZielInput(String(Math.round(anz * preis)));
-                }
-              }}
-              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
-            />
-          </label>
+
 
 
           <div style={{ display: "flex", gap: 8 }}>
