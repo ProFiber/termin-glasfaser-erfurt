@@ -12,6 +12,7 @@ import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
+import PipelineTab from "@/components/PipelineTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
 import * as XLSX from "xlsx";
 import { runFullProFiberImport } from "@/lib/proFiberImport";
@@ -515,7 +516,7 @@ function ExportMenu({
   );
 }
 
-type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard" | "finanz";
+type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard" | "finanz" | "pipeline";
 const TAB_TITLE: Record<TabKey, string> = {
   objekte: "🗂️ Objekte",
   karte: "🗺️ Karte",
@@ -523,6 +524,7 @@ const TAB_TITLE: Record<TabKey, string> = {
   doku: "📋 Dokumentation",
   dashboard: "🎯 Dashboard",
   finanz: "💰 Finanzen",
+  pipeline: "🔗 Pipeline",
 };
 
 export const Route = createFileRoute("/")({
@@ -1369,6 +1371,8 @@ function Index() {
       )}
 
       {activeTab === "finanz" && <FinanzTab />}
+
+      {activeTab === "pipeline" && <PipelineTab contacts={contacts} states={states} />}
 
       {activeTab === "objekte" && (<>
       {/* SEARCH + FILTER */}
@@ -2395,6 +2399,25 @@ function Index() {
         }}
       >
         💰
+      </button>
+      <button
+        onClick={() => setActiveTab("pipeline")}
+        aria-label="Pipeline"
+        style={{
+          position: "fixed",
+          bottom: "calc(56px + env(safe-area-inset-bottom, 0px) + 8px)",
+          left: 14,
+          width: 56, height: 56, borderRadius: "50%",
+          background: activeTab === "pipeline"
+            ? "linear-gradient(135deg, #1e3a8a, #0c4a6e)"
+            : "linear-gradient(135deg, #3b82f6, #0ea5e9)",
+          border: "none", cursor: "pointer",
+          boxShadow: "0 4px 16px rgba(59,130,246,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 10000, color: "white", fontSize: 24, lineHeight: 1,
+        }}
+      >
+        🔗
       </button>
     </div>
   );
