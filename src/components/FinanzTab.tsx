@@ -955,9 +955,8 @@ export default function FinanzTab() {
                   const v = e.target.value;
                   setZielInput(v);
                   const eur = parseFloat(v);
-                  const preis = parseFloat(haPreisInput);
-                  if (isFinite(eur) && isFinite(preis) && preis > 0) {
-                    setHaAnzahlInput(String(Math.round((eur / preis) * 10) / 10));
+                  if (isFinite(eur) && haPreis > 0) {
+                    setHaAnzahlInput(String(Math.round((eur / haPreis) * 10) / 10));
                   }
                 }}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
@@ -973,32 +972,15 @@ export default function FinanzTab() {
                   const v = e.target.value;
                   setHaAnzahlInput(v);
                   const anz = parseFloat(v);
-                  const preis = parseFloat(haPreisInput);
-                  if (isFinite(anz) && isFinite(preis) && preis > 0) {
-                    setZielInput(String(Math.round(anz * preis)));
+                  if (isFinite(anz) && haPreis > 0) {
+                    setZielInput(String(Math.round(anz * haPreis)));
                   }
                 }}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
               />
             </label>
           </div>
-          <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 8 }}>
-            Pauschale pro HA (€)
-            <input
-              type="number"
-              value={haPreisInput}
-              onChange={(e) => {
-                const v = e.target.value;
-                setHaPreisInput(v);
-                const preis = parseFloat(v);
-                const anz = parseFloat(haAnzahlInput);
-                if (isFinite(preis) && preis > 0 && isFinite(anz)) {
-                  setZielInput(String(Math.round(anz * preis)));
-                }
-              }}
-              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
-            />
-          </label>
+
 
 
           <div style={{ display: "flex", gap: 8 }}>
