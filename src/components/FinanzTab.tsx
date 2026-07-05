@@ -101,6 +101,8 @@ export default function FinanzTab() {
   const [zielInput, setZielInput] = useState("70000");
   const [haPreisInput, setHaPreisInput] = useState("1200");
   const [haProTagInput, setHaProTagInput] = useState("4");
+  const [haAnzahlInput, setHaAnzahlInput] = useState("58");
+
 
   const [showPrevHeute, setShowPrevHeute] = useState(false);
   const [showPrevWoche, setShowPrevWoche] = useState(false);
