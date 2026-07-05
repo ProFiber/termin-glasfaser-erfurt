@@ -1257,7 +1257,7 @@ function Index() {
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
-      <div ref={headerRef} style={{ background: "#e20074", color: "white", padding: "12px 16px", position: "sticky", top: 0, zIndex: 20 }}>
+      <div ref={headerRef} style={{ background: "#e20074", color: "white", padding: "calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ fontSize: 11, opacity: 0.75, letterSpacing: 0.3 }}>An der Schmücke · Glasfaser · Störmer Bau · ☁️ Cloud-Sync</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
           <span style={{ fontSize: 18, fontWeight: 700 }}>{TAB_TITLE[activeTab]}</span>
