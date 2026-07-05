@@ -1023,6 +1023,13 @@ function Index() {
           if (d && d < today) matchesAny = true;
         }
         if (orFilters.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (orFilters.has("erlOhneZustimmung") && st === "erledigt" && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && isOhneTelekomAuftrag(c.bid)) matchesAny = true;
+        if (orFilters.has("imBauHeute")) {
+          const today = new Date().toISOString().slice(0, 10);
+          const cs = states[c.bid];
+          if (cs && ((cs.termin_datum === today && !!cs.team) || cs.erledigt_datum === today)) matchesAny = true;
+        }
         if (orFilters.has("auskundungErledigt") && c.auskundung_erfolgt) matchesAny = true;
         if (!matchesAny) return false;
       }
