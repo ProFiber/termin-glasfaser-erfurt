@@ -241,7 +241,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         });
       } else if (st === "inPruefung") {
         const t = tageInPruefung(cs.eingereicht_am);
-        if (t !== null && t > 14) {
+        if (t !== null && t > 7) {
           langeInPruefung.push({ contact: c, status: st, fehlend: [], tage: t });
         }
       }
