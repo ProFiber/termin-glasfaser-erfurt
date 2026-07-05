@@ -1023,6 +1023,13 @@ function Index() {
           if (d && d < today) matchesAny = true;
         }
         if (orFilters.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (orFilters.has("erlOhneZustimmung") && st === "erledigt" && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
+        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && isOhneTelekomAuftrag(c.bid)) matchesAny = true;
+        if (orFilters.has("imBauHeute")) {
+          const today = new Date().toISOString().slice(0, 10);
+          const cs = states[c.bid];
+          if (cs && ((cs.termin_datum === today && !!cs.team) || cs.erledigt_datum === today)) matchesAny = true;
+        }
         if (orFilters.has("auskundungErledigt") && c.auskundung_erfolgt) matchesAny = true;
         if (!matchesAny) return false;
       }
@@ -1257,6 +1264,35 @@ function Index() {
     [contacts],
   );
 
+  const erlOhneZustimmungCount = useMemo(
+    () => contacts.reduce((n, c) => {
+      const st = states[c.bid]?.status;
+      if (st !== "erledigt") return n;
+      return n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0);
+    }, 0),
+    [contacts, states],
+  );
+
+  const erlOhneAuftragCount = useMemo(
+    () => contacts.reduce((n, c) => {
+      const st = states[c.bid]?.status;
+      if (st !== "erledigt") return n;
+      return n + (isOhneTelekomAuftrag(c.bid) ? 1 : 0);
+    }, 0),
+    [contacts, states],
+  );
+
+  const imBauHeuteCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return contacts.reduce((n, c) => {
+      const cs = states[c.bid];
+      if (!cs) return n;
+      const bautHeute = (cs.termin_datum === today && !!cs.team) || cs.erledigt_datum === today;
+      return n + (bautHeute ? 1 : 0);
+    }, 0);
+  }, [contacts, states]);
+
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
@@ -1482,8 +1518,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1497,6 +1533,9 @@ function Index() {
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
               : f === "auskundungErledigt" ? `✓ Auskundung erledigt (${auskundungErledigtCount})`
+              : f === "erlOhneZustimmung" ? `📝 Erl. ohne Zustimmung (${erlOhneZustimmungCount})`
+              : f === "erlOhneAuftrag" ? `📄 Erl. ohne Auftrag (${erlOhneAuftragCount})`
+              : f === "imBauHeute" ? `🚧 Im Bau heute (${imBauHeuteCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
