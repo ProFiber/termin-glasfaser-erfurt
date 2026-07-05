@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState, NachforderungGrund, PruefungStatus } from "@/lib/types";
+import { deriveDokuStatus, DOKU_STATUS_META, fehlendeDoks, tageInPruefung, type DokuStatus } from "@/lib/dokuStatus";
 import GrabenStepper from "@/components/GrabenStepper";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
