@@ -244,7 +244,10 @@ function ImportButton() {
 
   function closeReport() {
     setReport(null);
-    window.location.reload();
+    // Cache-busting Reload: iOS-Safari serviert sonst häufig alten JS-Bundle
+    const u = new URL(window.location.href);
+    u.searchParams.set("_r", String(Date.now()));
+    window.location.replace(u.toString());
   }
 
   const badFmt = report?.dokuIssues.filter(i => i.foto === "format" || i.protokoll === "format" || i.sharepoint === "format") ?? [];
