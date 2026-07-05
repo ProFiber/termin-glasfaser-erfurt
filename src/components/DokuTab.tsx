@@ -211,6 +211,47 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell };
   }, [contacts, callStates, dokuStates]);
 
+  // Doku-Status pro erledigtem HA (live berechnet aus Excel-Rohfeldern)
+  type FokusEintrag = {
+    contact: Contact;
+    status: DokuStatus;
+    fehlend: string[];
+    tage: number | null;
+  };
+  const fokus = useMemo(() => {
+    const unvollstaendig: FokusEintrag[] = [];
+    const langeInPruefung: FokusEintrag[] = [];
+    for (const c of contacts) {
+      const cs = callStates[c.bid];
+      if (!cs || cs.status !== "erledigt") continue;
+      const d = dokuStates[c.bid];
+      const st = deriveDokuStatus({
+        foto: !!d?.foto,
+        protokoll: !!d?.protokoll,
+        sharepoint: !!d?.sharepoint,
+        eingereicht_am: cs.eingereicht_am,
+        aufmass_am: cs.aufmass_am,
+      });
+      if (st === "unvollstaendig") {
+        unvollstaendig.push({
+          contact: c,
+          status: st,
+          fehlend: fehlendeDoks({ foto: !!d?.foto, protokoll: !!d?.protokoll, sharepoint: !!d?.sharepoint }),
+          tage: tageInPruefung(cs.eingereicht_am),
+        });
+      } else if (st === "inPruefung") {
+        const t = tageInPruefung(cs.eingereicht_am);
+        if (t !== null && t > 14) {
+          langeInPruefung.push({ contact: c, status: st, fehlend: [], tage: t });
+        }
+      }
+    }
+    // Sortierung: kritischste zuerst (mehr fehlende / mehr Tage)
+    unvollstaendig.sort((a, b) => b.fehlend.length - a.fehlend.length || (b.tage ?? 0) - (a.tage ?? 0));
+    langeInPruefung.sort((a, b) => (b.tage ?? 0) - (a.tage ?? 0));
+    return { unvollstaendig, langeInPruefung };
+  }, [contacts, callStates, dokuStates]);
+
   const bidsInFilter = useMemo(() => {
     if (!klarfallFilter) return null;
     const map: Record<KlarfallKey, Contact[]> = {
