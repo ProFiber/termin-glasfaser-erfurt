@@ -516,7 +516,7 @@ function ExportMenu({
   );
 }
 
-type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard" | "finanz";
+type TabKey = "objekte" | "karte" | "kalender" | "doku" | "dashboard" | "finanz" | "pipeline";
 const TAB_TITLE: Record<TabKey, string> = {
   objekte: "🗂️ Objekte",
   karte: "🗺️ Karte",
@@ -524,6 +524,7 @@ const TAB_TITLE: Record<TabKey, string> = {
   doku: "📋 Dokumentation",
   dashboard: "🎯 Dashboard",
   finanz: "💰 Finanzen",
+  pipeline: "🔗 Pipeline",
 };
 
 export const Route = createFileRoute("/")({
