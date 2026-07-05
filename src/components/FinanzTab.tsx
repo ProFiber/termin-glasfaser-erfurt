@@ -883,9 +883,10 @@ export default function FinanzTab() {
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 10, opacity: 0.7 }}>
-          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"} · Pauschale {EUR(haPreis)}/HA
+          {data.arbeitstagePassed}/{data.arbeitstageMonat} Arbeitstage · {data.satBuffer ? `Sa = Puffer (${data.samstageRest} übrig)` : "Sa zählt"}
         </div>
       </div>
+
 
       {/* On-Time Banner */}
       <div style={{
