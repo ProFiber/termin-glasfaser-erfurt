@@ -94,8 +94,9 @@ function saturdayDatesRemaining(now: Date): Date[] {
 export default function FinanzTab() {
   const [rows, setRows] = useState<FinRow[]>([]);
   const [ziel, setZiel] = useState<Ziel | null>(null);
-  const [haPreis, setHaPreis] = useState<number>(390);
+  const [haPreis] = useState<number>(390);
   const [haProTag, setHaProTag] = useState<number>(4);
+  const [loading, setLoading] = useState(true);
   const [editingZiel, setEditingZiel] = useState(false);
   const [zielInput, setZielInput] = useState("22620");
   const [haProTagInput, setHaProTagInput] = useState("4");
