@@ -457,6 +457,15 @@ export default function FinanzTab() {
             ? `Gebaut am ${new Date(k.bauDatum).toLocaleDateString("de-DE")}${k.tage != null ? ` · seit ${k.tage} Tagen offen` : ""}`
             : "Bau-Datum unbekannt";
           pdf.text(bauStr, margin, y); y += 4;
+          // Kategorien-Zeile (ASCII-only für jsPDF: Emojis fallen weg)
+          const katsAscii = k.kats.map((s) => s.replace(/[^\x20-\x7E]/g, "").trim()).filter(Boolean).join(", ");
+          if (katsAscii) {
+            pdf.setTextColor(200, 60, 40); pdf.setFont("helvetica", "bold");
+            const kl = pdf.splitTextToSize(`Blocker: ${katsAscii}`, pageW - margin * 2);
+            kl.forEach((line: string) => { ensureSpace(4); pdf.text(line, margin, y); y += 4; });
+            pdf.setFont("helvetica", "normal"); pdf.setTextColor(110);
+          }
+
           if (k.notiz) {
             pdf.setTextColor(60);
             const lines = pdf.splitTextToSize(`Notiz: ${k.notiz}`, pageW - margin * 2);
