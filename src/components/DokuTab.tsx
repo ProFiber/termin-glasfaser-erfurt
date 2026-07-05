@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Contact, CallState, DokuState, NachforderungGrund, PruefungStatus } from "@/lib/types";
+import { deriveDokuStatus, DOKU_STATUS_META, fehlendeDoks, tageInPruefung, type DokuStatus } from "@/lib/dokuStatus";
 import GrabenStepper from "@/components/GrabenStepper";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
@@ -208,6 +209,47 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
       if (cs.klarfall) manuell.push(c);
     }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell };
+  }, [contacts, callStates, dokuStates]);
+
+  // Doku-Status pro erledigtem HA (live berechnet aus Excel-Rohfeldern)
+  type FokusEintrag = {
+    contact: Contact;
+    status: DokuStatus;
+    fehlend: string[];
+    tage: number | null;
+  };
+  const fokus = useMemo(() => {
+    const unvollstaendig: FokusEintrag[] = [];
+    const langeInPruefung: FokusEintrag[] = [];
+    for (const c of contacts) {
+      const cs = callStates[c.bid];
+      if (!cs || cs.status !== "erledigt") continue;
+      const d = dokuStates[c.bid];
+      const st = deriveDokuStatus({
+        foto: !!d?.foto,
+        protokoll: !!d?.protokoll,
+        sharepoint: !!d?.sharepoint,
+        eingereicht_am: cs.eingereicht_am,
+        aufmass_am: cs.aufmass_am,
+      });
+      if (st === "unvollstaendig") {
+        unvollstaendig.push({
+          contact: c,
+          status: st,
+          fehlend: fehlendeDoks({ foto: !!d?.foto, protokoll: !!d?.protokoll, sharepoint: !!d?.sharepoint }),
+          tage: tageInPruefung(cs.eingereicht_am),
+        });
+      } else if (st === "inPruefung") {
+        const t = tageInPruefung(cs.eingereicht_am);
+        if (t !== null && t > 14) {
+          langeInPruefung.push({ contact: c, status: st, fehlend: [], tage: t });
+        }
+      }
+    }
+    // Sortierung: kritischste zuerst (mehr fehlende / mehr Tage)
+    unvollstaendig.sort((a, b) => b.fehlend.length - a.fehlend.length || (b.tage ?? 0) - (a.tage ?? 0));
+    langeInPruefung.sort((a, b) => (b.tage ?? 0) - (a.tage ?? 0));
+    return { unvollstaendig, langeInPruefung };
   }, [contacts, callStates, dokuStates]);
 
   const bidsInFilter = useMemo(() => {
@@ -591,6 +633,23 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         />
       )}
 
+      {/* FOKUS: Problemfälle Doku-Status */}
+      {!focusBid && (fokus.unvollstaendig.length > 0 || fokus.langeInPruefung.length > 0) && (
+        <FokusPanel
+          unvollstaendig={fokus.unvollstaendig}
+          langeInPruefung={fokus.langeInPruefung}
+          onOpen={(bid) => {
+            setExpanded(bid);
+            requestAnimationFrame(() => {
+              const el = document.getElementById(`doku-card-${bid}`);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
+        />
+      )}
+
+
+
 
 
       {focusBid && onClearFocus && (
@@ -633,7 +692,12 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         const slot = cs?.termin_slot;
         const anyActive = d.foto || d.protokoll || d.sharepoint;
 
-        const borderColor = complete ? "#22c55e" : sc > 0 ? "#facc15" : "#e5e7eb";
+        const dokuStatus: DokuStatus = deriveDokuStatus({
+          foto: !!d.foto, protokoll: !!d.protokoll, sharepoint: !!d.sharepoint,
+          eingereicht_am: cs?.eingereicht_am, aufmass_am: cs?.aufmass_am,
+        });
+        const meta = DOKU_STATUS_META[dokuStatus];
+        const borderColor = meta.color;
 
         return (
           <div
@@ -673,9 +737,18 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>
-                  {c.strasse} {c.hnr}
-                  {c.hnr_zusatz}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>
+                    {c.strasse} {c.hnr}
+                    {c.hnr_zusatz}
+                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                    padding: "2px 7px", borderRadius: 999,
+                    background: meta.bg, color: meta.fg, textTransform: "uppercase",
+                  }}>
+                    {meta.label}
+                  </span>
                 </div>
                 <div style={{ fontSize: 13, color: "#475569" }}>{c.name}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
@@ -684,6 +757,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                   <span>📄 {d.protokoll ? "✓" : "—"}</span> ·{" "}
                   <span>☁️ {d.sharepoint ? "✓" : "—"}</span>
                 </div>
+
               </div>
               {sortMode === "manual" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={(e) => e.stopPropagation()}>
@@ -1111,4 +1185,88 @@ function NachforderungEditor({ bid, cs }: { bid: string; cs: CallState | undefin
   );
 }
 
+// ─── FokusPanel: unvollständig + lange in Prüfung ────────────────
+type FokusPanelProps = {
+  unvollstaendig: Array<{ contact: Contact; fehlend: string[]; tage: number | null }>;
+  langeInPruefung: Array<{ contact: Contact; tage: number | null }>;
+  onOpen: (bid: string) => void;
+};
+
+function FokusPanel({ unvollstaendig, langeInPruefung, onOpen }: FokusPanelProps) {
+  return (
+    <div style={{ background: "white", borderRadius: 11, padding: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>🎯 Fokus Doku-Status</div>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: "#fee2e2", color: "#991b1b" }}>
+          {unvollstaendig.length} unvollständig
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: "#fef3c7", color: "#92400e" }}>
+          {langeInPruefung.length} lange in Prüfung
+        </span>
+      </div>
+
+      {unvollstaendig.length > 0 && (
+        <div style={{ marginBottom: langeInPruefung.length > 0 ? 12 : 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#991b1b", marginBottom: 6 }}>
+            🔴 UNVOLLSTÄNDIG · AG hat Doku bemängelt
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {unvollstaendig.map(({ contact, fehlend, tage }) => (
+              <button
+                key={contact.bid}
+                onClick={() => onOpen(contact.bid)}
+                style={{
+                  textAlign: "left", padding: "8px 10px", borderRadius: 8,
+                  border: "1px solid #fecaca", background: "#fef2f2",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    {contact.strasse} {contact.hnr}{contact.hnr_zusatz} <span style={{ color: "#64748b", fontWeight: 500 }}>· {contact.name}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 600, marginTop: 2 }}>
+                    Fehlt: {fehlend.join(" · ")}{tage !== null ? `  ·  ${tage} Tage in Prüfung` : ""}
+                  </div>
+                </div>
+                <span style={{ color: "#94a3b8", fontSize: 16 }}>▸</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {langeInPruefung.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#92400e", marginBottom: 6 }}>
+            🟡 IN PRÜFUNG &gt; 14 TAGE · potenziell hängengeblieben
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {langeInPruefung.map(({ contact, tage }) => (
+              <button
+                key={contact.bid}
+                onClick={() => onOpen(contact.bid)}
+                style={{
+                  textAlign: "left", padding: "8px 10px", borderRadius: 8,
+                  border: "1px solid #fcd34d", background: "#fffbeb",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    {contact.strasse} {contact.hnr}{contact.hnr_zusatz} <span style={{ color: "#64748b", fontWeight: 500 }}>· {contact.name}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600, marginTop: 2 }}>
+                    Seit {tage} Tagen ohne Aufmaß-Bestätigung
+                  </div>
+                </div>
+                <span style={{ color: "#94a3b8", fontSize: 16 }}>▸</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 

@@ -57,6 +57,7 @@ export type CallState = {
   umsatz_eur?: number;
   zusatz_eur?: number;
   avis_am?: string | null;
+  aufmass_am?: string | null;
   verguetet_am?: string | null;
   pruefung_status?: PruefungStatus;
   pruefung_nachforderung?: NachforderungGrund[];

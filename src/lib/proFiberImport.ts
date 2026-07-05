@@ -220,6 +220,8 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       foto: foto.val,
       protokoll: proto.val,
       sharepoint: sp.val,
+      // Neue Spalte T = "Eingereicht am" (row[19]) – Rohfeld für Doku-Status-Logik
+      eingereicht_am: toDate(row[19]),
       aufmass_am: toDate(row[20]),
       gutschrift_nr: str(row[21]),
       avis_am: toDate(row[22]),
