@@ -559,6 +559,10 @@ export default function FinanzTab() {
       if (zMonat) { setZiel(zMonat); setZielInput(String(zMonat.ziel_eur)); }
       if (zHa) { setHaPreis(Number(zHa.ziel_eur)); setHaPreisInput(String(zHa.ziel_eur)); }
       if (zHaTag) { setHaProTag(Number(zHaTag.ziel_eur)); setHaProTagInput(String(zHaTag.ziel_eur)); }
+      const zielEur = zMonat ? Number(zMonat.ziel_eur) : 70000;
+      const preisEur = zHa ? Number(zHa.ziel_eur) : 1200;
+      setHaAnzahlInput(preisEur > 0 ? String(Math.round(zielEur / preisEur)) : "0");
+
       setLoading(false);
     })();
 
