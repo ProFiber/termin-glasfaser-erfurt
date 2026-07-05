@@ -151,9 +151,27 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   };
   const toDate = (v: unknown): string => {
     if (!v) return "";
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    const d = new Date(String(v));
-    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+    // WICHTIG: lokale Kalender-Komponenten nehmen, nicht toISOString() —
+    // sonst rutscht "1.7. 00:00 lokal" per UTC-Konvertierung auf 30.6. zurück.
+    if (v instanceof Date) {
+      const y = v.getFullYear();
+      const m = String(v.getMonth() + 1).padStart(2, "0");
+      const d = String(v.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    const s = String(v).trim();
+    // ISO-Datum wie "2026-07-01" oder "2026-07-01T..." → direkt die ersten 10 Zeichen
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    // DE-Format wie "01.07.2026"
+    const de = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (de) return `${de[3]}-${de[2].padStart(2,"0")}-${de[1].padStart(2,"0")}`;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
   };
   const TRUE_SET = new Set(["ja", "true", "1", "x", "yes", "y", "✓", "✔"]);
   const FALSE_SET = new Set(["", "nein", "false", "0", "no", "n", "-", "–"]);
