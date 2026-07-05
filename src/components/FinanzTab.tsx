@@ -524,6 +524,16 @@ export default function FinanzTab() {
 
       const fn = `Bauleiter-Bericht_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.pdf`;
       pdf.save(fn);
+
+      // Alle im Bericht enthaltenen erledigten HAs automatisch als "eingereicht" markieren
+      const bidsEinreichen = ((states as S[]) || [])
+        .filter((s) => s.status === "erledigt" && (s.pruefung_status ?? "offen") === "offen" && !s.avis_am)
+        .map((s) => s.bid);
+      if (bidsEinreichen.length > 0) {
+        const { error } = await supabase.rpc("mark_eingereicht", { bids: bidsEinreichen });
+        if (error) console.warn("mark_eingereicht fehlgeschlagen", error);
+      }
+
     } catch (e) {
       console.error("Bauleiter-PDF Fehler", e);
       alert("Export fehlgeschlagen. Bitte erneut versuchen.");
