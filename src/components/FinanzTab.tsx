@@ -737,7 +737,9 @@ export default function FinanzTab() {
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
       countHeute: heute.length, countWoche: woche.length, countMonat: monat.length,
       // Vergleichswerte (Vorperiode)
-      umsatzGestern: sumUmsatz(gestern), meterGestern: sumMeter(gestern), countGestern: gestern.length,
+      umsatzGestern: sumUmsatz(letzterArbeitstag), meterGestern: sumMeter(letzterArbeitstag), countGestern: letzterArbeitstag.length,
+      letzterArbeitstagLabel, kwHeute, kwVor, monatLabel, vormonatLabel,
+
       umsatzVorwoche: sumUmsatz(vorwoche), meterVorwoche: sumMeter(vorwoche), countVorwoche: vorwoche.length,
       umsatzVormonat: sumUmsatz(vormonat), meterVormonat: sumMeter(vormonat), countVormonat: vormonat.length,
       // Tatsächliche Arbeitstage / Tempo
