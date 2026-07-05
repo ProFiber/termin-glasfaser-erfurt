@@ -119,6 +119,7 @@ export type Database = {
           ge: number
           hnr: string
           hnr_zusatz: string
+          kls_id: string | null
           lat: number | null
           lng: number | null
           mobil: string
@@ -146,6 +147,7 @@ export type Database = {
           ge?: number
           hnr?: string
           hnr_zusatz?: string
+          kls_id?: string | null
           lat?: number | null
           lng?: number | null
           mobil?: string
@@ -173,6 +175,7 @@ export type Database = {
           ge?: number
           hnr?: string
           hnr_zusatz?: string
+          kls_id?: string | null
           lat?: number | null
           lng?: number | null
           mobil?: string
