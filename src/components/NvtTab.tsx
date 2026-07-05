@@ -161,7 +161,7 @@ export default function NvtTab({
     [contacts, states],
   );
 
-  // Zahlungspipeline — 5 System-Klärfälle
+  // Zahlungspipeline — Stufen aus Rohdaten (Excel-Datumsfelder + pruefung_status) ableiten
   const pipeline = useMemo(() => {
     let erledigt = 0, eingereicht = 0, nachforderung = 0, freigegeben = 0, verguetet = 0;
     let auskundung = 0, foto = 0, protokoll = 0, zustimmung = 0;
@@ -170,10 +170,12 @@ export default function NvtTab({
       if (!cs || cs.status !== "erledigt") continue;
       erledigt++;
       const ps = cs.pruefung_status ?? "offen";
+      // Stufen exklusiv, vom weitesten Fortschritt nach früher
       if (cs.verguetet_am) verguetet++;
-      else if (cs.avis_am || ps === "freigegeben") freigegeben++;
+      else if (cs.avis_am) freigegeben++;
       else if (ps === "nachforderung") nachforderung++;
-      else if (ps === "eingereicht") eingereicht++;
+      else if (cs.aufmass_am || ps === "freigegeben") freigegeben++;
+      else if (cs.eingereicht_am || ps === "eingereicht") eingereicht++;
 
       const d = dokuStates[c.bid];
       if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung++;
