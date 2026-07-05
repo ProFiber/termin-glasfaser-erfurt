@@ -1533,6 +1533,9 @@ function Index() {
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
               : f === "auskundungErledigt" ? `✓ Auskundung erledigt (${auskundungErledigtCount})`
+              : f === "erlOhneZustimmung" ? `📝 Erl. ohne Zustimmung (${erlOhneZustimmungCount})`
+              : f === "erlOhneAuftrag" ? `📄 Erl. ohne Auftrag (${erlOhneAuftragCount})`
+              : f === "imBauHeute" ? `🚧 Im Bau heute (${imBauHeuteCount})`
               : f === "offen" ? "Ausstehend"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
