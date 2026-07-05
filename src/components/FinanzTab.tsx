@@ -930,36 +930,57 @@ export default function FinanzTab() {
         )}
       </div>
 
-      {editingZiel && (
+      {editingZiel && (() => {
+        const atMonat = data.arbeitstageMonat || 22;
+        const syncFromHaProTag = (v: string) => {
+          setHaProTagInput(v);
+          const hpt = parseFloat(v);
+          if (isFinite(hpt)) {
+            const anz = hpt * atMonat;
+            setHaAnzahlInput(String(Math.round(anz * 10) / 10));
+            setZielInput(String(Math.round(anz * haPreis)));
+          }
+        };
+        const syncFromZiel = (v: string) => {
+          setZielInput(v);
+          const eur = parseFloat(v);
+          if (isFinite(eur) && haPreis > 0) {
+            const anz = eur / haPreis;
+            setHaAnzahlInput(String(Math.round(anz * 10) / 10));
+            if (atMonat > 0) setHaProTagInput(String(Math.round((anz / atMonat) * 100) / 100));
+          }
+        };
+        const syncFromAnzahl = (v: string) => {
+          setHaAnzahlInput(v);
+          const anz = parseFloat(v);
+          if (isFinite(anz)) {
+            setZielInput(String(Math.round(anz * haPreis)));
+            if (atMonat > 0) setHaProTagInput(String(Math.round((anz / atMonat) * 100) / 100));
+          }
+        };
+        return (
         <div style={{ background: "white", borderRadius: 10, padding: 12, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ziele anpassen</div>
-          <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 8 }}>
-            Ø Hausanschlüsse pro Tag (Team-Ziel)
-            <input
-              type="number"
-              step="0.1"
-              value={haProTagInput}
-              onChange={(e) => setHaProTagInput(e.target.value)}
-              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
-            />
-            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × 390 €/HA
-            </div>
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 8 }}>
+            Alle drei Felder sind verknüpft ({atMonat} Arbeitstage · 390 €/HA) — Änderung eines Felds passt die anderen automatisch an.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <label style={{ fontSize: 11, color: "#475569" }}>
+              HA pro Tag
+              <input
+                type="number"
+                step="0.1"
+                value={haProTagInput}
+                onChange={(e) => syncFromHaProTag(e.target.value)}
+                style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
+              />
+            </label>
             <label style={{ fontSize: 11, color: "#475569" }}>
               Monatsziel (€)
               <input
                 type="number"
                 value={zielInput}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setZielInput(v);
-                  const eur = parseFloat(v);
-                  if (isFinite(eur) && haPreis > 0) {
-                    setHaAnzahlInput(String(Math.round((eur / haPreis) * 10) / 10));
-                  }
-                }}
+                onChange={(e) => syncFromZiel(e.target.value)}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
               />
             </label>
@@ -969,21 +990,11 @@ export default function FinanzTab() {
                 type="number"
                 step="1"
                 value={haAnzahlInput}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setHaAnzahlInput(v);
-                  const anz = parseFloat(v);
-                  if (isFinite(anz) && haPreis > 0) {
-                    setZielInput(String(Math.round(anz * haPreis)));
-                  }
-                }}
+                onChange={(e) => syncFromAnzahl(e.target.value)}
                 style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
               />
             </label>
           </div>
-
-
-
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={saveZiel} style={{ flex: 1, padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
               Speichern
@@ -993,7 +1004,9 @@ export default function FinanzTab() {
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
+
 
       {/* KPI-Cards: Heute / Woche / Monat (mit Vorperiode-Vergleich) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
