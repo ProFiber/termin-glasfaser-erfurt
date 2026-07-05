@@ -1185,4 +1185,88 @@ function NachforderungEditor({ bid, cs }: { bid: string; cs: CallState | undefin
   );
 }
 
+// ─── FokusPanel: unvollständig + lange in Prüfung ────────────────
+type FokusPanelProps = {
+  unvollstaendig: Array<{ contact: Contact; fehlend: string[]; tage: number | null }>;
+  langeInPruefung: Array<{ contact: Contact; tage: number | null }>;
+  onOpen: (bid: string) => void;
+};
+
+function FokusPanel({ unvollstaendig, langeInPruefung, onOpen }: FokusPanelProps) {
+  return (
+    <div style={{ background: "white", borderRadius: 11, padding: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>🎯 Fokus Doku-Status</div>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: "#fee2e2", color: "#991b1b" }}>
+          {unvollstaendig.length} unvollständig
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: "#fef3c7", color: "#92400e" }}>
+          {langeInPruefung.length} lange in Prüfung
+        </span>
+      </div>
+
+      {unvollstaendig.length > 0 && (
+        <div style={{ marginBottom: langeInPruefung.length > 0 ? 12 : 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#991b1b", marginBottom: 6 }}>
+            🔴 UNVOLLSTÄNDIG · AG hat Doku bemängelt
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {unvollstaendig.map(({ contact, fehlend, tage }) => (
+              <button
+                key={contact.bid}
+                onClick={() => onOpen(contact.bid)}
+                style={{
+                  textAlign: "left", padding: "8px 10px", borderRadius: 8,
+                  border: "1px solid #fecaca", background: "#fef2f2",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    {contact.strasse} {contact.hnr}{contact.hnr_zusatz} <span style={{ color: "#64748b", fontWeight: 500 }}>· {contact.name}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 600, marginTop: 2 }}>
+                    Fehlt: {fehlend.join(" · ")}{tage !== null ? `  ·  ${tage} Tage in Prüfung` : ""}
+                  </div>
+                </div>
+                <span style={{ color: "#94a3b8", fontSize: 16 }}>▸</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {langeInPruefung.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#92400e", marginBottom: 6 }}>
+            🟡 IN PRÜFUNG &gt; 14 TAGE · potenziell hängengeblieben
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {langeInPruefung.map(({ contact, tage }) => (
+              <button
+                key={contact.bid}
+                onClick={() => onOpen(contact.bid)}
+                style={{
+                  textAlign: "left", padding: "8px 10px", borderRadius: 8,
+                  border: "1px solid #fcd34d", background: "#fffbeb",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    {contact.strasse} {contact.hnr}{contact.hnr_zusatz} <span style={{ color: "#64748b", fontWeight: 500 }}>· {contact.name}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600, marginTop: 2 }}>
+                    Seit {tage} Tagen ohne Aufmaß-Bestätigung
+                  </div>
+                </div>
+                <span style={{ color: "#94a3b8", fontSize: 16 }}>▸</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
