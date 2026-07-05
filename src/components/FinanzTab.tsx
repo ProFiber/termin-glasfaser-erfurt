@@ -285,17 +285,35 @@ export default function FinanzTab() {
         })
         .sort((a, b) => a.datum.localeCompare(b.datum));
 
-      // Klärfälle
+      // Klärfälle — manuell (klarfall=true) UND 5 System-Kategorien
+      function kategorienFuer(s: S, c: C | undefined): string[] {
+        const out: string[] = [];
+        if (s.status === "erledigt") {
+          if (c?.auskundung_erforderlich && !c.auskundung_erfolgt) out.push("🚫 Ohne Auskundung");
+          const d = dokuMap.get(s.bid);
+          if (!d?.foto) out.push("📸 Foto fehlt");
+          if (!d?.protokoll) out.push("📄 Protokoll fehlt");
+          const z = (c?.zustimmung || "").trim().toLowerCase();
+          if (!z || z === "nein" || z === "offen") out.push("✍️ Zustimmung fehlt");
+          if (s.pruefung_status === "nachforderung") out.push("⚠️ Nachforderung AG");
+        }
+        if (s.klarfall) out.push("🔧 Manuell");
+        return out;
+      }
+
       const klaerfaelle = ((states as S[]) || [])
-        .filter((s) => s.klarfall)
         .map((s) => {
           const c = contactMap.get(s.bid);
+          const kats = kategorienFuer(s, c);
+          if (kats.length === 0) return null;
           const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
           const nvt = c?.nvt || "—";
           const bauDatum = s.erledigt_datum;
           const tage = bauDatum ? Math.max(0, Math.round((today.getTime() - new Date(bauDatum).getTime()) / 86400000)) : null;
-          return { adresse: adr, nvt, notiz: s.klarfall_notiz || "", bauDatum, tage, prio: getNvtPriority(nvt) };
+          const notiz = [s.klarfall_notiz, s.pruefung_notiz].filter(Boolean).join(" · ");
+          return { adresse: adr, nvt, notiz, bauDatum, tage, prio: getNvtPriority(nvt), kats };
         })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
         .sort((a, b) => {
           if (a.bauDatum && b.bauDatum) return a.bauDatum.localeCompare(b.bauDatum);
           if (a.bauDatum) return -1;
@@ -303,6 +321,7 @@ export default function FinanzTab() {
           return 0;
         });
       const aeltesterKlarfall = klaerfaelle.find((k) => k.tage != null)?.tage ?? null;
+
 
       // Gesamt
       const totals = nvtList.reduce(
