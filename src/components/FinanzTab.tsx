@@ -583,8 +583,6 @@ export default function FinanzTab() {
   const data = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayIso = toIso(today);
-    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-    const yesterdayIso = toIso(yesterday);
     const weekStart = startOfWeek(today);
     const weekStartIso = toIso(weekStart);
     const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate() - 7);
@@ -605,11 +603,33 @@ export default function FinanzTab() {
       rs.reduce((s, r) => s + Number(r.grabenlaenge || 0), 0);
 
     const heute = erledigte.filter((r) => r.erledigt_datum === todayIso);
-    const gestern = erledigte.filter((r) => r.erledigt_datum === yesterdayIso);
+    // Letzter Arbeitstag = größtes erledigt_datum vor heute (aus tatsächlichen Daten)
+    const vergangeneDaten = Array.from(new Set(
+      erledigte.filter((r) => r.erledigt_datum! < todayIso).map((r) => r.erledigt_datum!)
+    )).sort();
+    const letzterArbeitstagIso = vergangeneDaten.length > 0 ? vergangeneDaten[vergangeneDaten.length - 1] : null;
+    const letzterArbeitstag = letzterArbeitstagIso
+      ? erledigte.filter((r) => r.erledigt_datum === letzterArbeitstagIso)
+      : [];
     const woche = erledigte.filter((r) => r.erledigt_datum! >= weekStartIso);
     const vorwoche = erledigte.filter((r) => r.erledigt_datum! >= prevWeekStartIso && r.erledigt_datum! < weekStartIso);
     const monat = erledigte.filter((r) => r.erledigt_datum! >= monthStartIso);
     const vormonat = erledigte.filter((r) => r.erledigt_datum! >= prevMonthStartIso && r.erledigt_datum! < prevMonthEndIso);
+
+    // Labels
+    const kwHeute = getWeek(today);
+    const kwVor = getWeek(prevWeekStart);
+    const monatLabel = today.toLocaleString("de-DE", { month: "long" });
+    const vormonatLabel = prevMonthStart.toLocaleString("de-DE", { month: "long" });
+    const letzterArbeitstagLabel = letzterArbeitstagIso
+      ? (() => {
+          const [y, m, d] = letzterArbeitstagIso.split("-").map(Number);
+          const dt = new Date(y, m - 1, d);
+          const wd = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][dt.getDay()];
+          return `${wd} ${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.`;
+        })()
+      : "—";
+
 
     // Tatsächliche Arbeitstage = Tage mit mindestens 1 erledigtem HA
     const uniqueDays = (rs: FinRow[]) => new Set(rs.map((r) => r.erledigt_datum)).size;
