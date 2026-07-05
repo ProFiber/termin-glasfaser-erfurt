@@ -1257,6 +1257,35 @@ function Index() {
     [contacts],
   );
 
+  const erlOhneZustimmungCount = useMemo(
+    () => contacts.reduce((n, c) => {
+      const st = states[c.bid]?.status;
+      if (st !== "erledigt") return n;
+      return n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0);
+    }, 0),
+    [contacts, states],
+  );
+
+  const erlOhneAuftragCount = useMemo(
+    () => contacts.reduce((n, c) => {
+      const st = states[c.bid]?.status;
+      if (st !== "erledigt") return n;
+      return n + (isOhneTelekomAuftrag(c.bid) ? 1 : 0);
+    }, 0),
+    [contacts, states],
+  );
+
+  const imBauHeuteCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return contacts.reduce((n, c) => {
+      const cs = states[c.bid];
+      if (!cs) return n;
+      const bautHeute = (cs.termin_datum === today && !!cs.team) || cs.erledigt_datum === today;
+      return n + (bautHeute ? 1 : 0);
+    }, 0);
+  }, [contacts, states]);
+
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", maxWidth: 480, margin: "0 auto", background: "#f2f2f7", minHeight: "100dvh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
       {/* HEADER */}
