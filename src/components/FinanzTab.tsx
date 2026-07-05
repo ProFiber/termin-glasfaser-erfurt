@@ -943,7 +943,7 @@ export default function FinanzTab() {
               style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid #d4d4d8", fontSize: 16 }}
             />
             <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × Pauschale
+              Monatsziel wird automatisch berechnet: HA/Tag × Arbeitstage × 390 €/HA
             </div>
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
