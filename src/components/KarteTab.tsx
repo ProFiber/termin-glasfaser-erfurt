@@ -85,6 +85,24 @@ function addressOf(c: Contact): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Decode Google/OSRM polyline (precision 5) to [lat, lng] pairs
+function decodePolyline(str: string): [number, number][] {
+  const out: [number, number][] = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < str.length) {
+    let b: number, shift = 0, result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lat += dlat;
+    shift = 0; result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lng += dlng;
+    out.push([lat / 1e5, lng / 1e5]);
+  }
+  return out;
+}
+
 function injectStyles() {
   if (typeof document === "undefined") return;
   if (document.getElementById("user-loc-pulse-style")) return;
@@ -133,6 +151,12 @@ function injectStyles() {
       position: absolute; inset: 3px; border-radius: 50%;
       border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
+    @keyframes todayInArbeitPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.7), 0 2px 6px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(249,115,22,0), 0 2px 6px rgba(0,0,0,0.4); }
+    }
+    .today-pin-inarbeit {
+      animation: todayInArbeitPulse 1.4s ease-in-out infinite;
   `;
   document.head.appendChild(style);
 }
@@ -176,6 +200,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [selected, setSelected] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routeLineRef = useRef<any>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; coords: [number, number][] } | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
@@ -569,6 +595,44 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     return m;
   }, [todaySequence]);
 
+  // Fetch real driving route from OSRM (free public demo)
+  const routeKey = useMemo(() => {
+    if (!heuteOnly) return "";
+    const pts = todaySequence.map((c) => coords[c.bid]).filter((p) => p);
+    if (pts.length < 2) return "";
+    return pts.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(";");
+  }, [heuteOnly, todaySequence, coords]);
+
+  useEffect(() => {
+    if (!routeKey) { setRouteInfo(null); return; }
+    let cancelled = false;
+    setRouteLoading(true);
+    const coordsStr = routeKey.split(";").map((p) => {
+      const [lat, lng] = p.split(",");
+      return `${lng},${lat}`;
+    }).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=polyline`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const route = data?.routes?.[0];
+        if (!route) { setRouteInfo(null); setRouteLoading(false); return; }
+        const decoded = decodePolyline(route.geometry);
+        setRouteInfo({
+          distanceKm: route.distance / 1000,
+          durationMin: route.duration / 60,
+          coords: decoded,
+        });
+        setRouteLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) { setRouteInfo(null); setRouteLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [routeKey]);
+
+
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
@@ -614,8 +678,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       let sz: number;
       if (heuteOnly && orderNum) {
         sz = 32;
-        const color = team ? teamColor : STATUS_COLOR[status];
-        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
+        // Farbe nach Status: grün=erledigt, orange (pochend) = in-Arbeit, blau=bevorstehend
+        let pinColor = "#3b82f6"; // blau default
+        let pulseClass = "";
+        if (status === "erledigt" || teamStatus === "fertig") {
+          pinColor = "#22c55e";
+        } else if (teamStatus === "in_arbeit") {
+          pinColor = "#f97316";
+          pulseClass = " today-pin-inarbeit";
+        }
+        html = `<div class="today-pin${pulseClass}" style="width:${sz}px;height:${sz}px;border-radius:50%;background:${pinColor};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
       } else if (isInArbeit) {
         sz = 24;
         html = `<div class="team-wrap"><div class="team-ring" style="background:${teamColor}"></div><div class="team-pin" style="background:${teamColor}"></div></div>`;
@@ -650,17 +722,25 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       routeLineRef.current = null;
     }
     if (heuteOnly && todaySequence.length >= 2) {
-      const pts = todaySequence
-        .map((c) => coords[c.bid])
-        .filter((p): p is { lat: number; lng: number } => !!p)
-        .map((p) => [p.lat, p.lng] as [number, number]);
-      if (pts.length >= 2) {
-        routeLineRef.current = L.polyline(pts, {
-          color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+      if (routeInfo && routeInfo.coords.length >= 2) {
+        // Echte Fahrstrecke (OSRM) — durchgezogene magenta Linie
+        routeLineRef.current = L.polyline(routeInfo.coords, {
+          color: MAGENTA, weight: 5, opacity: 0.75,
         }).addTo(map);
+      } else {
+        // Fallback: gestrichelte Luftlinie
+        const pts = todaySequence
+          .map((c) => coords[c.bid])
+          .filter((p): p is { lat: number; lng: number } => !!p)
+          .map((p) => [p.lat, p.lng] as [number, number]);
+        if (pts.length >= 2) {
+          routeLineRef.current = L.polyline(pts, {
+            color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+          }).addTo(map);
+        }
       }
     }
-  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence]);
+  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
@@ -776,6 +856,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           >
             <div style={{ fontWeight: 800, fontSize: 13 }}>
               📅 {todaySequence.length} Termin{todaySequence.length === 1 ? "" : "e"} heute
+              {routeInfo && ` · 🚗 ${routeInfo.distanceKm.toFixed(1)} km · ${Math.round(routeInfo.durationMin)} min`}
+              {routeLoading && !routeInfo && " · Route wird berechnet…"}
             </div>
             <div style={{ opacity: 0.95, marginTop: 2 }}>
               Start {fmt(fs)} {first.strasse} {first.hnr}{first.hnr_zusatz}
