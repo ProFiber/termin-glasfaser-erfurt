@@ -14,6 +14,7 @@ import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
 import PipelineTab from "@/components/PipelineTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
+import { buildRelationIndex, REASON_LABEL } from "@/lib/relatedContacts";
 import * as XLSX from "xlsx";
 import { runFullProFiberImport } from "@/lib/proFiberImport";
 
@@ -708,6 +709,12 @@ function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
+  const relations = useMemo(() => buildRelationIndex(contacts), [contacts]);
+  const contactByBid = useMemo(() => {
+    const m: Record<string, Contact> = {};
+    for (const c of contacts) m[c.bid] = c;
+    return m;
+  }, [contacts]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
@@ -1323,6 +1330,7 @@ function Index() {
             onOpenContact={openContactInList}
             focusBid={mapFocusBid}
             onFocusConsumed={() => setMapFocusBid(null)}
+            relations={relations}
           />
         </div>
       )}
@@ -1735,11 +1743,53 @@ function Index() {
                   })()}
 
                 </div>
+                {relations[c.bid]?.length ? (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.bid); }}
+                    title={`${relations[c.bid].length} verknüpfte(s) Objekt(e)`}
+                    style={{ fontSize: 11, fontWeight: 800, color: "#7c3aed", background: "#ede9fe", padding: "3px 7px", borderRadius: 8, whiteSpace: "nowrap" }}
+                  >🔗 {relations[c.bid].length}</div>
+                ) : null}
                 <div style={{ color: "#bbb", fontSize: 14 }}>{open ? "▲" : "▼"}</div>
               </div>
 
               {open && (
                 <div style={{ borderTop: "1px solid #eee", padding: "12px 12px 14px" }}>
+                  {relations[c.bid]?.length ? (
+                    <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 900, color: "#6d28d9", letterSpacing: 1, marginBottom: 6 }}>
+                        🔗 VERKNÜPFTE OBJEKTE ({relations[c.bid].length})
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {relations[c.bid].map((rel) => {
+                          const rc = contactByBid[rel.bid];
+                          if (!rc) return null;
+                          const rst = (states[rel.bid]?.status ?? "offen") as CallStatus;
+                          return (
+                            <button
+                              key={rel.bid}
+                              onClick={(e) => { e.stopPropagation(); openContactInList(rel.bid); }}
+                              style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 10px", textAlign: "left", cursor: "pointer", width: "100%" }}
+                            >
+                              <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_META[rst].dot, flexShrink: 0 }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {rc.strasse} {rc.hnr}{rc.hnr_zusatz}
+                                  <span style={{ fontWeight: 400, color: "#64748b", marginLeft: 6, fontSize: 11 }}>{rc.typ}</span>
+                                </div>
+                                <div style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rc.name}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                                {rel.reasons.map((r) => (
+                                  <span key={r} style={{ fontSize: 9, fontWeight: 800, color: "#6d28d9", background: "#ede9fe", padding: "2px 5px", borderRadius: 4, letterSpacing: 0.3 }}>{REASON_LABEL[r]}</span>
+                                ))}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                   <StreetViewImage
                     strasse={c.strasse}
                     hnr={c.hnr}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
+import { REASON_LABEL, type RelationIndex } from "@/lib/relatedContacts";
 import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   onOpenContact: (bid: string) => void;
   focusBid?: string | null;
   onFocusConsumed?: () => void;
+  relations?: RelationIndex;
 };
 
 const MAGENTA = "#e20074";
@@ -159,7 +161,7 @@ function buildLabelsLayer(L: any) {
   );
 }
 
-export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed }: Props) {
+export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed, relations }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -982,6 +984,41 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
               📅 {selectedState.termin_datum} {selectedState.termin_slot ? `· ${selectedState.termin_slot.toUpperCase()}` : ""}{selectedState.termin_zeit ? ` · ${selectedState.termin_zeit}` : ""}
             </div>
           )}
+
+          {selectedContact && relations?.[selectedContact.bid]?.length ? (
+            <div style={{ marginTop: 10, background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 10, fontWeight: 900, color: "#6d28d9", letterSpacing: 1, marginBottom: 6 }}>
+                🔗 VERKNÜPFTE OBJEKTE ({relations[selectedContact.bid].length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {relations[selectedContact.bid].map((rel) => {
+                  const rc = contacts.find((c) => c.bid === rel.bid);
+                  if (!rc) return null;
+                  const rst = (states[rel.bid]?.status ?? "offen") as CallStatus;
+                  return (
+                    <button
+                      key={rel.bid}
+                      onClick={() => onOpenContact(rel.bid)}
+                      style={{ display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #e5e7eb", borderRadius: 6, padding: "6px 8px", textAlign: "left", cursor: "pointer", width: "100%" }}
+                    >
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[rst], flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {rc.strasse} {rc.hnr}{rc.hnr_zusatz}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                        {rel.reasons.map((r) => (
+                          <span key={r} style={{ fontSize: 9, fontWeight: 800, color: "#6d28d9", background: "#ede9fe", padding: "1px 4px", borderRadius: 3 }}>{REASON_LABEL[r]}</span>
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
 
           <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
             {(selectedContact.mobil || selectedContact.festnetz) && (
