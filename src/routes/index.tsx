@@ -14,6 +14,7 @@ import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
 import PipelineTab from "@/components/PipelineTab";
 import { isPriorityNvt, isUrgentNvt, getNvtPriority, priorityStars, type PriorityLevel } from "@/lib/priority";
+import { buildRelationIndex, REASON_LABEL } from "@/lib/relatedContacts";
 import * as XLSX from "xlsx";
 import { runFullProFiberImport } from "@/lib/proFiberImport";
 
