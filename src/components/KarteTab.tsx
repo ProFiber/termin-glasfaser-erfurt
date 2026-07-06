@@ -133,6 +133,12 @@ function injectStyles() {
       position: absolute; inset: 3px; border-radius: 50%;
       border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
+    @keyframes todayInArbeitPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.7), 0 2px 6px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(249,115,22,0), 0 2px 6px rgba(0,0,0,0.4); }
+    }
+    .today-pin-inarbeit {
+      animation: todayInArbeitPulse 1.4s ease-in-out infinite;
   `;
   document.head.appendChild(style);
 }
