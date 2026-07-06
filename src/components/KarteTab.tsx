@@ -182,6 +182,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [selected, setSelected] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routeLineRef = useRef<any>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; coords: [number, number][] } | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
