@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
+import { REASON_LABEL, type RelationIndex } from "@/lib/relatedContacts";
 import StreetViewImage from "@/components/StreetViewImage";
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   onOpenContact: (bid: string) => void;
   focusBid?: string | null;
   onFocusConsumed?: () => void;
+  relations?: RelationIndex;
 };
 
 const MAGENTA = "#e20074";
