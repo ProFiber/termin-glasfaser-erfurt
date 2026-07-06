@@ -6,10 +6,11 @@ import {
 import type { Contact, CallState, DokuState } from "@/lib/types";
 import {
   isPriorityNvt, isUrgentNvt,
-  getNvtPriority, priorityStars, NUM_TEAMS, AUFTRAEGE_PRO_TEAM_PRO_TAG,
+  getNvtPriority, priorityStars,
   type PriorityLevel,
 } from "@/lib/priority";
 import { supabase } from "@/integrations/supabase/client";
+
 
 const MAGENTA = "#e20074";
 
@@ -126,6 +127,27 @@ export default function NvtTab({
 }) {
 
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
+  const [bedarfProTag, setBedarfProTag] = useState<number>(4);
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { data: zList } = await supabase.from("umsatz_ziele").select("*");
+      if (cancel) return;
+      const zHaTag = (zList as { scope: string; ziel_eur: number }[] | null)?.find((z) => z.scope === "ha_pro_tag");
+      if (zHaTag) setBedarfProTag(Number(zHaTag.ziel_eur));
+    })();
+
+    const zCh = supabase
+      .channel("umsatz_ziele_dash")
+      .on("postgres_changes", { event: "*", schema: "public", table: "umsatz_ziele" }, (payload) => {
+        const row = payload.new as { scope?: string; ziel_eur?: number } | null;
+        if (row?.scope === "ha_pro_tag") setBedarfProTag(Number(row.ziel_eur));
+      })
+      .subscribe();
+
+    return () => { cancel = true; supabase.removeChannel(zCh); };
+  }, []);
 
   useEffect(() => {
     let cancel = false;
@@ -241,11 +263,11 @@ export default function NvtTab({
     }).length;
   }, [contacts, states]);
 
-  const bedarfProTag = NUM_TEAMS * AUFTRAEGE_PRO_TEAM_PRO_TAG;
   const ampelHeute = getAmpel(einsatzPlanung.heute, bedarfProTag);
   const ampelMorgen = getAmpel(einsatzPlanung.morgen, bedarfProTag);
   const ampelUebermorgen = getAmpel(einsatzPlanung.uebermorgen, bedarfProTag);
   const kritischWarnungAktiv = ampelMorgen === "rot" || ampelUebermorgen === "rot";
+
   // ────────────────────────────────────────────────────────────────
 
   // Tages-KPIs
