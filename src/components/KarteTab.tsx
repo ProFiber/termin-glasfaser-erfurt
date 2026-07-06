@@ -722,17 +722,25 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       routeLineRef.current = null;
     }
     if (heuteOnly && todaySequence.length >= 2) {
-      const pts = todaySequence
-        .map((c) => coords[c.bid])
-        .filter((p): p is { lat: number; lng: number } => !!p)
-        .map((p) => [p.lat, p.lng] as [number, number]);
-      if (pts.length >= 2) {
-        routeLineRef.current = L.polyline(pts, {
-          color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+      if (routeInfo && routeInfo.coords.length >= 2) {
+        // Echte Fahrstrecke (OSRM) — durchgezogene magenta Linie
+        routeLineRef.current = L.polyline(routeInfo.coords, {
+          color: MAGENTA, weight: 5, opacity: 0.75,
         }).addTo(map);
+      } else {
+        // Fallback: gestrichelte Luftlinie
+        const pts = todaySequence
+          .map((c) => coords[c.bid])
+          .filter((p): p is { lat: number; lng: number } => !!p)
+          .map((p) => [p.lat, p.lng] as [number, number]);
+        if (pts.length >= 2) {
+          routeLineRef.current = L.polyline(pts, {
+            color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+          }).addTo(map);
+        }
       }
     }
-  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence]);
+  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
