@@ -607,9 +607,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const isInArbeit = team && teamStatus === "in_arbeit";
       const isFertig = team && teamStatus === "fertig";
 
+      const orderNum = todayOrder[c.bid];
       let html: string;
       let sz: number;
-      if (isInArbeit) {
+      if (heuteOnly && orderNum) {
+        sz = 32;
+        const color = team ? teamColor : STATUS_COLOR[status];
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
+      } else if (isInArbeit) {
         sz = 24;
         html = `<div class="team-wrap"><div class="team-ring" style="background:${teamColor}"></div><div class="team-pin" style="background:${teamColor}"></div></div>`;
       } else if (isFertig) {
@@ -636,7 +641,24 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         markersRef.current[c.bid] = m;
       }
     });
-  }, [ready, visibleContacts, coords, states]);
+
+    // Route line for today's sequence
+    if (routeLineRef.current) {
+      map.removeLayer(routeLineRef.current);
+      routeLineRef.current = null;
+    }
+    if (heuteOnly && todaySequence.length >= 2) {
+      const pts = todaySequence
+        .map((c) => coords[c.bid])
+        .filter((p): p is { lat: number; lng: number } => !!p)
+        .map((p) => [p.lat, p.lng] as [number, number]);
+      if (pts.length >= 2) {
+        routeLineRef.current = L.polyline(pts, {
+          color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+        }).addTo(map);
+      }
+    }
+  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
