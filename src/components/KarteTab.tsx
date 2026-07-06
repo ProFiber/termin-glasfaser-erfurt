@@ -595,6 +595,44 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     return m;
   }, [todaySequence]);
 
+  // Fetch real driving route from OSRM (free public demo)
+  const routeKey = useMemo(() => {
+    if (!heuteOnly) return "";
+    const pts = todaySequence.map((c) => coords[c.bid]).filter((p) => p);
+    if (pts.length < 2) return "";
+    return pts.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(";");
+  }, [heuteOnly, todaySequence, coords]);
+
+  useEffect(() => {
+    if (!routeKey) { setRouteInfo(null); return; }
+    let cancelled = false;
+    setRouteLoading(true);
+    const coordsStr = routeKey.split(";").map((p) => {
+      const [lat, lng] = p.split(",");
+      return `${lng},${lat}`;
+    }).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=polyline`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const route = data?.routes?.[0];
+        if (!route) { setRouteInfo(null); setRouteLoading(false); return; }
+        const decoded = decodePolyline(route.geometry);
+        setRouteInfo({
+          distanceKm: route.distance / 1000,
+          durationMin: route.duration / 60,
+          coords: decoded,
+        });
+        setRouteLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) { setRouteInfo(null); setRouteLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [routeKey]);
+
+
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
