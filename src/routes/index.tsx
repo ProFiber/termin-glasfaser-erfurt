@@ -1330,6 +1330,7 @@ function Index() {
             onOpenContact={openContactInList}
             focusBid={mapFocusBid}
             onFocusConsumed={() => setMapFocusBid(null)}
+            relations={relations}
           />
         </div>
       )}
