@@ -533,13 +533,48 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     return () => { cancelled = true; };
   }, [contacts]);
 
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const SLOT_ORDER: Record<string, number> = { vormittag: 0, nachmittag: 1, abend: 2 };
+  function sortKey(c: Contact): number {
+    const s = states[c.bid];
+    const z = s?.termin_zeit;
+    if (z && /^\d{1,2}:\d{2}/.test(z)) {
+      const [h, mm] = z.split(":").map(Number);
+      return h * 60 + (mm || 0);
+    }
+    const slot = (s?.termin_slot ?? "").toLowerCase();
+    const base = SLOT_ORDER[slot] ?? 3;
+    return 24 * 60 + base * 60;
+  }
+
+  const todaySequence = useMemo(() => {
+    return contacts
+      .filter((c) => states[c.bid]?.termin_datum === todayStr)
+      .sort((a, b) => sortKey(a) - sortKey(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts, states, todayStr]);
+
+  const todayOrder = useMemo(() => {
+    const m: Record<string, number> = {};
+    todaySequence.forEach((c, i) => { m[c.bid] = i + 1; });
+    return m;
+  }, [todaySequence]);
+
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
+      if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       return true;
     }),
-    [contacts, states, filter, priorityOnly],
+    [contacts, states, filter, priorityOnly, heuteOnly, todayStr],
   );
 
   // Render markers
