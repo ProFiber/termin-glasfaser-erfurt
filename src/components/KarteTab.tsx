@@ -85,6 +85,24 @@ function addressOf(c: Contact): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Decode Google/OSRM polyline (precision 5) to [lat, lng] pairs
+function decodePolyline(str: string): [number, number][] {
+  const out: [number, number][] = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < str.length) {
+    let b: number, shift = 0, result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lat += dlat;
+    shift = 0; result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lng += dlng;
+    out.push([lat / 1e5, lng / 1e5]);
+  }
+  return out;
+}
+
 function injectStyles() {
   if (typeof document === "undefined") return;
   if (document.getElementById("user-loc-pulse-style")) return;
