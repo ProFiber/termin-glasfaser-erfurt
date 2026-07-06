@@ -620,8 +620,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       let sz: number;
       if (heuteOnly && orderNum) {
         sz = 32;
-        const color = team ? teamColor : STATUS_COLOR[status];
-        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
+        // Farbe nach Status: grün=erledigt, orange (pochend) = in-Arbeit, blau=bevorstehend
+        let pinColor = "#3b82f6"; // blau default
+        let pulseClass = "";
+        if (status === "erledigt" || teamStatus === "fertig") {
+          pinColor = "#22c55e";
+        } else if (teamStatus === "in_arbeit") {
+          pinColor = "#f97316";
+          pulseClass = " today-pin-inarbeit";
+        }
+        html = `<div class="today-pin${pulseClass}" style="width:${sz}px;height:${sz}px;border-radius:50%;background:${pinColor};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
       } else if (isInArbeit) {
         sz = 24;
         html = `<div class="team-wrap"><div class="team-ring" style="background:${teamColor}"></div><div class="team-pin" style="background:${teamColor}"></div></div>`;
