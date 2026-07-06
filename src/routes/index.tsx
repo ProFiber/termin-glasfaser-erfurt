@@ -709,6 +709,12 @@ function Index() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [states, setStates] = useState<Record<string, CallState>>({});
   const [loading, setLoading] = useState(true);
+  const relations = useMemo(() => buildRelationIndex(contacts), [contacts]);
+  const contactByBid = useMemo(() => {
+    const m: Record<string, Contact> = {};
+    for (const c of contacts) m[c.bid] = c;
+    return m;
+  }, [contacts]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
