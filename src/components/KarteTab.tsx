@@ -694,6 +694,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         }}
       >
         <button
+          onClick={() => setHeuteOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${heuteOnly ? "#0891b2" : "#e5e7eb"}`,
+            background: heuteOnly ? "#0891b2" : "white",
+            color: heuteOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >📅 Heute{heuteOnly && todaySequence.length ? ` (${todaySequence.length})` : ""}</button>
+        <button
           onClick={() => setPriorityOnly((v) => !v)}
           style={{
             padding: "5px 10px", borderRadius: 999,
