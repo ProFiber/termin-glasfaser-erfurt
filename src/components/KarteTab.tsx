@@ -170,7 +170,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [geocoding, setGeocoding] = useState(false);
   const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [heuteOnly, setHeuteOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const routeLineRef = useRef<any>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
