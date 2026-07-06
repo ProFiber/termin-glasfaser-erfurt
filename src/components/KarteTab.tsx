@@ -856,6 +856,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           >
             <div style={{ fontWeight: 800, fontSize: 13 }}>
               📅 {todaySequence.length} Termin{todaySequence.length === 1 ? "" : "e"} heute
+              {routeInfo && ` · 🚗 ${routeInfo.distanceKm.toFixed(1)} km · ${Math.round(routeInfo.durationMin)} min`}
+              {routeLoading && !routeInfo && " · Route wird berechnet…"}
             </div>
             <div style={{ opacity: 0.95, marginTop: 2 }}>
               Start {fmt(fs)} {first.strasse} {first.hnr}{first.hnr_zusatz}
