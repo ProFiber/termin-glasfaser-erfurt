@@ -161,7 +161,7 @@ function buildLabelsLayer(L: any) {
   );
 }
 
-export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed }: Props) {
+export default function KarteTab({ contacts, states, onOpenContact, focusBid, onFocusConsumed, relations }: Props) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
