@@ -755,6 +755,34 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         </div>
       )}
 
+      {/* Heute info bar */}
+      {heuteOnly && todaySequence.length > 0 && (() => {
+        const first = todaySequence[0];
+        const last = todaySequence[todaySequence.length - 1];
+        const fs = states[first.bid];
+        const ls = states[last.bid];
+        const fmt = (s: typeof fs) => s?.termin_zeit || (s?.termin_slot ? s.termin_slot.toUpperCase() : "");
+        return (
+          <div
+            style={{
+              position: "absolute", top: 56, left: 8, right: 56, zIndex: 1000,
+              background: "rgba(8,145,178,0.95)", color: "white",
+              padding: "8px 12px", borderRadius: 10,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 12, fontWeight: 600,
+              lineHeight: 1.35,
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 13 }}>
+              📅 {todaySequence.length} Termin{todaySequence.length === 1 ? "" : "e"} heute
+            </div>
+            <div style={{ opacity: 0.95, marginTop: 2 }}>
+              Start {fmt(fs)} {first.strasse} {first.hnr}{first.hnr_zusatz}
+              {todaySequence.length > 1 && ` · Ende ${fmt(ls)} ${last.strasse} ${last.hnr}${last.hnr_zusatz}`}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Action buttons (stacked top-right) */}
       <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: "flex", flexDirection: "column", gap: 8 }}>
         <button
