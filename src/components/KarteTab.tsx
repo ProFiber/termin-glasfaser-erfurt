@@ -170,7 +170,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [geocoding, setGeocoding] = useState(false);
   const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [heuteOnly, setHeuteOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const routeLineRef = useRef<any>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
@@ -530,13 +533,48 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     return () => { cancelled = true; };
   }, [contacts]);
 
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const SLOT_ORDER: Record<string, number> = { vormittag: 0, nachmittag: 1, abend: 2 };
+  function sortKey(c: Contact): number {
+    const s = states[c.bid];
+    const z = s?.termin_zeit;
+    if (z && /^\d{1,2}:\d{2}/.test(z)) {
+      const [h, mm] = z.split(":").map(Number);
+      return h * 60 + (mm || 0);
+    }
+    const slot = (s?.termin_slot ?? "").toLowerCase();
+    const base = SLOT_ORDER[slot] ?? 3;
+    return 24 * 60 + base * 60;
+  }
+
+  const todaySequence = useMemo(() => {
+    return contacts
+      .filter((c) => states[c.bid]?.termin_datum === todayStr)
+      .sort((a, b) => sortKey(a) - sortKey(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts, states, todayStr]);
+
+  const todayOrder = useMemo(() => {
+    const m: Record<string, number> = {};
+    todaySequence.forEach((c, i) => { m[c.bid] = i + 1; });
+    return m;
+  }, [todaySequence]);
+
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
+      if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       return true;
     }),
-    [contacts, states, filter, priorityOnly],
+    [contacts, states, filter, priorityOnly, heuteOnly, todayStr],
   );
 
   // Render markers
@@ -569,9 +607,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const isInArbeit = team && teamStatus === "in_arbeit";
       const isFertig = team && teamStatus === "fertig";
 
+      const orderNum = todayOrder[c.bid];
       let html: string;
       let sz: number;
-      if (isInArbeit) {
+      if (heuteOnly && orderNum) {
+        sz = 32;
+        const color = team ? teamColor : STATUS_COLOR[status];
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:system-ui,sans-serif;">${orderNum}</div>`;
+      } else if (isInArbeit) {
         sz = 24;
         html = `<div class="team-wrap"><div class="team-ring" style="background:${teamColor}"></div><div class="team-pin" style="background:${teamColor}"></div></div>`;
       } else if (isFertig) {
@@ -598,7 +641,24 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         markersRef.current[c.bid] = m;
       }
     });
-  }, [ready, visibleContacts, coords, states]);
+
+    // Route line for today's sequence
+    if (routeLineRef.current) {
+      map.removeLayer(routeLineRef.current);
+      routeLineRef.current = null;
+    }
+    if (heuteOnly && todaySequence.length >= 2) {
+      const pts = todaySequence
+        .map((c) => coords[c.bid])
+        .filter((p): p is { lat: number; lng: number } => !!p)
+        .map((p) => [p.lat, p.lng] as [number, number]);
+      if (pts.length >= 2) {
+        routeLineRef.current = L.polyline(pts, {
+          color: MAGENTA, weight: 4, opacity: 0.7, dashArray: "8,6",
+        }).addTo(map);
+      }
+    }
+  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
@@ -633,6 +693,16 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
         }}
       >
+        <button
+          onClick={() => setHeuteOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${heuteOnly ? "#0891b2" : "#e5e7eb"}`,
+            background: heuteOnly ? "#0891b2" : "white",
+            color: heuteOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >📅 Heute{heuteOnly && todaySequence.length ? ` (${todaySequence.length})` : ""}</button>
         <button
           onClick={() => setPriorityOnly((v) => !v)}
           style={{
@@ -684,6 +754,34 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           ⏳ Adressen werden geocodiert…
         </div>
       )}
+
+      {/* Heute info bar */}
+      {heuteOnly && todaySequence.length > 0 && (() => {
+        const first = todaySequence[0];
+        const last = todaySequence[todaySequence.length - 1];
+        const fs = states[first.bid];
+        const ls = states[last.bid];
+        const fmt = (s: typeof fs) => s?.termin_zeit || (s?.termin_slot ? s.termin_slot.toUpperCase() : "");
+        return (
+          <div
+            style={{
+              position: "absolute", top: 56, left: 8, right: 56, zIndex: 1000,
+              background: "rgba(8,145,178,0.95)", color: "white",
+              padding: "8px 12px", borderRadius: 10,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 12, fontWeight: 600,
+              lineHeight: 1.35,
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 13 }}>
+              📅 {todaySequence.length} Termin{todaySequence.length === 1 ? "" : "e"} heute
+            </div>
+            <div style={{ opacity: 0.95, marginTop: 2 }}>
+              Start {fmt(fs)} {first.strasse} {first.hnr}{first.hnr_zusatz}
+              {todaySequence.length > 1 && ` · Ende ${fmt(ls)} ${last.strasse} ${last.hnr}${last.hnr_zusatz}`}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Action buttons (stacked top-right) */}
       <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: "flex", flexDirection: "column", gap: 8 }}>
