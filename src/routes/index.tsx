@@ -1374,6 +1374,7 @@ function Index() {
           onOpenAuskundungHeute={() => { setActiveTab("objekte"); }}
           onOpenTeamDokuOffen={() => { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }}
           onOpenDoku={() => { setActiveTab("doku"); }}
+          onOpenNeuTelekom20={() => { setFilter(new Set(["neuTelekom20"])); setActiveTab("objekte"); }}
 
           onTeamAction={(team, action) => {
             setTeamFilter(team);
