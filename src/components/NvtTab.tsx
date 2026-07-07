@@ -111,6 +111,7 @@ export default function NvtTab({
   onOpenAuskundungHeute,
   onOpenTeamDokuOffen,
   onOpenDoku,
+  onOpenNeuTelekom20,
   onTeamAction,
   onPickKalenderDate,
   onOpenPlan,
@@ -121,6 +122,7 @@ export default function NvtTab({
   onOpenAuskundungHeute?: () => void;
   onOpenTeamDokuOffen?: () => void;
   onOpenDoku?: () => void;
+  onOpenNeuTelekom20?: () => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
   onOpenPlan?: () => void;
@@ -507,6 +509,72 @@ export default function NvtTab({
           </div>
         </div>
       )}
+
+      {/* ══════════════ NEU VON TELEKOM (Top 20) ══════════════ */}
+      {(() => {
+        const neu = [...contacts]
+          .filter((c) => !!c.auftrag_erstellt_am)
+          .sort((a, b) => String(b.auftrag_erstellt_am).localeCompare(String(a.auftrag_erstellt_am)))
+          .slice(0, 20);
+        if (neu.length === 0) return null;
+        const fmtDate = (iso: string | null | undefined) => {
+          if (!iso) return "";
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return "";
+          return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+        };
+        const zustBadge = (z: string) => {
+          if (z === "AGREED") return { bg: "#dcfce7", fg: "#166534", label: "✓" };
+          if (z === "REJECTED") return { bg: "#fee2e2", fg: "#991b1b", label: "✕" };
+          return { bg: "#fef3c7", fg: "#78350f", label: "?" };
+        };
+        return (
+          <div style={{ marginBottom: 14 }}>
+            <div style={SECTION_TITLE}>🆕 Neu von Telekom (Top 20)</div>
+            <div style={{ ...CARD, padding: 0, overflow: "hidden" }}>
+              <button
+                type="button"
+                onClick={() => onOpenNeuTelekom20?.()}
+                style={{
+                  width: "100%", textAlign: "left", cursor: onOpenNeuTelekom20 ? "pointer" : "default",
+                  background: "#eff6ff", border: "none", borderBottom: "1px solid #dbeafe",
+                  padding: "10px 14px", color: "#1e3a8a", fontSize: 13, fontWeight: 800,
+                }}
+              >
+                📋 {neu.length} neueste Datensätze — zur Liste →
+              </button>
+              <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                {neu.map((c) => {
+                  const b = zustBadge(c.zustimmung ?? "");
+                  return (
+                    <div key={c.bid} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "8px 14px", borderBottom: "1px solid #f1f5f9", fontSize: 13,
+                    }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        width: 20, height: 20, borderRadius: 6, background: b.bg, color: b.fg,
+                        fontWeight: 800, fontSize: 11, flexShrink: 0,
+                      }}>{b.label}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {c.strasse} {c.hnr}{c.hnr_zusatz ?? ""}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#64748b" }}>
+                          {c.nvt || "—"} · {c.typ || "—"} · WE {c.we ?? 0} / GE {c.ge ?? 0}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, flexShrink: 0 }}>
+                        {fmtDate(c.auftrag_erstellt_am)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══════════════ 2) AKTIONEN / WARNUNGEN ══════════════ */}
       {(klarfallCount > 0 || auskundungHeute.length > 0 || lowPrioNvts.length > 0) && (
