@@ -1011,6 +1011,7 @@ function Index() {
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
       orFilters.delete("offen");
+      orFilters.delete("neuTelekom20");
       if (orFilters.size > 0) {
         let matchesAny = false;
         if (orFilters.has("klarfall") && kf) matchesAny = true;
