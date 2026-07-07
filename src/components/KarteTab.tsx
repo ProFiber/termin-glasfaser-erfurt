@@ -527,11 +527,24 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     };
   }, []);
 
-  // Seed coords from contacts and geocode missing
+  // Seed coords from contacts + localStorage cache, then geocode missing
+  // Priorität: heutige Termine zuerst, parallel, ohne künstliche Pause.
   useEffect(() => {
+    const CACHE_KEY = "geocodeCache.v1";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cache: Record<string, { lat: number; lng: number }> = {};
+    try {
+      cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}") || {};
+    } catch { cache = {}; }
+
     const seed: Record<string, { lat: number; lng: number }> = {};
     contacts.forEach((c) => {
-      if (c.lat != null && c.lng != null) seed[c.bid] = { lat: c.lat, lng: c.lng };
+      if (c.lat != null && c.lng != null) {
+        seed[c.bid] = { lat: c.lat, lng: c.lng };
+      } else {
+        const cached = cache[addressOf(c)];
+        if (cached) seed[c.bid] = cached;
+      }
     });
     setCoords((prev) => ({ ...seed, ...prev }));
 
@@ -539,27 +552,52 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     (async () => {
       const missing = contacts.filter((c) => !(c.bid in seed));
       if (missing.length === 0) return;
+
+      // Heute-Kontakte zuerst geocodieren
+      const d = new Date();
+      const tStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const isToday = (c: Contact) => states[c.bid]?.termin_datum === tStr;
+      const queue = [...missing.filter(isToday), ...missing.filter((c) => !isToday(c))];
+
       setGeocoding(true);
-      for (const c of missing) {
-        if (cancelled) break;
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressOf(c))}`;
-          const res = await fetch(url, { headers: { "Accept-Language": "de" } });
-          const json = (await res.json()) as Array<{ lat: string; lon: string }>;
-          if (json && json[0]) {
-            const lat = parseFloat(json[0].lat);
-            const lng = parseFloat(json[0].lon);
-            if (!cancelled) setCoords((p) => ({ ...p, [c.bid]: { lat, lng } }));
+
+      const CONCURRENCY = 4;
+      let idx = 0;
+      let pendingWrites = 0;
+      const flushCache = () => {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch { /* ignore */ }
+      };
+
+      const worker = async () => {
+        while (!cancelled) {
+          const i = idx++;
+          if (i >= queue.length) return;
+          const c = queue[i];
+          const addr = addressOf(c);
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`;
+            const res = await fetch(url, { headers: { "Accept-Language": "de" } });
+            const json = (await res.json()) as Array<{ lat: string; lon: string }>;
+            if (json && json[0]) {
+              const lat = parseFloat(json[0].lat);
+              const lng = parseFloat(json[0].lon);
+              cache[addr] = { lat, lng };
+              pendingWrites++;
+              if (pendingWrites >= 5) { pendingWrites = 0; flushCache(); }
+              if (!cancelled) setCoords((p) => ({ ...p, [c.bid]: { lat, lng } }));
+            }
+          } catch (e) {
+            console.warn("geocode failed", c.bid, e);
           }
-        } catch (e) {
-          console.warn("geocode failed", c.bid, e);
         }
-        await sleep(200);
-      }
+      };
+
+      await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+      flushCache();
       if (!cancelled) setGeocoding(false);
     })();
     return () => { cancelled = true; };
-  }, [contacts]);
+  }, [contacts, states]);
 
   const todayStr = useMemo(() => {
     const d = new Date();
