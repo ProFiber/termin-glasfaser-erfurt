@@ -600,7 +600,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       if (!cancelled) setGeocoding(false);
     })();
     return () => { cancelled = true; };
-  }, [contacts, states]);
+  }, [contacts]);
 
   const todayStr = useMemo(() => {
     const d = new Date();
