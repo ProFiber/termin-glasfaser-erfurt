@@ -1072,6 +1072,13 @@ function Index() {
       return true;
     });
     return list.sort((a, b) => {
+      // Filter "neuTelekom20": nach Erstellungsdatum absteigend
+      if (filter.has("neuTelekom20")) {
+        const da = (a.auftrag_erstellt_am ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? "").toString();
+        if (da !== db) return db.localeCompare(da);
+        return 0;
+      }
       // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
       if (filter.size === 1 && filter.has("termin")) {
         const da = states[a.bid]?.termin_datum ?? "";
@@ -1103,7 +1110,7 @@ function Index() {
       const bi = Number.isNaN(nb) ? Number.MAX_SAFE_INTEGER : nb;
       if (ai !== bi) return ai - bi;
       return (a.hnr_zusatz ?? "").localeCompare(b.hnr_zusatz ?? "", "de");
-    });
+    }).slice(0, filter.has("neuTelekom20") ? 20 : Infinity);
   }, [contacts, states, filter, teamFilter, ortSel, nvtSel, streetSel, search, priorityOnly, urgentOnly, priorityFilter, focusBid, pinnedBid, listSort]);
 
   const appointments = useMemo(() => {
