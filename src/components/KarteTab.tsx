@@ -194,6 +194,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [ready, setReady] = useState(false);
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number }>>({});
   const [geocoding, setGeocoding] = useState(false);
+  const statesRef = useRef(states);
+  useEffect(() => { statesRef.current = states; }, [states]);
   const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [heuteOnly, setHeuteOnly] = useState(false);
