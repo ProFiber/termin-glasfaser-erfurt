@@ -526,9 +526,23 @@ export default function NvtTab({
           return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
         };
         const zustBadge = (z: string) => {
-          if (z === "AGREED") return { bg: "#dcfce7", fg: "#166534", label: "✓" };
-          if (z === "REJECTED") return { bg: "#fee2e2", fg: "#991b1b", label: "✕" };
-          return { bg: "#fef3c7", fg: "#78350f", label: "?" };
+          const v = (z ?? "").trim().toLowerCase();
+          if (v === "agreed" || v === "zugestimmt" || v === "ja") return { bg: "#dcfce7", fg: "#166534", label: "✓", title: "Zustimmung erteilt" };
+          if (v === "rejected" || v === "abgelehnt" || v === "nein") return { bg: "#fee2e2", fg: "#991b1b", label: "✕", title: "Zustimmung abgelehnt" };
+          return { bg: "#fef3c7", fg: "#78350f", label: "?", title: "Zustimmung ausstehend" };
+        };
+        const auskBadge = (c: Contact) => {
+          if (c.auskundung_erfolgt) return { bg: "#dcfce7", fg: "#166534", label: "A", title: "Auskundung erledigt" };
+          if (c.auskundung_von || c.auskundung_bis || c.auskundung_erforderlich) return { bg: "#ffedd5", fg: "#9a3412", label: "A", title: "Auskundung ausstehend" };
+          return { bg: "#f3f4f6", fg: "#6b7280", label: "—", title: "Keine Auskundung erforderlich" };
+        };
+        const statusBadge = (c: Contact) => {
+          const st = states[c.bid]?.status ?? "offen";
+          const ts = states[c.bid]?.team_status ?? "";
+          if (st === "erledigt") return { bg: "#dcfce7", fg: "#166534", border: "#86efac", label: "✓ erledigt", pulse: false };
+          if (ts === "in_arbeit") return { bg: "#fff7ed", fg: "#9a3412", border: "#fdba74", label: "🔨 Bau", pulse: true };
+          if (st === "termin") return { bg: "#eff6ff", fg: "#1e40af", border: "#93c5fd", label: "📅 Termin", pulse: false };
+          return { bg: "#f3f4f6", fg: "#6b7280", border: "#e5e7eb", label: "⚪ offen", pulse: false };
         };
         return (
           <div style={{ marginBottom: 14 }}>
@@ -545,29 +559,52 @@ export default function NvtTab({
               >
                 📋 {neu.length} neueste Datensätze — zur Liste →
               </button>
-              <div style={{ maxHeight: 320, overflowY: "auto" }}>
+              <div style={{ maxHeight: 360, overflowY: "auto" }}>
                 {neu.map((c) => {
-                  const b = zustBadge(c.zustimmung ?? "");
+                  const zB = zustBadge(c.zustimmung ?? "");
+                  const aB = auskBadge(c);
+                  const sB = statusBadge(c);
                   return (
-                    <div key={c.bid} style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "8px 14px", borderBottom: "1px solid #f1f5f9", fontSize: 13,
-                    }}>
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        width: 20, height: 20, borderRadius: 6, background: b.bg, color: b.fg,
-                        fontWeight: 800, fontSize: 11, flexShrink: 0,
-                      }}>{b.label}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {c.strasse} {c.hnr}{c.hnr_zusatz ?? ""}
+                    <div
+                      key={c.bid}
+                      onClick={() => onOpenContact?.(c.bid)}
+                      role={onOpenContact ? "button" : undefined}
+                      tabIndex={onOpenContact ? 0 : undefined}
+                      onKeyDown={(e) => { if (onOpenContact && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenContact(c.bid); }}}
+                      style={{
+                        padding: "8px 14px", borderBottom: "1px solid #f1f5f9", fontSize: 13,
+                        cursor: onOpenContact ? "pointer" : "default",
+                        background: "white",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {c.strasse} {c.hnr}{c.hnr_zusatz ?? ""}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 11, color: "#64748b" }}>
-                          {c.nvt || "—"} · {c.typ || "—"} · WE {c.we ?? 0} / GE {c.ge ?? 0}
+                        <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, flexShrink: 0 }}>
+                          {fmtDate(c.auftrag_erstellt_am)}
                         </div>
                       </div>
-                      <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, flexShrink: 0 }}>
-                        {fmtDate(c.auftrag_erstellt_am)}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 3,
+                          background: sB.bg, color: sB.fg, border: `1px solid ${sB.border}`,
+                          borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 800,
+                          animation: sB.pulse ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
+                        }}>{sB.label}</span>
+                        <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>{c.nvt || "—"}</span>
+                        <span title={zB.title} style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 20, height: 20, borderRadius: 6, background: zB.bg, color: zB.fg,
+                          fontWeight: 800, fontSize: 11,
+                        }}>{zB.label}</span>
+                        <span title={aB.title} style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 20, height: 20, borderRadius: 6, background: aB.bg, color: aB.fg,
+                          fontWeight: 800, fontSize: 11,
+                        }}>{aB.label}</span>
                       </div>
                     </div>
                   );
