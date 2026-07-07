@@ -558,7 +558,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       // Heute-Kontakte zuerst geocodieren
       const d = new Date();
       const tStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const isToday = (c: Contact) => states[c.bid]?.termin_datum === tStr;
+      const s = statesRef.current;
+      const isToday = (c: Contact) => s[c.bid]?.termin_datum === tStr;
       const queue = [...missing.filter(isToday), ...missing.filter((c) => !isToday(c))];
 
       setGeocoding(true);
