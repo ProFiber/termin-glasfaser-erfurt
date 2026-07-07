@@ -1375,6 +1375,7 @@ function Index() {
           onOpenTeamDokuOffen={() => { setFilter(new Set(["dokuOffen"])); setActiveTab("objekte"); }}
           onOpenDoku={() => { setActiveTab("doku"); }}
           onOpenNeuTelekom20={() => { setFilter(new Set(["neuTelekom20"])); setActiveTab("objekte"); }}
+          onOpenContact={(bid) => openContactInList(bid)}
 
           onTeamAction={(team, action) => {
             setTeamFilter(team);
