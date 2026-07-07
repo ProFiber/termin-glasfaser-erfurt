@@ -112,6 +112,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen,
   onOpenDoku,
   onOpenNeuTelekom20,
+  onOpenContact,
   onTeamAction,
   onPickKalenderDate,
   onOpenPlan,
@@ -123,6 +124,7 @@ export default function NvtTab({
   onOpenTeamDokuOffen?: () => void;
   onOpenDoku?: () => void;
   onOpenNeuTelekom20?: () => void;
+  onOpenContact?: (bid: string) => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
   onOpenPlan?: () => void;
