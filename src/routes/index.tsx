@@ -1568,8 +1568,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1579,6 +1579,8 @@ function Index() {
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
+              : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
+              : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
