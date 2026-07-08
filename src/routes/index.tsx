@@ -1847,6 +1847,43 @@ function Index() {
                     plz={c.plz}
                     ort={c.ort}
                   />
+                  {/* Anschluss-Typ (Schätzung Grabenlänge) */}
+                  <div style={{ margin: "10px 0 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#475569", letterSpacing: 1, marginBottom: 6 }}>
+                      ⛏️ ANSCHLUSS-LÄNGE (SCHÄTZUNG)
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      {([
+                        { v: "kurz", label: "🟢 Kurz\n<10 m", bg: "#16a34a", bgIn: "#f0fdf4", fg: "#166534" },
+                        { v: "lang", label: "🟠 Lang\n≥10 m", bg: "#ea580c", bgIn: "#fff7ed", fg: "#9a3412" },
+                      ] as const).map((opt) => {
+                        const active = c.anschluss_typ === opt.v;
+                        return (
+                          <button
+                            key={opt.v}
+                            onClick={() => patchContact(c.bid, { anschluss_typ: active ? null : opt.v })}
+                            style={{
+                              padding: "10px 6px",
+                              borderRadius: 8,
+                              border: `2px solid ${active ? opt.bg : "#e2e8f0"}`,
+                              background: active ? opt.bg : opt.bgIn,
+                              color: active ? "#fff" : opt.fg,
+                              fontSize: 13,
+                              fontWeight: 800,
+                              lineHeight: 1.25,
+                              whiteSpace: "pre-line",
+                              cursor: "pointer",
+                            }}
+                          >{opt.label}</button>
+                        );
+                      })}
+                    </div>
+                    {c.anschluss_typ && (
+                      <div style={{ marginTop: 6, textAlign: "center", fontSize: 11, color: "#64748b" }}>
+                        Erneut klicken = zurücksetzen
+                      </div>
+                    )}
+                  </div>
                   {(() => {
                     const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
