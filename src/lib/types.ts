@@ -24,6 +24,7 @@ export type Contact = {
   auskundung_ergebnis?: string;
   auftrag_erstellt_am?: string | null;
   kls_id?: string | null;
+  anschluss_typ?: string | null;
 };
 
 export type CallStatus =
