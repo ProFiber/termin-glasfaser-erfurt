@@ -1778,6 +1778,16 @@ function Index() {
                         {!ai.required && ai.plan && (
                           <span style={{ fontSize: 11, color: "#0891b2", fontWeight: 700 }}>🔍 Auskundung: {ai.plan}</span>
                         )}
+                        {c.anschluss_typ === "kurz" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#16a34a", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🟢 KURZ &lt;10m
+                          </span>
+                        )}
+                        {c.anschluss_typ === "lang" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#ea580c", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🟠 LANG ≥10m
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
