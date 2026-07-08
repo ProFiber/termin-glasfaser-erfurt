@@ -1283,6 +1283,17 @@ function Index() {
     [contacts, states],
   );
 
+  const kurzAnschlussCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.anschluss_typ === "kurz" ? 1 : 0), 0),
+    [contacts],
+  );
+  const langAnschlussCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.anschluss_typ === "lang" ? 1 : 0), 0),
+    [contacts],
+  );
+
+
+
   const ohneZustimmungCount = useMemo(
     () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0), 0),
     [contacts],
