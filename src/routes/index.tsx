@@ -932,7 +932,22 @@ function Index() {
     }
   }
 
-  // Kontakte gefiltert nach Ort (Basis für NVT-/Straßenlisten)
+  async function patchContact(bid: string, changes: Partial<Pick<Contact, "anschluss_typ">>) {
+    // Optimistisch aktualisieren
+    setContacts((cs) => cs.map((c) => (c.bid === bid ? { ...c, ...changes } : c)));
+    showFlash("saving");
+    const { error } = await supabase
+      .from("contacts")
+      .update(changes as never)
+      .eq("bid", bid);
+    if (error) {
+      console.error("patchContact failed", error);
+      showFlash("error");
+    } else {
+      showFlash("saved");
+    }
+  }
+
   const ortContacts = useMemo(
     () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
     [contacts, ortSel]
