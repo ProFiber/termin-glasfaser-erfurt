@@ -932,7 +932,22 @@ function Index() {
     }
   }
 
-  // Kontakte gefiltert nach Ort (Basis für NVT-/Straßenlisten)
+  async function patchContact(bid: string, changes: Partial<Pick<Contact, "anschluss_typ">>) {
+    // Optimistisch aktualisieren
+    setContacts((cs) => cs.map((c) => (c.bid === bid ? { ...c, ...changes } : c)));
+    showFlash("saving");
+    const { error } = await supabase
+      .from("contacts")
+      .update(changes as never)
+      .eq("bid", bid);
+    if (error) {
+      console.error("patchContact failed", error);
+      showFlash("error");
+    } else {
+      showFlash("saved");
+    }
+  }
+
   const ortContacts = useMemo(
     () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
     [contacts, ortSel]
@@ -1022,6 +1037,8 @@ function Index() {
           if (fertig && offen) matchesAny = true;
         }
         if (orFilters.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
+        if (orFilters.has("kurzAnschluss") && c.anschluss_typ === "kurz") matchesAny = true;
+        if (orFilters.has("langAnschluss") && c.anschluss_typ === "lang") matchesAny = true;
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
@@ -1265,6 +1282,17 @@ function Index() {
     () => contacts.reduce((n, c) => n + (states[c.bid]?.kurz_kandidat ? 1 : 0), 0),
     [contacts, states],
   );
+
+  const kurzAnschlussCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.anschluss_typ === "kurz" ? 1 : 0), 0),
+    [contacts],
+  );
+  const langAnschlussCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.anschluss_typ === "lang" ? 1 : 0), 0),
+    [contacts],
+  );
+
+
 
   const ohneZustimmungCount = useMemo(
     () => contacts.reduce((n, c) => n + (zustimmungStatus(c.zustimmung, c.bid) === "fehlt" ? 1 : 0), 0),
@@ -1540,8 +1568,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1551,6 +1579,8 @@ function Index() {
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
+              : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
+              : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
@@ -1748,6 +1778,16 @@ function Index() {
                         {!ai.required && ai.plan && (
                           <span style={{ fontSize: 11, color: "#0891b2", fontWeight: 700 }}>🔍 Auskundung: {ai.plan}</span>
                         )}
+                        {c.anschluss_typ === "kurz" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#16a34a", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🟢 KURZ &lt;10m
+                          </span>
+                        )}
+                        {c.anschluss_typ === "lang" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#ea580c", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
+                            🟠 LANG ≥10m
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
@@ -1807,6 +1847,43 @@ function Index() {
                     plz={c.plz}
                     ort={c.ort}
                   />
+                  {/* Anschluss-Typ (Schätzung Grabenlänge) */}
+                  <div style={{ margin: "10px 0 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#475569", letterSpacing: 1, marginBottom: 6 }}>
+                      ⛏️ ANSCHLUSS-LÄNGE (SCHÄTZUNG)
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      {([
+                        { v: "kurz", label: "🟢 Kurz\n<10 m", bg: "#16a34a", bgIn: "#f0fdf4", fg: "#166534" },
+                        { v: "lang", label: "🟠 Lang\n≥10 m", bg: "#ea580c", bgIn: "#fff7ed", fg: "#9a3412" },
+                      ] as const).map((opt) => {
+                        const active = c.anschluss_typ === opt.v;
+                        return (
+                          <button
+                            key={opt.v}
+                            onClick={() => patchContact(c.bid, { anschluss_typ: active ? null : opt.v })}
+                            style={{
+                              padding: "10px 6px",
+                              borderRadius: 8,
+                              border: `2px solid ${active ? opt.bg : "#e2e8f0"}`,
+                              background: active ? opt.bg : opt.bgIn,
+                              color: active ? "#fff" : opt.fg,
+                              fontSize: 13,
+                              fontWeight: 800,
+                              lineHeight: 1.25,
+                              whiteSpace: "pre-line",
+                              cursor: "pointer",
+                            }}
+                          >{opt.label}</button>
+                        );
+                      })}
+                    </div>
+                    {c.anschluss_typ && (
+                      <div style={{ marginTop: 6, textAlign: "center", fontSize: 11, color: "#64748b" }}>
+                        Erneut klicken = zurücksetzen
+                      </div>
+                    )}
+                  </div>
                   {(() => {
                     const zSt = zustimmungStatus(c.zustimmung, c.bid);
                     const ai = auskundungInfo(c);
