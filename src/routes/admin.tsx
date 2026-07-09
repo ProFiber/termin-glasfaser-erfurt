@@ -578,11 +578,24 @@ function Admin() {
       const parseDate = (s: string): string | null => {
         const t = (s || "").trim();
         if (!t) return null;
-        // try german "19. Juni 2026, 21:05:37"
-        const monate: Record<string, number> = { januar:0,februar:1,märz:2,maerz:2,april:3,mai:4,juni:5,juli:6,august:7,september:8,oktober:9,november:10,dezember:11 };
-        const m = t.match(/(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s*(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+        // full + abbreviated German months (Telekom-Export nutzt z.B. "Aug.", "Sept.", "Okt.", "Dez.")
+        const monate: Record<string, number> = {
+          januar:0, jan:0,
+          februar:1, feb:1,
+          märz:2, maerz:2, mär:2, maer:2, mrz:2,
+          april:3, apr:3,
+          mai:4,
+          juni:5, jun:5,
+          juli:6, jul:6,
+          august:7, aug:7,
+          september:8, sept:8, sep:8,
+          oktober:9, okt:9,
+          november:10, nov:10,
+          dezember:11, dez:11,
+        };
+        const m = t.match(/(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\.?\s*(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
         if (m) {
-          const mo = monate[m[2].toLowerCase()];
+          const mo = monate[m[2].toLowerCase().replace(/\.$/, "")];
           if (mo !== undefined) {
             const d = new Date(Date.UTC(+m[3], mo, +m[1], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)));
             return d.toISOString();
