@@ -546,16 +546,19 @@ function Admin() {
       }
       append(`${rows.length} Property-Zeilen gelesen`);
 
-      // Load existing contacts → match by FoL-ID (bid) or address
+      // Load existing contacts → match by FoL-ID (bid) or address, plus fields we compare against
       const { data: contacts, error: cErr } = await supabase
-        .from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+        .from("contacts")
+        .select("bid,strasse,hnr,hnr_zusatz,plz,ort,typ,we,ge,nvt,zustimmung,auskundung_erforderlich,auskundung_status,auskundung_von,auskundung_bis,auskundung_erfolgt,auskundung_ergebnis,auftrag_erstellt_am")
+        .range(0, 9999);
       if (cErr) { append(`❌ ${cErr.message}`); setBusy(false); return; }
-      const byBid = new Set<string>();
+      const byBid = new Map<string, Record<string, unknown>>();
       const norm = (s: string) => (s ?? "").trim().toLowerCase();
       const addrMap = new Map<string, string>();
-      for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
-        byBid.add(c.bid);
-        addrMap.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+      for (const c of (contacts ?? []) as Record<string, unknown>[]) {
+        const bid = String(c.bid);
+        byBid.set(bid, c);
+        addrMap.set(`${norm(String(c.strasse ?? ""))}|${norm(String(c.hnr ?? ""))}|${norm(String(c.hnr_zusatz ?? ""))}`, bid);
       }
 
       const zustMap = (v: string): string => {
