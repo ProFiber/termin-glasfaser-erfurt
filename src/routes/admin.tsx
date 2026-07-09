@@ -593,7 +593,8 @@ function Admin() {
       };
 
       const payload: Record<string, unknown>[] = [];
-      let newCount = 0, updCount = 0, skip = 0;
+      let newCount = 0, updCount = 0, unchangedCount = 0, skip = 0;
+      const newBids: string[] = [];
       for (const r of rows) {
         const kls = (r["KLS ID"] ?? "").toString().trim();
         const fol = (r["FoL-ID"] ?? "").toString().trim();
@@ -612,9 +613,7 @@ function Admin() {
           else bid = `KLS-${kls}`;
         }
 
-        if (byBid.has(bid)) updCount++; else newCount++;
-
-        payload.push({
+        const row: Record<string, unknown> = {
           bid,
           strasse, hnr, hnr_zusatz: hnr_z,
           plz: (r["Postleitzahl"] ?? "").trim(),
@@ -630,9 +629,35 @@ function Admin() {
           auskundung_bis: parseDate(r["Auskundung Ende"] ?? ""),
           auskundung_erfolgt: (r["Auskundung erfolgt"] ?? "").trim().toLowerCase() === "true",
           auskundung_ergebnis: (r["Auskundungs-Ergebnis"] ?? "").trim(),
-        });
+          auftrag_erstellt_am: parseDate(r["Erstellungsdatum"] ?? ""),
+        };
+
+        const existing = byBid.get(bid);
+        if (!existing) {
+          newCount++;
+          newBids.push(bid);
+          payload.push(row);
+        } else {
+          // Compare relevant fields; only send if something actually changed
+          const cmpKeys = ["typ","we","ge","nvt","zustimmung","auskundung_erforderlich","auskundung_status","auskundung_erfolgt","auskundung_ergebnis"];
+          const dateKeys = ["auskundung_von","auskundung_bis","auftrag_erstellt_am"];
+          let changed = false;
+          for (const k of cmpKeys) {
+            if (String(existing[k] ?? "") !== String(row[k] ?? "")) { changed = true; break; }
+          }
+          if (!changed) {
+            for (const k of dateKeys) {
+              const a = existing[k] ? new Date(existing[k] as string).getTime() : 0;
+              const b = row[k] ? new Date(row[k] as string).getTime() : 0;
+              if (a !== b) { changed = true; break; }
+            }
+          }
+          if (changed) { updCount++; payload.push(row); }
+          else unchangedCount++;
+        }
       }
-      append(`✓ ${payload.length} zu importieren · ${newCount} neu · ${updCount} update · ${skip} übersprungen`);
+      append(`✓ ${payload.length} zu schreiben · ${newCount} neu · ${updCount} geändert · ${unchangedCount} unverändert · ${skip} übersprungen`);
+      if (newBids.length) append(`  🆕 Neue BIDs: ${newBids.join(", ")}`);
 
       let ok = 0, fail = 0;
       const CHUNK = 60;
@@ -642,7 +667,7 @@ function Admin() {
         if (error) { fail += part.length; append(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`); }
         else { ok += part.length; append(`  ✓ Chunk ${i / CHUNK + 1}: ${part.length} ok`); }
       }
-      append(`✅ Fertig: ${ok} importiert, ${fail} fehlgeschlagen (${newCount} neu angelegt)`);
+      append(`✅ Fertig: ${ok} geschrieben, ${fail} fehlgeschlagen (${newCount} neu · ${updCount} geändert)`);
     } catch (e) {
       append(`❌ ${(e as Error).message}`);
     } finally {
