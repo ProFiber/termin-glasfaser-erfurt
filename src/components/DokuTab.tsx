@@ -56,7 +56,12 @@ function emptyDoku(bid: string): DokuState {
 type SortMode = "az" | "nvt" | "manual";
 const MANUAL_KEY = "doku_manual_order";
 
-export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }: Props) {
+export default function DokuTab({ contacts: contactsProp, callStates, focusBid, onClearFocus }: Props) {
+  const [quelleOverride, setQuelleOverride] = useState<Record<string, "gf_plus" | "bulk">>({});
+  const contacts = useMemo(
+    () => contactsProp.map((c) => quelleOverride[c.bid] ? { ...c, auftragsquelle: quelleOverride[c.bid] } : c),
+    [contactsProp, quelleOverride],
+  );
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
