@@ -230,6 +230,8 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     const foto = classify(row[15]);
     const proto = classify(row[16]);
     const sp = classify(row[17]);
+    // Spalte L (Index 11) = GF+  → true wenn "Ja", sonst false (Nein/leer = kein Telekom-Auftrag im GF+ Portal)
+    const gfPlus = classify(row[11]);
     if (foto.state !== "ok" || proto.state !== "ok" || sp.state !== "ok") {
       dokuIssues.push({
         bid,
@@ -248,6 +250,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       foto: foto.val,
       protokoll: proto.val,
       sharepoint: sp.val,
+      gf_plus: gfPlus.val,
       // Neue Spalte T = "Eingereicht am" (row[19]) – Rohfeld für Doku-Status-Logik
       eingereicht_am: toDate(row[19]),
       aufmass_am: toDate(row[20]),
