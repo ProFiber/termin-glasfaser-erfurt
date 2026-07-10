@@ -210,7 +210,7 @@ export default function NvtTab({
   // Zahlungspipeline — Stufen aus Rohdaten (Excel-Datumsfelder + pruefung_status) ableiten
   const pipeline = useMemo(() => {
     let erledigt = 0, eingereicht = 0, nachforderung = 0, freigegeben = 0, verguetet = 0;
-    let auskundung = 0, foto = 0, protokoll = 0, zustimmung = 0;
+    let auskundung = 0, foto = 0, protokoll = 0, zustimmung = 0, gfPlus = 0;
     for (const c of contacts) {
       const cs = states[c.bid];
       if (!cs || cs.status !== "erledigt") continue;
@@ -229,8 +229,10 @@ export default function NvtTab({
       if (!d?.protokoll) protokoll++;
       const z = (c.zustimmung || "").trim().toLowerCase();
       if (!z || z === "nein" || z === "offen") zustimmung++;
+      // Kein GF+ Auftrag: Objekt gebaut, aber nicht im Telekom Glasfaser-Plus-Portal
+      if (d && d.gf_plus === false) gfPlus++;
     }
-    return { erledigt, eingereicht, nachforderung, freigegeben, verguetet, auskundung, foto, protokoll, zustimmung };
+    return { erledigt, eingereicht, nachforderung, freigegeben, verguetet, auskundung, foto, protokoll, zustimmung, gfPlus };
   }, [contacts, states, dokuStates]);
 
 
@@ -525,9 +527,10 @@ export default function NvtTab({
                 </div>
               ))}
             </div>
-            {(pipeline.auskundung + pipeline.foto + pipeline.protokoll + pipeline.zustimmung) > 0 && (
+            {(pipeline.auskundung + pipeline.foto + pipeline.protokoll + pipeline.zustimmung + pipeline.gfPlus) > 0 && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #f1f5f9", display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11, fontWeight: 700, color: "#475569" }}>
                 {pipeline.auskundung > 0 && <span style={{ color: "#dc2626" }}>🚫 Ohne Auskundung: {pipeline.auskundung}</span>}
+                {pipeline.gfPlus > 0 && <span style={{ color: "#ea580c" }}>🏷️ Kein GF+ Auftrag: {pipeline.gfPlus}</span>}
                 {pipeline.foto > 0 && <span>📸 Foto: {pipeline.foto}</span>}
                 {pipeline.protokoll > 0 && <span>📄 Protokoll: {pipeline.protokoll}</span>}
                 {pipeline.zustimmung > 0 && <span>✍️ Zustimmung: {pipeline.zustimmung}</span>}
