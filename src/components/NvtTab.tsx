@@ -47,10 +47,15 @@ function nextWorkday(iso: string): string {
 }
 
 const WEEKDAY_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const WEEKDAY_LONG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 function formatDayLabel(iso: string): string {
   const d = new Date(iso + "T00:00:00");
   return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
 }
+function weekdayLong(iso: string): string {
+  return WEEKDAY_LONG[new Date(iso + "T00:00:00").getDay()];
+}
+
 
 
 function isSameLocalDay(iso: string | null | undefined, ref: string): boolean {
