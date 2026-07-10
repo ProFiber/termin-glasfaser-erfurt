@@ -1000,6 +1000,7 @@ type KacheldefProps = {
     zustimmungFehlt: Contact[];
     nachforderung: Contact[];
     manuell: Contact[];
+    ohneAuftrag: Contact[];
   };
   noMatchCount: number;
   active: KlarfallKey | null;
@@ -1017,7 +1018,7 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
     onClick: () => void;
   }> = [
     { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
-    { key: "ohneAuftrag", icon: "🏷️", label: "Ohne Auftrag", count: noMatchCount, color: "#ea580c", onClick: () => onShowNoMatch() },
+    { key: "ohneAuftrag", icon: "🏷️", label: "Kein GF+ Auftrag", count: kategorien.ohneAuftrag.length, color: "#ea580c", onClick: () => onSelect("ohneAuftrag") },
     { key: "nachforderung", icon: "⚠️", label: "Nachforderung AG", count: kategorien.nachforderung.length, color: "#f59e0b", onClick: () => onSelect("nachforderung") },
     { key: "fotoFehlt", icon: "📸", label: "Foto fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
     { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
@@ -1043,7 +1044,7 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
         {tiles.map((t) => {
           const isActive = active === t.key;
-          const dim = t.count === 0 && t.key !== "ohneAuftrag";
+          const dim = t.count === 0;
           return (
             <button
               key={t.key}
