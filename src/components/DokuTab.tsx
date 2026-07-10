@@ -45,6 +45,7 @@ function emptyDoku(bid: string): DokuState {
     foto: false,
     protokoll: false,
     sharepoint: false,
+    gf_plus: true,
     durchfuehrt_von: "",
     durchfuehrt_am: null,
     notiz: "",
