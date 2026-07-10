@@ -193,6 +193,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     const zustimmungFehlt: Contact[] = [];
     const nachforderung: Contact[] = [];
     const manuell: Contact[] = [];
+    const ohneAuftrag: Contact[] = []; // erledigt, aber kein GF+ Eintrag im Telekom-Portal
     for (const c of contacts) {
       const cs = callStates[c.bid];
       if (!cs) continue;
@@ -208,8 +209,9 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
       if (!z || z === "nein" || z === "offen") zustimmungFehlt.push(c);
       if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
       if (cs.klarfall) manuell.push(c);
+      if (d && d.gf_plus === false) ohneAuftrag.push(c);
     }
-    return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell };
+    return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell, ohneAuftrag };
   }, [contacts, callStates, dokuStates]);
 
   // Doku-Status pro erledigtem HA (live berechnet aus Excel-Rohfeldern)
@@ -257,7 +259,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
     if (!klarfallFilter) return null;
     const map: Record<KlarfallKey, Contact[]> = {
       auskundung: kategorien.auskundung,
-      ohneAuftrag: [],
+      ohneAuftrag: kategorien.ohneAuftrag,
       fotoFehlt: kategorien.fotoFehlt,
       protokollFehlt: kategorien.protokollFehlt,
       zustimmungFehlt: kategorien.zustimmungFehlt,
