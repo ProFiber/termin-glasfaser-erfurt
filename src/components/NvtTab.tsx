@@ -443,8 +443,9 @@ export default function NvtTab({
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
           {[
             { label: "Heute", count: einsatzPlanung.heute, ampel: ampelHeute, date: today },
-            { label: "Morgen", count: einsatzPlanung.morgen, ampel: ampelMorgen, date: morgenStr },
-            { label: "Übermorgen", count: einsatzPlanung.uebermorgen, ampel: ampelUebermorgen, date: uebermorganStr },
+            { label: weekdayLong(morgenStr), count: einsatzPlanung.morgen, ampel: ampelMorgen, date: morgenStr },
+            { label: weekdayLong(uebermorganStr), count: einsatzPlanung.uebermorgen, ampel: ampelUebermorgen, date: uebermorganStr },
+
           ].map(({ label, count, ampel, date }) => {
             const clickable = !!onPickKalenderDate;
             return (
