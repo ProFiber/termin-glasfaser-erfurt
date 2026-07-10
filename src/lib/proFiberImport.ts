@@ -213,8 +213,12 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   }
 
   const payload: Record<string, unknown>[] = [];
+  const syntheticContacts: Record<string, unknown>[] = [];
   const dokuIssues: DokuIssue[] = [];
-  let unmatched = 0, skipProj = 0, skipStatus = 0;
+  let unmatched = 0, skipProj = 0, skipStatus = 0, synthCreated = 0;
+  const slug = (s: string) => s.toLowerCase()
+    .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
   for (const row of dataRows) {
     const projekt = str(row[0]);
     if (!/schm[uü]cke/i.test(projekt)) { skipProj++; continue; }
@@ -225,8 +229,29 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     if (!strasse || !nr || !statusRaw) continue;
     const mapped = statusMap[statusRaw] ?? "";
     if (mapped !== "erledigt") { skipStatus++; continue; }
-    const bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
-    if (!bid) { unmatched++; continue; }
+    let bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
+    if (!bid) {
+      // Kein Contact-Match → gebaut ohne GF+ Auftrag (Telekom hat kein KLS angelegt
+      // oder alten Auftrag längst gelöscht). Synthetischen Kontakt anlegen, damit
+      // das Objekt in der App als "Kein GF+ Auftrag"-Klärfall auftaucht.
+      bid = `OHNE-${slug(strasse)}-${nr}${abc ? "-" + slug(abc) : ""}`;
+      const nvt = str(row[4]);
+      syntheticContacts.push({
+        bid, strasse, hnr: nr, hnr_zusatz: abc,
+        plz: "", ort: "An der Schmücke",
+        name: "", email: "", mobil: "", festnetz: "",
+        typ: "", we: 0, ge: 0,
+        zustimmung: "AGREED",
+        nvt: nvt || "Schmücke",
+        auskundung_erforderlich: false,
+        auskundung_status: "erfolgt",
+        auskundung_erfolgt: true,
+        auskundung_ergebnis: "",
+      });
+      map.set(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`, bid);
+      synthCreated++;
+      unmatched++;
+    }
     const foto = classify(row[15]);
     const proto = classify(row[16]);
     const sp = classify(row[17]);
@@ -251,7 +276,6 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
       protokoll: proto.val,
       sharepoint: sp.val,
       gf_plus: gfPlus.val,
-      // Neue Spalte T = "Eingereicht am" (row[19]) – Rohfeld für Doku-Status-Logik
       eingereicht_am: toDate(row[19]),
       aufmass_am: toDate(row[20]),
       gutschrift_nr: str(row[21]),
@@ -261,8 +285,21 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     });
   }
   const badFmt = dokuIssues.filter(i => i.foto === "format" || i.protokoll === "format" || i.sharepoint === "format").length;
-  log(`  → ${payload.length} erledigte Schmücke-Zeilen · ${skipProj} andere Projekte · ${skipStatus} andere Status · ${unmatched} ohne Match`);
+  log(`  → ${payload.length} erledigte Schmücke-Zeilen · ${skipProj} andere Projekte · ${skipStatus} andere Status · ${unmatched} ohne Contact-Match (davon ${synthCreated} als synthetischer Kontakt angelegt)`);
   log(`  📋 Doku-Check: ${dokuIssues.length} unvollständig (${badFmt} Format-Fehler)`);
+
+  // Erst synthetische Kontakte anlegen, dann call_states schreiben (FK würde sonst greifen)
+  if (syntheticContacts.length > 0) {
+    const CHUNK_C = 60;
+    let cOk = 0;
+    for (let i = 0; i < syntheticContacts.length; i += CHUNK_C) {
+      const part = syntheticContacts.slice(i, i + CHUNK_C);
+      const { error } = await supabase.rpc("bulk_import_contacts", { payload: part as never });
+      if (error) log(`  ⚠ Synth-Kontakt Chunk: ${error.message}`);
+      else cOk += part.length;
+    }
+    log(`  🏷️ ${cOk} synthetische "Ohne Auftrag"-Kontakte gespeichert`);
+  }
 
   let ok = 0;
   const CHUNK = 100;
