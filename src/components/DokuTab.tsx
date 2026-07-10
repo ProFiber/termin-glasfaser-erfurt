@@ -834,6 +834,36 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
                   />
                 </div>
 
+                {/* Auftragsquelle */}
+                <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Quelle:</span>
+                  {(["gf_plus", "bulk"] as const).map((q) => {
+                    const current = c.auftragsquelle ?? "gf_plus";
+                    const active = current === q;
+                    return (
+                      <button
+                        key={q}
+                        onClick={async () => {
+                          setQuelleOverride((prev) => ({ ...prev, [c.bid]: q }));
+                          showFlash("saving");
+                          const { error } = await supabase.from("contacts").update({ auftragsquelle: q } as never).eq("bid", c.bid);
+                          showFlash(error ? "error" : "saved");
+                        }}
+                        style={{
+                          padding: "4px 10px", borderRadius: 999,
+                          border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
+                          background: active ? MAGENTA : "white",
+                          color: active ? "white" : "#475569",
+                          fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        {q === "gf_plus" ? "GF+" : "Bulk"}
+                      </button>
+                    );
+                  })}
+                </div>
+
+
                 {anyActive && (
                   <>
                     <div style={{ marginTop: 12, fontSize: 12, fontWeight: 700, color: "#475569" }}>
