@@ -211,6 +211,7 @@ export type Database = {
           durchfuehrt_am: string | null
           durchfuehrt_von: string
           foto: boolean
+          gf_plus: boolean
           notiz: string
           protokoll: boolean
           sharepoint: boolean
@@ -221,6 +222,7 @@ export type Database = {
           durchfuehrt_am?: string | null
           durchfuehrt_von?: string
           foto?: boolean
+          gf_plus?: boolean
           notiz?: string
           protokoll?: boolean
           sharepoint?: boolean
@@ -231,6 +233,7 @@ export type Database = {
           durchfuehrt_am?: string | null
           durchfuehrt_von?: string
           foto?: boolean
+          gf_plus?: boolean
           notiz?: string
           protokoll?: boolean
           sharepoint?: boolean

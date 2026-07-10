@@ -72,6 +72,7 @@ export type DokuState = {
   foto: boolean;
   protokoll: boolean;
   sharepoint: boolean;
+  gf_plus: boolean;
   durchfuehrt_von: string;
   durchfuehrt_am: string | null;
   notiz: string;

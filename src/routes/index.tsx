@@ -798,13 +798,16 @@ function Index() {
 
   // Initial load
   const [haPreis, setHaPreis] = useState<number>(390);
+  // BIDs erledigter Objekte, die NICHT im Telekom GF+ Portal sind (doku_states.gf_plus = false)
+  const [ohneGfPlus, setOhneGfPlus] = useState<Set<string>>(new Set());
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: cs, error: e1 }, { data: ss, error: e2 }, { data: zl }] = await Promise.all([
+      const [{ data: cs, error: e1 }, { data: ss, error: e2 }, { data: zl }, { data: doku }] = await Promise.all([
         supabase.from("contacts").select("*").order("strasse").order("hnr"),
         supabase.from("call_states").select("*"),
         supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle(),
+        supabase.from("doku_states").select("bid,gf_plus").eq("gf_plus", false),
       ]);
       if (cancelled) return;
       if (e1 || e2) {
@@ -816,11 +819,31 @@ function Index() {
       const map: Record<string, CallState> = {};
       (ss as CallState[] | null)?.forEach((s) => (map[s.bid] = s));
       setStates(map);
+      setOhneGfPlus(new Set(((doku as { bid: string }[] | null) ?? []).map((d) => d.bid)));
       const p = Number((zl as { ziel_eur?: number } | null)?.ziel_eur);
       if (isFinite(p) && p > 0) setHaPreis(p);
       setLoading(false);
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // Realtime: gf_plus-Set live halten
+  useEffect(() => {
+    const ch = supabase
+      .channel("doku_states_gfplus")
+      .on("postgres_changes", { event: "*", schema: "public", table: "doku_states" }, (payload) => {
+        const row = (payload.new ?? payload.old) as { bid: string; gf_plus: boolean } | null;
+        if (!row?.bid) return;
+        setOhneGfPlus((prev) => {
+          const next = new Set(prev);
+          if (payload.eventType === "DELETE") next.delete(row.bid);
+          else if (row.gf_plus === false) next.add(row.bid);
+          else next.delete(row.bid);
+          return next;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   useEffect(() => {
@@ -1051,7 +1074,7 @@ function Index() {
         }
         if (orFilters.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
         if (orFilters.has("erlOhneZustimmung") && st === "erledigt" && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
-        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && isOhneTelekomAuftrag(c.bid)) matchesAny = true;
+        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && ohneGfPlus.has(c.bid)) matchesAny = true;
         if (orFilters.has("imBauHeute")) {
           const today = new Date().toISOString().slice(0, 10);
           const cs = states[c.bid];
@@ -1322,9 +1345,9 @@ function Index() {
     () => contacts.reduce((n, c) => {
       const st = states[c.bid]?.status;
       if (st !== "erledigt") return n;
-      return n + (isOhneTelekomAuftrag(c.bid) ? 1 : 0);
+      return n + (ohneGfPlus.has(c.bid) ? 1 : 0);
     }, 0),
-    [contacts, states],
+    [contacts, states, ohneGfPlus],
   );
 
   const imBauHeuteCount = useMemo(() => {
