@@ -260,15 +260,16 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
     const dateShort = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
     const teamLabel = (t: string) =>
       t === "team1" ? "Team Jozey" : t === "team2" ? "Team Adil" : "Ohne Team";
+    const totalM = appts.reduce((s, c) => s + (states[c.bid]?.grabenlaenge || 0), 0);
     const lines: string[] = [];
-    lines.push(`${dateShort} Schmücke (${appts.length})`);
+    lines.push(`*${dateShort} Schmücke (${appts.length}/${totalM}m)*`);
 
     let lastTeam = "__initial__";
     appts.forEach((c) => {
       const t = states[c.bid]?.team || "";
       if (t !== lastTeam) {
-        if (lines.length > 1) lines.push("");
-        lines.push(teamLabel(t));
+        lines.push("");
+        lines.push(`_${teamLabel(t)}_`);
         lines.push("");
         lastTeam = t;
       }
