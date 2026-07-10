@@ -636,25 +636,6 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
         />
       )}
 
-      {/* FOKUS: Problemfälle Doku-Status */}
-      {!focusBid && (fokus.unvollstaendig.length > 0 || fokus.langeInPruefung.length > 0) && (
-        <FokusPanel
-          unvollstaendig={fokus.unvollstaendig}
-          langeInPruefung={fokus.langeInPruefung}
-          onOpen={(bid) => {
-            setExpanded(bid);
-            requestAnimationFrame(() => {
-              const el = document.getElementById(`doku-card-${bid}`);
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
-          }}
-        />
-      )}
-
-
-
-
-
       {focusBid && onClearFocus && (
         <button
           type="button"
@@ -987,6 +968,21 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
           </div>
         );
       })}
+
+      {/* FOKUS: Problemfälle Doku-Status */}
+      {!focusBid && (fokus.unvollstaendig.length > 0 || fokus.langeInPruefung.length > 0) && (
+        <FokusPanel
+          unvollstaendig={fokus.unvollstaendig}
+          langeInPruefung={fokus.langeInPruefung}
+          onOpen={(bid) => {
+            setExpanded(bid);
+            requestAnimationFrame(() => {
+              const el = document.getElementById(`doku-card-${bid}`);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
