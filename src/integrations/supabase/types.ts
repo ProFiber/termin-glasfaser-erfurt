@@ -119,6 +119,7 @@ export type Database = {
         Row: {
           anschluss_typ: string | null
           auftrag_erstellt_am: string | null
+          auftragsquelle: string
           auskundung_bis: string | null
           auskundung_erfolgt: boolean
           auskundung_erforderlich: boolean
@@ -148,6 +149,7 @@ export type Database = {
         Insert: {
           anschluss_typ?: string | null
           auftrag_erstellt_am?: string | null
+          auftragsquelle?: string
           auskundung_bis?: string | null
           auskundung_erfolgt?: boolean
           auskundung_erforderlich?: boolean
@@ -177,6 +179,7 @@ export type Database = {
         Update: {
           anschluss_typ?: string | null
           auftrag_erstellt_am?: string | null
+          auftragsquelle?: string
           auskundung_bis?: string | null
           auskundung_erfolgt?: boolean
           auskundung_erforderlich?: boolean

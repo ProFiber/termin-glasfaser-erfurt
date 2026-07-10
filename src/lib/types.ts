@@ -25,6 +25,7 @@ export type Contact = {
   auftrag_erstellt_am?: string | null;
   kls_id?: string | null;
   anschluss_typ?: string | null;
+  auftragsquelle?: "gf_plus" | "bulk";
 };
 
 export type CallStatus =

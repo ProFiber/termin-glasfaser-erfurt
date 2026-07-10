@@ -247,6 +247,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
         auskundung_status: "erfolgt",
         auskundung_erfolgt: true,
         auskundung_ergebnis: "",
+        auftragsquelle: "bulk",
       });
       map.set(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`, bid);
       synthCreated++;

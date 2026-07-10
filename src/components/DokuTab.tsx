@@ -56,7 +56,12 @@ function emptyDoku(bid: string): DokuState {
 type SortMode = "az" | "nvt" | "manual";
 const MANUAL_KEY = "doku_manual_order";
 
-export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }: Props) {
+export default function DokuTab({ contacts: contactsProp, callStates, focusBid, onClearFocus }: Props) {
+  const [quelleOverride, setQuelleOverride] = useState<Record<string, "gf_plus" | "bulk">>({});
+  const contacts = useMemo(
+    () => contactsProp.map((c) => quelleOverride[c.bid] ? { ...c, auftragsquelle: quelleOverride[c.bid] } : c),
+    [contactsProp, quelleOverride],
+  );
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState<"saving" | "saved" | "error" | null>(null);
@@ -733,6 +738,15 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                   }}>
                     {meta.label}
                   </span>
+                  {c.auftragsquelle === "bulk" && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                      padding: "2px 7px", borderRadius: 999,
+                      background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
+                    }}>
+                      Bulk
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 13, color: "#475569" }}>{c.name}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
@@ -819,6 +833,36 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                     }}
                   />
                 </div>
+
+                {/* Auftragsquelle */}
+                <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Quelle:</span>
+                  {(["gf_plus", "bulk"] as const).map((q) => {
+                    const current = c.auftragsquelle ?? "gf_plus";
+                    const active = current === q;
+                    return (
+                      <button
+                        key={q}
+                        onClick={async () => {
+                          setQuelleOverride((prev) => ({ ...prev, [c.bid]: q }));
+                          showFlash("saving");
+                          const { error } = await supabase.from("contacts").update({ auftragsquelle: q } as never).eq("bid", c.bid);
+                          showFlash(error ? "error" : "saved");
+                        }}
+                        style={{
+                          padding: "4px 10px", borderRadius: 999,
+                          border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
+                          background: active ? MAGENTA : "white",
+                          color: active ? "white" : "#475569",
+                          fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        {q === "gf_plus" ? "GF+" : "Bulk"}
+                      </button>
+                    );
+                  })}
+                </div>
+
 
                 {anyActive && (
                   <>
