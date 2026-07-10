@@ -193,8 +193,9 @@ export default function NvtTab({
   }, []);
 
   const today = todayISO();
-  const morgenStr = addDays(today, 1);
-  const uebermorganStr = addDays(today, 2);
+  const morgenStr = nextWorkday(today);
+  const uebermorganStr = nextWorkday(morgenStr);
+
 
   const klarfallCount = useMemo(
     () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
