@@ -15,7 +15,7 @@ type Props = {
 
 type KlarfallKey =
   | "auskundung"    // gebaut ohne Auskundung (5 = kritischster)
-  | "ohneAuftrag"   // no_match aus import_log
+  | "ohneAuftrag"   // erledigt, aber kein GF+ Eintrag im Telekom Glasfaser-Plus-Portal
   | "fotoFehlt"
   | "protokollFehlt"
   | "zustimmungFehlt"
@@ -628,7 +628,7 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
           active={klarfallFilter}
           onSelect={(k) => setKlarfallFilter(k === klarfallFilter ? null : k)}
           onShowNoMatch={() => alert(
-            "Objekte ohne Auftrag (gebaut, aber kein Telekom-Match):\n\n" +
+            "Objekte in Excel, die keinem Kontakt in der DB zugeordnet werden konnten:\n\n" +
             (noMatch.length === 0
               ? "Keine offenen Fälle."
               : noMatch.map((n) => `• ${n.strasse ?? "?"} ${n.hnr ?? ""}`).join("\n"))
