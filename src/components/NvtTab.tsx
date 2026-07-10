@@ -464,6 +464,10 @@ export default function NvtTab({
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#334155", marginTop: 2 }}>
                   {label} {clickable && <span style={{ color: "#94a3b8" }}>›</span>}
                 </div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: "#64748b", marginTop: 1 }}>
+                  {formatDayLabel(date)}
+                </div>
+
               </button>
             );
           })}
