@@ -39,6 +39,20 @@ function addDays(iso: string, n: number): string {
   return toIsoDate(d);
 }
 
+// Nächster Arbeitstag (Mo–Sa, Sonntag wird übersprungen)
+function nextWorkday(iso: string): string {
+  let next = addDays(iso, 1);
+  while (new Date(next + "T00:00:00").getDay() === 0) next = addDays(next, 1);
+  return next;
+}
+
+const WEEKDAY_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+function formatDayLabel(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
+}
+
+
 function isSameLocalDay(iso: string | null | undefined, ref: string): boolean {
   if (!iso) return false;
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso === ref;
