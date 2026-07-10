@@ -1074,7 +1074,7 @@ function Index() {
         }
         if (orFilters.has("ohneZustimmung") && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
         if (orFilters.has("erlOhneZustimmung") && st === "erledigt" && zustimmungStatus(c.zustimmung, c.bid) === "fehlt") matchesAny = true;
-        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && isOhneTelekomAuftrag(c.bid)) matchesAny = true;
+        if (orFilters.has("erlOhneAuftrag") && st === "erledigt" && ohneGfPlus.has(c.bid)) matchesAny = true;
         if (orFilters.has("imBauHeute")) {
           const today = new Date().toISOString().slice(0, 10);
           const cs = states[c.bid];
@@ -1345,9 +1345,9 @@ function Index() {
     () => contacts.reduce((n, c) => {
       const st = states[c.bid]?.status;
       if (st !== "erledigt") return n;
-      return n + (isOhneTelekomAuftrag(c.bid) ? 1 : 0);
+      return n + (ohneGfPlus.has(c.bid) ? 1 : 0);
     }, 0),
-    [contacts, states],
+    [contacts, states, ohneGfPlus],
   );
 
   const imBauHeuteCount = useMemo(() => {
