@@ -733,6 +733,15 @@ export default function DokuTab({ contacts, callStates, focusBid, onClearFocus }
                   }}>
                     {meta.label}
                   </span>
+                  {c.auftragsquelle === "bulk" && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                      padding: "2px 7px", borderRadius: 999,
+                      background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
+                    }}>
+                      Bulk
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 13, color: "#475569" }}>{c.name}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
