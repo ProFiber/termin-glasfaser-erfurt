@@ -530,7 +530,7 @@ export default function NvtTab({
             {(pipeline.auskundung + pipeline.foto + pipeline.protokoll + pipeline.zustimmung + pipeline.gfPlus) > 0 && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #f1f5f9", display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11, fontWeight: 700, color: "#475569" }}>
                 {pipeline.auskundung > 0 && <span style={{ color: "#dc2626" }}>🚫 Ohne Auskundung: {pipeline.auskundung}</span>}
-                {pipeline.gfPlus > 0 && <span style={{ color: "#ea580c" }}>🏷️ Kein GF+ Auftrag: {pipeline.gfPlus}</span>}
+                {pipeline.gfPlus > 0 && <span style={{ color: "#ea580c" }}>🏷️ Auftrag fehlt: {pipeline.gfPlus}</span>}
                 {pipeline.foto > 0 && <span>📸 Foto: {pipeline.foto}</span>}
                 {pipeline.protokoll > 0 && <span>📄 Protokoll: {pipeline.protokoll}</span>}
                 {pipeline.zustimmung > 0 && <span>✍️ Zustimmung: {pipeline.zustimmung}</span>}
