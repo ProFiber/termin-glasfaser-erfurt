@@ -129,7 +129,7 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
     const hnr = String(r["Hausnummer"] ?? "").trim();
     const hnr_z = (r["Hausnummer Z."] ?? "").trim();
     if (!kls || !strasse || !hnr) continue;
-    const addrBid = addrMap.get(`${norm(strasse)}|${norm(hnr)}|${norm(hnr_z)}`);
+    const addrBid = addrMap.get(normAddr(strasse, hnr, hnr_z));
     const bid = addrBid ?? `KLS-${kls}`;
     if (byBid.has(bid)) upd++; else neu++;
     payload.push({
