@@ -1065,7 +1065,7 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
     { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
     { key: "ohneAuftrag", icon: "🏷️", label: "Auftrag fehlt", count: kategorien.ohneAuftrag.length, color: "#ea580c", onClick: () => onSelect("ohneAuftrag") },
     
-    { key: "fotoFehlt", icon: "📸", label: "Foto fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
+    { key: "fotoFehlt", icon: "📸", label: "Bilder fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
     { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
     { key: "zustimmungFehlt", icon: "✍️", label: "Zustimmung fehlt", count: kategorien.zustimmungFehlt.length, color: "#7c3aed", onClick: () => onSelect("zustimmungFehlt") },
     { key: "manuell", icon: "🔧", label: "Manuelle Klärfälle", count: kategorien.manuell.length, color: "#64748b", onClick: () => onSelect("manuell") },
