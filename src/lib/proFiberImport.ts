@@ -233,10 +233,10 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     return s;
   };
 
-  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const contacts = await fetchAllContacts();
   const map = new Map<string, string>();
-  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
-    map.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+  for (const c of contacts) {
+    map.set(normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
   }
 
   const payload: Record<string, unknown>[] = [];
