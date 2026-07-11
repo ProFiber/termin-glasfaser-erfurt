@@ -191,30 +191,35 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
   }, [focusBid]);
 
   // Klärfall-Kategorien berechnen (live aus vorhandenen Daten)
+  // Basis-Filter (analog Excel „Alle GF+ HA"): Ort = An der Schmücke,
+  // Status = erledigt, Vergütet leer. Nicht-vergütet ist der Kern der Klärfälle
+  // — sobald ein HA vergütet ist, ist er endgültig abgeschlossen.
   const kategorien = useMemo(() => {
     const auskundung: Contact[] = [];
-    const fotoFehlt: Contact[] = [];
-    const protokollFehlt: Contact[] = [];
-    const zustimmungFehlt: Contact[] = [];
+    const fotoFehlt: Contact[] = [];    // FotoGIS ≠ Ja
+    const protokollFehlt: Contact[] = []; // Protokoll ≠ Ja
+    const zustimmungFehlt: Contact[] = []; // Zustimmung ≠ Ja (Nein oder leer)
     const nachforderung: Contact[] = [];
     const manuell: Contact[] = [];
-    const ohneAuftrag: Contact[] = []; // erledigt, aber kein GF+ Eintrag im Telekom-Portal
+    const ohneAuftrag: Contact[] = []; // GF+ ≠ Ja
     for (const c of contacts) {
       const cs = callStates[c.bid];
       if (!cs) continue;
-      if (cs.status !== "erledigt") {
-        if (cs.klarfall) manuell.push(c);
-        continue;
-      }
-      const d = dokuStates[c.bid];
+      // Manuelle Klärfälle unabhängig vom Status
+      if (cs.klarfall) manuell.push(c);
+      // Auskundung offen: unabhängig vom Status
       if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung.push(c);
+      // Basis-Filter für die 4 Excel-Klärfälle
+      if (cs.status !== "erledigt") continue;
+      if (cs.verguetet_am) continue; // vergütete HA sind abgeschlossen
+      if ((c.ort || "").trim() !== "An der Schmücke") continue;
+      const d = dokuStates[c.bid];
       if (!d?.foto) fotoFehlt.push(c);
       if (!d?.protokoll) protokollFehlt.push(c);
-      const z = (c.zustimmung || "").trim().toLowerCase();
-      if (!z || z === "nein" || z === "offen") zustimmungFehlt.push(c);
+      if (!d?.gf_plus) ohneAuftrag.push(c);
+      const z = (c.zustimmung || "").trim().toUpperCase();
+      if (z !== "AGREED") zustimmungFehlt.push(c);
       if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
-      if (cs.klarfall) manuell.push(c);
-      if (d && d.gf_plus === false) ohneAuftrag.push(c);
     }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell, ohneAuftrag };
   }, [contacts, callStates, dokuStates]);
@@ -1060,7 +1065,7 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
     { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
     { key: "ohneAuftrag", icon: "🏷️", label: "Auftrag fehlt", count: kategorien.ohneAuftrag.length, color: "#ea580c", onClick: () => onSelect("ohneAuftrag") },
     
-    { key: "fotoFehlt", icon: "📸", label: "Foto fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
+    { key: "fotoFehlt", icon: "📸", label: "Bilder fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
     { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
     { key: "zustimmungFehlt", icon: "✍️", label: "Zustimmung fehlt", count: kategorien.zustimmungFehlt.length, color: "#7c3aed", onClick: () => onSelect("zustimmungFehlt") },
     { key: "manuell", icon: "🔧", label: "Manuelle Klärfälle", count: kategorien.manuell.length, color: "#64748b", onClick: () => onSelect("manuell") },
