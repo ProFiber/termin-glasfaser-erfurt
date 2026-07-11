@@ -26,6 +26,33 @@ export type ImportResult = {
 
 const norm = (s: string) => (s ?? "").trim().toLowerCase();
 
+/** Aggressive Adress-Normalisierung: Umlaute + alle Nicht-Alphanumerisch weg.
+ *  So matcht "Am Bahnhof 2 a" == "am-bahnhof-2-a" == "Am Bahnhof 2a". */
+const normAddr = (strasse: string, hnr: string, hnr_z: string) => {
+  const clean = (s: string) => (s ?? "")
+    .toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "");
+  return `${clean(strasse)}|${clean(hnr)}${clean(hnr_z)}`;
+};
+
+/** Echte Pagination — PostgREST liefert max. 1000 pro Request. */
+async function fetchAllContacts(): Promise<{ bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]> {
+  const PAGE = 1000;
+  const out: { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("bid,strasse,hnr,hnr_zusatz")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    out.push(...(data as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]));
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 function parseGermanDate(s: string): string | null {
   const t = (s || "").trim();
   if (!t) return null;
@@ -86,12 +113,12 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
   const rows = XLSX.utils.sheet_to_json<Row>(wb.Sheets[sheetName], { defval: "", raw: false });
   log(`  ${rows.length} Zeilen gelesen`);
 
-  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const contacts = await fetchAllContacts();
   const byBid = new Set<string>();
   const addrMap = new Map<string, string>();
-  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+  for (const c of contacts) {
     byBid.add(c.bid);
-    addrMap.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+    addrMap.set(normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
   }
 
   const payload: Record<string, unknown>[] = [];
@@ -102,7 +129,7 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
     const hnr = String(r["Hausnummer"] ?? "").trim();
     const hnr_z = (r["Hausnummer Z."] ?? "").trim();
     if (!kls || !strasse || !hnr) continue;
-    const addrBid = addrMap.get(`${norm(strasse)}|${norm(hnr)}|${norm(hnr_z)}`);
+    const addrBid = addrMap.get(normAddr(strasse, hnr, hnr_z));
     const bid = addrBid ?? `KLS-${kls}`;
     if (byBid.has(bid)) upd++; else neu++;
     payload.push({
@@ -206,10 +233,10 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     return s;
   };
 
-  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const contacts = await fetchAllContacts();
   const map = new Map<string, string>();
-  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
-    map.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+  for (const c of contacts) {
+    map.set(normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
   }
 
   const payload: Record<string, unknown>[] = [];
@@ -229,7 +256,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     if (!strasse || !nr || !statusRaw) continue;
     const mapped = statusMap[statusRaw] ?? "";
     if (mapped !== "erledigt") { skipStatus++; continue; }
-    let bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
+    let bid = map.get(normAddr(strasse, nr, abc));
     if (!bid) {
       // Kein Contact-Match → gebaut ohne GF+ Auftrag (Telekom hat kein KLS angelegt
       // oder alten Auftrag längst gelöscht). Synthetischen Kontakt anlegen, damit
@@ -249,7 +276,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
         auskundung_ergebnis: "",
         auftragsquelle: "bulk",
       });
-      map.set(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`, bid);
+      map.set(normAddr(strasse, nr, abc), bid);
       synthCreated++;
       unmatched++;
     }
