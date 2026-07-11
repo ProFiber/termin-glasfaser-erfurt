@@ -26,6 +26,33 @@ export type ImportResult = {
 
 const norm = (s: string) => (s ?? "").trim().toLowerCase();
 
+/** Aggressive Adress-Normalisierung: Umlaute + alle Nicht-Alphanumerisch weg.
+ *  So matcht "Am Bahnhof 2 a" == "am-bahnhof-2-a" == "Am Bahnhof 2a". */
+const normAddr = (strasse: string, hnr: string, hnr_z: string) => {
+  const clean = (s: string) => (s ?? "")
+    .toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "");
+  return `${clean(strasse)}|${clean(hnr)}${clean(hnr_z)}`;
+};
+
+/** Echte Pagination — PostgREST liefert max. 1000 pro Request. */
+async function fetchAllContacts(): Promise<{ bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]> {
+  const PAGE = 1000;
+  const out: { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("bid,strasse,hnr,hnr_zusatz")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    out.push(...(data as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]));
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 function parseGermanDate(s: string): string | null {
   const t = (s || "").trim();
   if (!t) return null;
