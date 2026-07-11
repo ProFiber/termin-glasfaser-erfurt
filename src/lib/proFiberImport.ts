@@ -256,7 +256,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     if (!strasse || !nr || !statusRaw) continue;
     const mapped = statusMap[statusRaw] ?? "";
     if (mapped !== "erledigt") { skipStatus++; continue; }
-    let bid = map.get(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`);
+    let bid = map.get(normAddr(strasse, nr, abc));
     if (!bid) {
       // Kein Contact-Match → gebaut ohne GF+ Auftrag (Telekom hat kein KLS angelegt
       // oder alten Auftrag längst gelöscht). Synthetischen Kontakt anlegen, damit
@@ -276,7 +276,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
         auskundung_ergebnis: "",
         auftragsquelle: "bulk",
       });
-      map.set(`${norm(strasse)}|${norm(nr)}|${norm(abc)}`, bid);
+      map.set(normAddr(strasse, nr, abc), bid);
       synthCreated++;
       unmatched++;
     }
