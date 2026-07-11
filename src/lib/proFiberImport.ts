@@ -113,12 +113,12 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
   const rows = XLSX.utils.sheet_to_json<Row>(wb.Sheets[sheetName], { defval: "", raw: false });
   log(`  ${rows.length} Zeilen gelesen`);
 
-  const { data: contacts } = await supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz").range(0, 9999);
+  const contacts = await fetchAllContacts();
   const byBid = new Set<string>();
   const addrMap = new Map<string, string>();
-  for (const c of (contacts ?? []) as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]) {
+  for (const c of contacts) {
     byBid.add(c.bid);
-    addrMap.set(`${norm(c.strasse)}|${norm(c.hnr)}|${norm(c.hnr_zusatz ?? "")}`, c.bid);
+    addrMap.set(normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
   }
 
   const payload: Record<string, unknown>[] = [];
