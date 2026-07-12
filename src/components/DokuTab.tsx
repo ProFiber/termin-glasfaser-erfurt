@@ -487,146 +487,71 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
 
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", padding: 12 }}>
-      {/* Header */}
+      {/* Kompakter Header — Progress + Teilen */}
       <div
         style={{
-          background: "white",
-          borderRadius: 11,
-          padding: 14,
-          marginBottom: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+          padding: "8px 10px", background: "white", borderRadius: 10,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
-            {done} / {total} vollständig dokumentiert
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{done}/{total}</span>
+            <span style={{ fontSize: 11, color: "#64748b" }}>dokumentiert · {pct}%</span>
+            {flashIcon && <span style={{ fontSize: 12, marginLeft: "auto" }}>{flashIcon}</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
-            <div style={{ fontSize: 14 }}>{flashIcon}</div>
-            <button
-              onClick={() => setShareMenu((v) => !v)}
+          <div style={{ height: 5, background: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: "#22c55e", transition: "width .3s" }} />
+          </div>
+        </div>
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShareMenu((v) => !v)}
+            style={{
+              background: "#25D366", color: "white", border: "none", borderRadius: 8,
+              padding: "8px 12px", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}
+          >💬 Teilen</button>
+          {shareMenu && (
+            <div
               style={{
-                background: "#25D366",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                padding: "8px 12px",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
+                position: "absolute", top: "100%", right: 0, marginTop: 6, background: "white",
+                border: "1px solid #e5e7eb", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                zIndex: 10, minWidth: 180, overflow: "hidden",
               }}
             >
-              💬 Teilen
-            </button>
-            {shareMenu && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  marginTop: 6,
-                  background: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-                  zIndex: 10,
-                  minWidth: 180,
-                  overflow: "hidden",
-                }}
-              >
-                <button
-                  onClick={shareWhatsApp}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📊 Status (NVT)
-                </button>
-                <button
-                  onClick={() => shareReport("alle")}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📋 Alle teilen
-                </button>
-                <button
-                  onClick={() => shareReport("heute")}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📅 Nur heute teilen
-                </button>
-              </div>
-            )}
-          </div>
+              <button onClick={shareWhatsApp} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📊 Status (NVT)</button>
+              <button onClick={() => shareReport("alle")} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📋 Alle teilen</button>
+              <button onClick={() => shareReport("heute")} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📅 Nur heute teilen</button>
+            </div>
+          )}
         </div>
-        <div style={{ height: 10, background: "#e5e7eb", borderRadius: 6, overflow: "hidden" }}>
-          <div
-            style={{
-              width: `${pct}%`,
-              height: "100%",
-              background: "#22c55e",
-              transition: "width 0.3s",
-            }}
-          />
+      </div>
+
+      {/* Kompakter Filter/Sort-Bar */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 8, padding: 3, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          {([[false, "Alle"], [true, "📅 Heute"]] as const).map(([v, l]) => (
+            <button key={String(v)} onClick={() => setOnlyToday(v)}
+              style={{
+                padding: "5px 10px", borderRadius: 6, border: "none",
+                background: onlyToday === v ? MAGENTA : "transparent",
+                color: onlyToday === v ? "white" : "#475569",
+                fontWeight: 700, fontSize: 12, cursor: "pointer",
+              }}>{l}</button>
+          ))}
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <button
-            onClick={() => setOnlyToday(false)}
-            style={{
-              flex: 1,
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: `1px solid ${!onlyToday ? MAGENTA : "#e5e7eb"}`,
-              background: !onlyToday ? MAGENTA : "white",
-              color: !onlyToday ? "white" : "#475569",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            Alle
-          </button>
-          <button
-            onClick={() => setOnlyToday(true)}
-            style={{
-              flex: 1,
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: `1px solid ${onlyToday ? MAGENTA : "#e5e7eb"}`,
-              background: onlyToday ? MAGENTA : "white",
-              color: onlyToday ? "white" : "#475569",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            📅 Heute
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-          {([
-            ["az", "A–Z"],
-            ["nvt", "NVT"],
-            ["manual", "Manuell"],
-          ] as const).map(([k, label]) => {
-            const active = sortMode === k;
-            return (
-              <button
-                key={k}
-                onClick={() => setSortMode(k)}
-                style={{
-                  flex: 1,
-                  padding: "6px 8px",
-                  borderRadius: 8,
-                  border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
-                  background: active ? MAGENTA : "white",
-                  color: active ? "white" : "#475569",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 8, padding: 3, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          {([["az", "A–Z"], ["nvt", "NVT"], ["manual", "Manuell"]] as const).map(([k, l]) => (
+            <button key={k} onClick={() => setSortMode(k)}
+              style={{
+                padding: "5px 10px", borderRadius: 6, border: "none",
+                background: sortMode === k ? MAGENTA : "transparent",
+                color: sortMode === k ? "white" : "#475569",
+                fontWeight: 700, fontSize: 12, cursor: "pointer",
+              }}>{l}</button>
+          ))}
         </div>
       </div>
 
@@ -1054,6 +979,7 @@ type KacheldefProps = {
 };
 
 function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch }: KacheldefProps) {
+  const [shareOpen, setShareOpen] = useState(false);
   const tiles: Array<{
     key: KlarfallKey;
     icon: string;
@@ -1064,7 +990,6 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
   }> = [
     { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
     { key: "ohneAuftrag", icon: "🏷️", label: "Auftrag fehlt", count: kategorien.ohneAuftrag.length, color: "#ea580c", onClick: () => onSelect("ohneAuftrag") },
-    
     { key: "fotoFehlt", icon: "📸", label: "Bilder fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
     { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
     { key: "zustimmungFehlt", icon: "✍️", label: "Zustimmung fehlt", count: kategorien.zustimmungFehlt.length, color: "#7c3aed", onClick: () => onSelect("zustimmungFehlt") },
@@ -1075,17 +1000,26 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
 
   return (
     <div style={{ background: "white", borderRadius: 11, padding: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 8, flexWrap: "wrap" }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
           ⚠️ Klärfälle {gesamt > 0 ? `(${gesamt})` : ""}
         </div>
-        {active && (
-          <button
-            onClick={() => onSelect(active)}
-            style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
-          >Filter zurücksetzen ✕</button>
-        )}
+        <div style={{ display: "flex", gap: 6 }}>
+          {gesamt > 0 && (
+            <button
+              onClick={() => setShareOpen(true)}
+              style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: "#25D366", color: "white", cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+            >💬 Teilen</button>
+          )}
+          {active && (
+            <button
+              onClick={() => onSelect(active)}
+              style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+            >Filter zurücksetzen ✕</button>
+          )}
+        </div>
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
         {tiles.map((t) => {
           const isActive = active === t.key;
@@ -1115,6 +1049,171 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
             </button>
           );
         })}
+      </div>
+      {shareOpen && (
+        <KlaerfaelleShareModal
+          tiles={tiles.map((t) => ({
+            key: t.key,
+            label: t.label,
+            icon: t.icon,
+            contacts:
+              t.key === "auskundung" ? kategorien.auskundung
+              : t.key === "ohneAuftrag" ? kategorien.ohneAuftrag
+              : t.key === "fotoFehlt" ? kategorien.fotoFehlt
+              : t.key === "protokollFehlt" ? kategorien.protokollFehlt
+              : t.key === "zustimmungFehlt" ? kategorien.zustimmungFehlt
+              : t.key === "nachforderung" ? kategorien.nachforderung
+              : kategorien.manuell,
+          }))}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Klärfälle-Teilen: Kategorien + Objekte auswählen ────────────
+type ShareTile = { key: KlarfallKey; label: string; icon: string; contacts: Contact[] };
+
+function KlaerfaelleShareModal({ tiles, onClose }: { tiles: ShareTile[]; onClose: () => void }) {
+  // Default: alle Objekte aller nicht-leeren Kategorien ausgewählt
+  const [sel, setSel] = useState<Record<string, boolean>>(() => {
+    const s: Record<string, boolean> = {};
+    tiles.forEach((t) => t.contacts.forEach((c) => { s[`${t.key}::${c.bid}`] = true; }));
+    return s;
+  });
+
+  function toggle(id: string) {
+    setSel((p) => ({ ...p, [id]: !p[id] }));
+  }
+  function toggleCategory(t: ShareTile, on: boolean) {
+    setSel((p) => {
+      const n = { ...p };
+      t.contacts.forEach((c) => { n[`${t.key}::${c.bid}`] = on; });
+      return n;
+    });
+  }
+
+  const selectedCount = Object.values(sel).filter(Boolean).length;
+
+  function send() {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const lines: string[] = [];
+    lines.push("⚠️ *Klärfälle · An der Schmücke*");
+    lines.push(`_Stand: ${dd}.${mm}.${yyyy} · ${hh}:${mi} Uhr_`);
+    lines.push("");
+    let totalSel = 0;
+    tiles.forEach((t) => {
+      const picked = t.contacts.filter((c) => sel[`${t.key}::${c.bid}`]);
+      if (picked.length === 0) return;
+      totalSel += picked.length;
+      lines.push(`${t.icon} *${t.label}* (${picked.length})`);
+      picked
+        .sort((a, b) => a.strasse.localeCompare(b.strasse, "de") || (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0))
+        .forEach((c) => {
+          const name = c.name?.trim() ? ` — ${c.name.trim()}` : "";
+          lines.push(`• ${c.strasse} ${c.hnr}${c.hnr_zusatz}${name}`);
+        });
+      lines.push("");
+    });
+    if (totalSel === 0) return;
+    lines.push("_Pro-Fiber · Störmer Bau_");
+    window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+    onClose();
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 1000,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "white", borderTopLeftRadius: 16, borderTopRightRadius: 16,
+          width: "100%", maxWidth: 560, maxHeight: "85vh", display: "flex", flexDirection: "column",
+        }}
+      >
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>💬 Klärfälle teilen</div>
+          <button onClick={onClose} style={{ border: "none", background: "transparent", fontSize: 20, cursor: "pointer", color: "#64748b" }}>✕</button>
+        </div>
+        <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
+          {tiles.filter((t) => t.contacts.length > 0).map((t) => {
+            const allOn = t.contacts.every((c) => sel[`${t.key}::${c.bid}`]);
+            const someOn = t.contacts.some((c) => sel[`${t.key}::${c.bid}`]);
+            return (
+              <div key={t.key} style={{ marginBottom: 14, border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                <button
+                  onClick={() => toggleCategory(t, !allOn)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%",
+                    padding: "8px 10px", background: "#f8fafc", border: "none", cursor: "pointer",
+                    fontWeight: 700, fontSize: 13, color: "#0f172a", textAlign: "left",
+                  }}
+                >
+                  <span style={{
+                    width: 18, height: 18, borderRadius: 4,
+                    border: `2px solid ${someOn ? MAGENTA : "#cbd5e1"}`,
+                    background: allOn ? MAGENTA : someOn ? `${MAGENTA}40` : "white",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "white", fontSize: 12, flexShrink: 0,
+                  }}>{allOn ? "✓" : someOn ? "–" : ""}</span>
+                  <span>{t.icon} {t.label}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748b" }}>{t.contacts.length}</span>
+                </button>
+                <div style={{ padding: "4px 0" }}>
+                  {t.contacts
+                    .slice()
+                    .sort((a, b) => a.strasse.localeCompare(b.strasse, "de") || (parseInt(a.hnr, 10) || 0) - (parseInt(b.hnr, 10) || 0))
+                    .map((c) => {
+                      const id = `${t.key}::${c.bid}`;
+                      const on = !!sel[id];
+                      return (
+                        <label
+                          key={id}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "6px 12px", cursor: "pointer", fontSize: 13, color: "#0f172a",
+                          }}
+                        >
+                          <input type="checkbox" checked={on} onChange={() => toggle(id)} style={{ width: 16, height: 16 }} />
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontWeight: 600 }}>{c.strasse} {c.hnr}{c.hnr_zusatz}</span>
+                            {c.name?.trim() && <span style={{ color: "#64748b" }}> · {c.name.trim()}</span>}
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ padding: 12, borderTop: "1px solid #f1f5f9", display: "flex", gap: 8 }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", fontWeight: 700, fontSize: 13, cursor: "pointer", color: "#475569" }}
+          >Abbrechen</button>
+          <button
+            onClick={send}
+            disabled={selectedCount === 0}
+            style={{
+              flex: 2, padding: "10px", borderRadius: 8, border: "none",
+              background: selectedCount === 0 ? "#cbd5e1" : "#25D366",
+              color: "white", fontWeight: 700, fontSize: 13,
+              cursor: selectedCount === 0 ? "default" : "pointer",
+            }}
+          >💬 An WhatsApp senden ({selectedCount})</button>
+        </div>
       </div>
     </div>
   );
