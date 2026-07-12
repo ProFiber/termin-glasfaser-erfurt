@@ -979,6 +979,7 @@ type KacheldefProps = {
 };
 
 function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch }: KacheldefProps) {
+  const [shareOpen, setShareOpen] = useState(false);
   const tiles: Array<{
     key: KlarfallKey;
     icon: string;
@@ -989,7 +990,6 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
   }> = [
     { key: "auskundung", icon: "🚫", label: "Ohne Auskundung", count: kategorien.auskundung.length, color: "#dc2626", onClick: () => onSelect("auskundung") },
     { key: "ohneAuftrag", icon: "🏷️", label: "Auftrag fehlt", count: kategorien.ohneAuftrag.length, color: "#ea580c", onClick: () => onSelect("ohneAuftrag") },
-    
     { key: "fotoFehlt", icon: "📸", label: "Bilder fehlt", count: kategorien.fotoFehlt.length, color: "#0891b2", onClick: () => onSelect("fotoFehlt") },
     { key: "protokollFehlt", icon: "📄", label: "Protokoll fehlt", count: kategorien.protokollFehlt.length, color: "#0891b2", onClick: () => onSelect("protokollFehlt") },
     { key: "zustimmungFehlt", icon: "✍️", label: "Zustimmung fehlt", count: kategorien.zustimmungFehlt.length, color: "#7c3aed", onClick: () => onSelect("zustimmungFehlt") },
@@ -1000,17 +1000,26 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
 
   return (
     <div style={{ background: "white", borderRadius: 11, padding: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 8, flexWrap: "wrap" }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
           ⚠️ Klärfälle {gesamt > 0 ? `(${gesamt})` : ""}
         </div>
-        {active && (
-          <button
-            onClick={() => onSelect(active)}
-            style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
-          >Filter zurücksetzen ✕</button>
-        )}
+        <div style={{ display: "flex", gap: 6 }}>
+          {gesamt > 0 && (
+            <button
+              onClick={() => setShareOpen(true)}
+              style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: "#25D366", color: "white", cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+            >💬 Teilen</button>
+          )}
+          {active && (
+            <button
+              onClick={() => onSelect(active)}
+              style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#475569" }}
+            >Filter zurücksetzen ✕</button>
+          )}
+        </div>
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
         {tiles.map((t) => {
           const isActive = active === t.key;
