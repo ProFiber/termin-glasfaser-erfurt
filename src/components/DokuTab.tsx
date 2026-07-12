@@ -487,146 +487,71 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
 
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", padding: 12 }}>
-      {/* Header */}
+      {/* Kompakter Header — Progress + Teilen */}
       <div
         style={{
-          background: "white",
-          borderRadius: 11,
-          padding: 14,
-          marginBottom: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+          padding: "8px 10px", background: "white", borderRadius: 10,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
-            {done} / {total} vollständig dokumentiert
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{done}/{total}</span>
+            <span style={{ fontSize: 11, color: "#64748b" }}>dokumentiert · {pct}%</span>
+            {flashIcon && <span style={{ fontSize: 12, marginLeft: "auto" }}>{flashIcon}</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
-            <div style={{ fontSize: 14 }}>{flashIcon}</div>
-            <button
-              onClick={() => setShareMenu((v) => !v)}
+          <div style={{ height: 5, background: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: "#22c55e", transition: "width .3s" }} />
+          </div>
+        </div>
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShareMenu((v) => !v)}
+            style={{
+              background: "#25D366", color: "white", border: "none", borderRadius: 8,
+              padding: "8px 12px", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}
+          >💬 Teilen</button>
+          {shareMenu && (
+            <div
               style={{
-                background: "#25D366",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                padding: "8px 12px",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
+                position: "absolute", top: "100%", right: 0, marginTop: 6, background: "white",
+                border: "1px solid #e5e7eb", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                zIndex: 10, minWidth: 180, overflow: "hidden",
               }}
             >
-              💬 Teilen
-            </button>
-            {shareMenu && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  marginTop: 6,
-                  background: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-                  zIndex: 10,
-                  minWidth: 180,
-                  overflow: "hidden",
-                }}
-              >
-                <button
-                  onClick={shareWhatsApp}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📊 Status (NVT)
-                </button>
-                <button
-                  onClick={() => shareReport("alle")}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📋 Alle teilen
-                </button>
-                <button
-                  onClick={() => shareReport("heute")}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}
-                >
-                  📅 Nur heute teilen
-                </button>
-              </div>
-            )}
-          </div>
+              <button onClick={shareWhatsApp} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📊 Status (NVT)</button>
+              <button onClick={() => shareReport("alle")} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📋 Alle teilen</button>
+              <button onClick={() => shareReport("heute")} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #f1f5f9", background: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#0f172a" }}>📅 Nur heute teilen</button>
+            </div>
+          )}
         </div>
-        <div style={{ height: 10, background: "#e5e7eb", borderRadius: 6, overflow: "hidden" }}>
-          <div
-            style={{
-              width: `${pct}%`,
-              height: "100%",
-              background: "#22c55e",
-              transition: "width 0.3s",
-            }}
-          />
+      </div>
+
+      {/* Kompakter Filter/Sort-Bar */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 8, padding: 3, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          {([[false, "Alle"], [true, "📅 Heute"]] as const).map(([v, l]) => (
+            <button key={String(v)} onClick={() => setOnlyToday(v)}
+              style={{
+                padding: "5px 10px", borderRadius: 6, border: "none",
+                background: onlyToday === v ? MAGENTA : "transparent",
+                color: onlyToday === v ? "white" : "#475569",
+                fontWeight: 700, fontSize: 12, cursor: "pointer",
+              }}>{l}</button>
+          ))}
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <button
-            onClick={() => setOnlyToday(false)}
-            style={{
-              flex: 1,
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: `1px solid ${!onlyToday ? MAGENTA : "#e5e7eb"}`,
-              background: !onlyToday ? MAGENTA : "white",
-              color: !onlyToday ? "white" : "#475569",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            Alle
-          </button>
-          <button
-            onClick={() => setOnlyToday(true)}
-            style={{
-              flex: 1,
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: `1px solid ${onlyToday ? MAGENTA : "#e5e7eb"}`,
-              background: onlyToday ? MAGENTA : "white",
-              color: onlyToday ? "white" : "#475569",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            📅 Heute
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-          {([
-            ["az", "A–Z"],
-            ["nvt", "NVT"],
-            ["manual", "Manuell"],
-          ] as const).map(([k, label]) => {
-            const active = sortMode === k;
-            return (
-              <button
-                key={k}
-                onClick={() => setSortMode(k)}
-                style={{
-                  flex: 1,
-                  padding: "6px 8px",
-                  borderRadius: 8,
-                  border: `1px solid ${active ? MAGENTA : "#e5e7eb"}`,
-                  background: active ? MAGENTA : "white",
-                  color: active ? "white" : "#475569",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 8, padding: 3, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          {([["az", "A–Z"], ["nvt", "NVT"], ["manual", "Manuell"]] as const).map(([k, l]) => (
+            <button key={k} onClick={() => setSortMode(k)}
+              style={{
+                padding: "5px 10px", borderRadius: 6, border: "none",
+                background: sortMode === k ? MAGENTA : "transparent",
+                color: sortMode === k ? "white" : "#475569",
+                fontWeight: 700, fontSize: 12, cursor: "pointer",
+              }}>{l}</button>
+          ))}
         </div>
       </div>
 
