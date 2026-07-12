@@ -786,6 +786,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_fill_contact_info: { Args: { payload: Json }; Returns: number }
       bulk_import_call_states_from_excel: {
         Args: { payload: Json }
         Returns: Json
