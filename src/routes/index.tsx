@@ -1062,6 +1062,7 @@ function Index() {
         if (orFilters.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
         if (orFilters.has("kurzAnschluss") && c.anschluss_typ === "kurz") matchesAny = true;
         if (orFilters.has("langAnschluss") && c.anschluss_typ === "lang") matchesAny = true;
+        if (orFilters.has("bulk") && c.auftragsquelle === "bulk") matchesAny = true;
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
@@ -1312,6 +1313,10 @@ function Index() {
   );
   const langAnschlussCount = useMemo(
     () => contacts.reduce((n, c) => n + (c.anschluss_typ === "lang" ? 1 : 0), 0),
+    [contacts],
+  );
+  const bulkCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.auftragsquelle === "bulk" ? 1 : 0), 0),
     [contacts],
   );
 
@@ -1591,8 +1596,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1604,6 +1609,7 @@ function Index() {
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
               : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
+              : f === "bulk" ? `📦 Bulk (${bulkCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
