@@ -1062,6 +1062,7 @@ function Index() {
         if (orFilters.has("kurzKandidat") && states[c.bid]?.kurz_kandidat) matchesAny = true;
         if (orFilters.has("kurzAnschluss") && c.anschluss_typ === "kurz") matchesAny = true;
         if (orFilters.has("langAnschluss") && c.anschluss_typ === "lang") matchesAny = true;
+        if (orFilters.has("bulk") && c.auftragsquelle === "bulk") matchesAny = true;
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
