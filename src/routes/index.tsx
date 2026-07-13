@@ -1314,6 +1314,10 @@ function Index() {
     () => contacts.reduce((n, c) => n + (c.anschluss_typ === "lang" ? 1 : 0), 0),
     [contacts],
   );
+  const bulkCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.auftragsquelle === "bulk" ? 1 : 0), 0),
+    [contacts],
+  );
 
 
 
