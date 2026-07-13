@@ -274,7 +274,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
         auskundung_status: "erfolgt",
         auskundung_erfolgt: true,
         auskundung_ergebnis: "",
-        auftragsquelle: "bulk",
+        auftragsquelle: "gf_plus",
       });
       map.set(normAddr(strasse, nr, abc), bid);
       synthCreated++;
