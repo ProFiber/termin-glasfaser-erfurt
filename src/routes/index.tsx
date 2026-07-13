@@ -1497,6 +1497,7 @@ function Index() {
           onPickKalenderDate={(dateISO) => { setKalenderFocusDate(dateISO); setActiveTab("kalender"); }}
           onOpenPlan={() => setShowPlan(true)}
         />
+        </>
       )}
 
       {activeTab === "finanz" && <FinanzTab />}
