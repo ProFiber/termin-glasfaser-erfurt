@@ -1762,9 +1762,18 @@ function Index() {
                   }}>{cs.team === "team1" ? "TH" : cs.team === "team2" ? "TA" : "T"}</div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>
-                    {c.strasse} {c.hnr}{c.hnr_zusatz}
-                    <span style={{ fontWeight: 400, fontSize: 12, color: "#888", marginLeft: 6 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                    <span>{c.strasse} {c.hnr}{c.hnr_zusatz}</span>
+                    {c.auftragsquelle === "bulk" && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                        padding: "2px 7px", borderRadius: 999,
+                        background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
+                      }}>
+                        Bulk
+                      </span>
+                    )}
+                    <span style={{ fontWeight: 400, fontSize: 12, color: "#888" }}>
                       {c.typ}{c.we ? ` · ${c.we} WE` : ""}{c.ge ? ` · ${c.ge} GE` : ""}
                     </span>
                   </div>
