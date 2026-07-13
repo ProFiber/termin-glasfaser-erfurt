@@ -1319,6 +1319,22 @@ function Index() {
     () => contacts.reduce((n, c) => n + (c.auftragsquelle === "bulk" ? 1 : 0), 0),
     [contacts],
   );
+  const bulkStats = useMemo(() => {
+    const bulkBids = new Set(contacts.filter(c => c.auftragsquelle === "bulk").map(c => c.bid));
+    let erledigt = 0, termin = 0, offen = 0, abgelehnt = 0;
+    for (const s of states) {
+      if (!bulkBids.has(s.bid)) continue;
+      if (s.status === "erledigt") erledigt++;
+      else if (s.status === "termin") termin++;
+      else if (s.status === "abgelehnt") abgelehnt++;
+      else offen++;
+    }
+    // Kontakte ohne State = offen
+    const withState = new Set(states.map(s => s.bid));
+    for (const bid of bulkBids) if (!withState.has(bid)) offen++;
+    const total = bulkBids.size;
+    return { total, erledigt, termin, offen, abgelehnt, pct: total > 0 ? Math.round((erledigt / total) * 100) : 0 };
+  }, [contacts, states]);
 
 
 
