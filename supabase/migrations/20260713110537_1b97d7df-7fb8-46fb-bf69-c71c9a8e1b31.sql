@@ -1,0 +1,1 @@
+UPDATE public.contacts SET auftragsquelle='gf_plus' WHERE bid LIKE 'OHNE-%' AND auftragsquelle='bulk';
