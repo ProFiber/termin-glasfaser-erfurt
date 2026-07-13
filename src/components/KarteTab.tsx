@@ -1075,8 +1075,17 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             aria-label="Schließen"
           >×</button>
 
-          <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", paddingRight: 32 }}>
-            {selectedContact.strasse} {selectedContact.hnr}{selectedContact.hnr_zusatz}
+          <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", paddingRight: 32, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <span>{selectedContact.strasse} {selectedContact.hnr}{selectedContact.hnr_zusatz}</span>
+            {selectedContact.auftragsquelle === "bulk" && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                padding: "2px 7px", borderRadius: 999,
+                background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
+              }}>
+                Bulk
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 13, color: "#475569" }}>{selectedContact.name}</div>
           <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
