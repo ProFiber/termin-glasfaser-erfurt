@@ -1437,6 +1437,47 @@ function Index() {
       )}
 
       {activeTab === "dashboard" && (
+        <>
+        {bulkStats.total > 0 && (
+          <div style={{
+            margin: "10px 12px 0", padding: 12, borderRadius: 12,
+            background: "linear-gradient(135deg,#fef3c7,#fde68a)",
+            border: "1px solid #f59e0b",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#78350f" }}>
+                📦 Telekom Bulk-Aufträge
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+                {bulkStats.erledigt} / {bulkStats.total} erledigt ({bulkStats.pct}%)
+              </div>
+            </div>
+            <div style={{
+              height: 10, borderRadius: 999, background: "rgba(255,255,255,0.6)",
+              overflow: "hidden", display: "flex",
+            }}>
+              {bulkStats.total > 0 && <>
+                <div style={{ width: `${(bulkStats.erledigt / bulkStats.total) * 100}%`, background: "#16a34a" }} title={`${bulkStats.erledigt} erledigt`} />
+                <div style={{ width: `${(bulkStats.termin / bulkStats.total) * 100}%`, background: "#3b82f6" }} title={`${bulkStats.termin} Termin`} />
+                <div style={{ width: `${(bulkStats.abgelehnt / bulkStats.total) * 100}%`, background: "#ef4444" }} title={`${bulkStats.abgelehnt} abgelehnt`} />
+              </>}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 11, color: "#78350f", flexWrap: "wrap" }}>
+              <span>✅ {bulkStats.erledigt} erledigt</span>
+              <span>📅 {bulkStats.termin} Termin</span>
+              <span>⏳ {bulkStats.offen} offen</span>
+              {bulkStats.abgelehnt > 0 && <span>❌ {bulkStats.abgelehnt} abgelehnt</span>}
+              <button
+                onClick={() => { setFilter(new Set()); /* orFilters */ setActiveTab("objekte"); }}
+                style={{
+                  marginLeft: "auto", padding: "3px 10px", borderRadius: 999,
+                  border: "1px solid #b45309", background: "white", color: "#92400e",
+                  fontWeight: 700, fontSize: 11, cursor: "pointer",
+                }}
+              >Alle anzeigen →</button>
+            </div>
+          </div>
+        )}
         <NvtTab
           contacts={contacts}
           states={states}
