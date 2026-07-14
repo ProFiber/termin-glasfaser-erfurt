@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS public._backup_20260711_final_cleanup_call_states;
+DROP TABLE IF EXISTS public._backup_20260711_final_cleanup_contacts;
+DROP TABLE IF EXISTS public._backup_20260711_final_cleanup_doku_states;
+DROP TABLE IF EXISTS public._backup_kls_merge_20260711_call_states;
+DROP TABLE IF EXISTS public._backup_kls_merge_20260711_contacts;
+DROP TABLE IF EXISTS public._backup_kls_merge_20260711_doku_states;
+DROP TABLE IF EXISTS public._backup_kls_merge_20260711_import_log;
