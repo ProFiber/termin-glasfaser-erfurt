@@ -1009,6 +1009,34 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
         <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
           ⚠️ Klärfälle {gesamt > 0 ? `(${gesamt})` : ""}
         </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={onToggleUnverguetet}
+            title={nurUnverguetet ? "Nur unvergütete HA werden gezählt" : "Alle erledigten HA werden gezählt"}
+            style={{
+              padding: "5px 10px",
+              borderRadius: 999,
+              border: `1px solid ${nurUnverguetet ? "#f59e0b" : "#cbd5e1"}`,
+              background: nurUnverguetet ? "#fef3c7" : "#f1f5f9",
+              color: nurUnverguetet ? "#92400e" : "#475569",
+              cursor: "pointer",
+              fontSize: 11,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{
+              display: "inline-block",
+              width: 8, height: 8, borderRadius: "50%",
+              background: nurUnverguetet ? "#f59e0b" : "#94a3b8",
+            }} />
+            {nurUnverguetet ? "Nur unvergütet" : "Alle erledigten"}
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 6 }}>
           {gesamt > 0 && (
             <button
