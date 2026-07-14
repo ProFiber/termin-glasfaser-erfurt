@@ -212,7 +212,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung.push(c);
       // Basis-Filter für die 4 Excel-Klärfälle
       if (cs.status !== "erledigt") continue;
-      if (cs.verguetet_am) continue; // vergütete HA sind abgeschlossen
+      if (nurUnverguetet && cs.verguetet_am) continue; // Toggle: nur unvergütete zeigen
       if ((c.ort || "").trim() !== "An der Schmücke") continue;
       const d = dokuStates[c.bid];
       if (!d?.foto) fotoFehlt.push(c);
@@ -223,7 +223,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
     }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell, ohneAuftrag };
-  }, [contacts, callStates, dokuStates]);
+  }, [contacts, callStates, dokuStates, nurUnverguetet]);
 
   // Doku-Status pro erledigtem HA (live berechnet aus Excel-Rohfeldern)
   type FokusEintrag = {
