@@ -77,6 +77,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
   });
   const [shareMenu, setShareMenu] = useState(false);
   const [klarfallFilter, setKlarfallFilter] = useState<KlarfallKey | null>(null);
+  const [nurUnverguetet, setNurUnverguetet] = useState<boolean>(true);
   const [noMatch, setNoMatch] = useState<NoMatchRow[]>([]);
   const flashTimer = useRef<number | null>(null);
 
