@@ -560,6 +560,8 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       {!focusBid && (
         <KlaerfaelleKacheln
           kategorien={kategorien}
+          nurUnverguetet={nurUnverguetet}
+          onToggleUnverguetet={() => setNurUnverguetet((v) => !v)}
           noMatchCount={noMatch.length}
           active={klarfallFilter}
           onSelect={(k) => setKlarfallFilter(k === klarfallFilter ? null : k)}
