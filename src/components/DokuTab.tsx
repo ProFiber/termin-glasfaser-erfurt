@@ -77,6 +77,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
   });
   const [shareMenu, setShareMenu] = useState(false);
   const [klarfallFilter, setKlarfallFilter] = useState<KlarfallKey | null>(null);
+  const [nurUnverguetet, setNurUnverguetet] = useState<boolean>(true);
   const [noMatch, setNoMatch] = useState<NoMatchRow[]>([]);
   const flashTimer = useRef<number | null>(null);
 
@@ -211,7 +212,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       if (c.auskundung_erforderlich && !c.auskundung_erfolgt) auskundung.push(c);
       // Basis-Filter für die 4 Excel-Klärfälle
       if (cs.status !== "erledigt") continue;
-      if (cs.verguetet_am) continue; // vergütete HA sind abgeschlossen
+      if (nurUnverguetet && cs.verguetet_am) continue; // Toggle: nur unvergütete zeigen
       if ((c.ort || "").trim() !== "An der Schmücke") continue;
       const d = dokuStates[c.bid];
       if (!d?.foto) fotoFehlt.push(c);
@@ -222,7 +223,7 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
     }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell, ohneAuftrag };
-  }, [contacts, callStates, dokuStates]);
+  }, [contacts, callStates, dokuStates, nurUnverguetet]);
 
   // Doku-Status pro erledigtem HA (live berechnet aus Excel-Rohfeldern)
   type FokusEintrag = {
@@ -559,6 +560,8 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       {!focusBid && (
         <KlaerfaelleKacheln
           kategorien={kategorien}
+          nurUnverguetet={nurUnverguetet}
+          onToggleUnverguetet={() => setNurUnverguetet((v) => !v)}
           noMatchCount={noMatch.length}
           active={klarfallFilter}
           onSelect={(k) => setKlarfallFilter(k === klarfallFilter ? null : k)}
@@ -976,9 +979,11 @@ type KacheldefProps = {
   active: KlarfallKey | null;
   onSelect: (k: KlarfallKey) => void;
   onShowNoMatch: () => void;
+  nurUnverguetet: boolean;
+  onToggleUnverguetet: () => void;
 };
 
-function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch }: KacheldefProps) {
+function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch, nurUnverguetet, onToggleUnverguetet }: KacheldefProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const tiles: Array<{
     key: KlarfallKey;
@@ -1004,6 +1009,34 @@ function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShow
         <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
           ⚠️ Klärfälle {gesamt > 0 ? `(${gesamt})` : ""}
         </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={onToggleUnverguetet}
+            title={nurUnverguetet ? "Nur unvergütete HA werden gezählt" : "Alle erledigten HA werden gezählt"}
+            style={{
+              padding: "5px 10px",
+              borderRadius: 999,
+              border: `1px solid ${nurUnverguetet ? "#f59e0b" : "#cbd5e1"}`,
+              background: nurUnverguetet ? "#fef3c7" : "#f1f5f9",
+              color: nurUnverguetet ? "#92400e" : "#475569",
+              cursor: "pointer",
+              fontSize: 11,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{
+              display: "inline-block",
+              width: 8, height: 8, borderRadius: "50%",
+              background: nurUnverguetet ? "#f59e0b" : "#94a3b8",
+            }} />
+            {nurUnverguetet ? "Nur unvergütet" : "Alle erledigten"}
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 6 }}>
           {gesamt > 0 && (
             <button
