@@ -1468,7 +1468,7 @@ function Index() {
               <span>⏳ {bulkStats.offen} offen</span>
               {bulkStats.abgelehnt > 0 && <span>❌ {bulkStats.abgelehnt} abgelehnt</span>}
               <button
-                onClick={() => { setFilter(new Set()); /* orFilters */ setActiveTab("objekte"); }}
+                onClick={() => { setFilter(new Set(["bulk"])); setActiveTab("objekte"); }}
                 style={{
                   marginLeft: "auto", padding: "3px 10px", borderRadius: 999,
                   border: "1px solid #b45309", background: "white", color: "#92400e",
