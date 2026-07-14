@@ -979,9 +979,11 @@ type KacheldefProps = {
   active: KlarfallKey | null;
   onSelect: (k: KlarfallKey) => void;
   onShowNoMatch: () => void;
+  nurUnverguetet: boolean;
+  onToggleUnverguetet: () => void;
 };
 
-function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch }: KacheldefProps) {
+function KlaerfaelleKacheln({ kategorien, noMatchCount, active, onSelect, onShowNoMatch, nurUnverguetet, onToggleUnverguetet }: KacheldefProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const tiles: Array<{
     key: KlarfallKey;
