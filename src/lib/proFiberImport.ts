@@ -37,21 +37,22 @@ const normAddr = (strasse: string, hnr: string, hnr_z: string) => {
 };
 
 /** Echte Pagination — PostgREST liefert max. 1000 pro Request. */
-async function fetchAllContacts(): Promise<{ bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]> {
+async function fetchAllContacts(): Promise<{ bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string }[]> {
   const PAGE = 1000;
-  const out: { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[] = [];
+  const out: { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string }[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from("contacts")
-      .select("bid,strasse,hnr,hnr_zusatz")
+      .select("bid,strasse,hnr,hnr_zusatz,nvt")
       .range(from, from + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
-    out.push(...(data as { bid: string; strasse: string; hnr: string; hnr_zusatz: string }[]));
+    out.push(...(data as { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string }[]));
     if (data.length < PAGE) break;
   }
   return out;
 }
+
 
 function parseGermanDate(s: string): string | null {
   const t = (s || "").trim();
