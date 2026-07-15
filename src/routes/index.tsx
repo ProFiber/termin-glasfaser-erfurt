@@ -261,12 +261,12 @@ function ImportButton() {
 
   return (
     <>
-      <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={onFile} />
+      <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={onFile} />
       <button
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        title={msg || "Pro-Fiber Database (.xlsx) importieren · nur Schmücke"}
+        title={msg || "Pro-Fiber Database (.xlsx) oder Property-Export (.csv) importieren · nur Schmücke"}
         style={{
           fontSize: 11, background: busy ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.22)",
           borderRadius: 8, padding: "4px 8px", color: "white", border: "none", cursor: busy ? "wait" : "pointer",
