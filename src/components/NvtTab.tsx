@@ -151,6 +151,14 @@ export default function NvtTab({
 
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [bedarfProTag, setBedarfProTag] = useState<number>(4);
+  const [neuTopN, setNeuTopN] = useState<number>(() => {
+    if (typeof window === "undefined") return 20;
+    const v = Number(window.localStorage.getItem("neuTopN"));
+    return v > 0 ? v : 20;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("neuTopN", String(neuTopN));
+  }, [neuTopN]);
 
   useEffect(() => {
     let cancel = false;
