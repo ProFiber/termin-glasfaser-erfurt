@@ -548,13 +548,6 @@ export default function NvtTab({
         </div>
       )}
 
-      {/* ══════════════ NEU VON TELEKOM (Top 20) ══════════════ */}
-      {(() => {
-        const neu = [...contacts]
-          .filter((c) => !!c.auftrag_erstellt_am)
-          .sort((a, b) => String(b.auftrag_erstellt_am).localeCompare(String(a.auftrag_erstellt_am)))
-          .slice(0, 20);
-        if (neu.length === 0) return null;
       {/* ══════════════ NEU VON TELEKOM (Top N) ══════════════ */}
       {(() => {
         const sorted = [...contacts]
