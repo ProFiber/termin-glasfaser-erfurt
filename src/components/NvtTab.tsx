@@ -151,6 +151,14 @@ export default function NvtTab({
 
   const [dokuStates, setDokuStates] = useState<Record<string, DokuState>>({});
   const [bedarfProTag, setBedarfProTag] = useState<number>(4);
+  const [neuTopN, setNeuTopN] = useState<number>(() => {
+    if (typeof window === "undefined") return 20;
+    const v = Number(window.localStorage.getItem("neuTopN"));
+    return v > 0 ? v : 20;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("neuTopN", String(neuTopN));
+  }, [neuTopN]);
 
   useEffect(() => {
     let cancel = false;
@@ -540,13 +548,14 @@ export default function NvtTab({
         </div>
       )}
 
-      {/* ══════════════ NEU VON TELEKOM (Top 20) ══════════════ */}
+      {/* ══════════════ NEU VON TELEKOM (Top N) ══════════════ */}
       {(() => {
-        const neu = [...contacts]
+        const sorted = [...contacts]
           .filter((c) => !!c.auftrag_erstellt_am)
-          .sort((a, b) => String(b.auftrag_erstellt_am).localeCompare(String(a.auftrag_erstellt_am)))
-          .slice(0, 20);
-        if (neu.length === 0) return null;
+          .sort((a, b) => String(b.auftrag_erstellt_am).localeCompare(String(a.auftrag_erstellt_am)));
+        const showAll = neuTopN >= 99999;
+        const neu = showAll ? sorted : sorted.slice(0, neuTopN);
+        if (sorted.length === 0) return null;
         const fmtDate = (iso: string | null | undefined) => {
           if (!iso) return "";
           const d = new Date(iso);
@@ -572,9 +581,31 @@ export default function NvtTab({
           if (st === "termin") return { bg: "#eff6ff", fg: "#1e40af", border: "#93c5fd", label: "📅 Termin", pulse: false };
           return { bg: "#f3f4f6", fg: "#6b7280", border: "#e5e7eb", label: "⚪ offen", pulse: false };
         };
+        const OPTIONS: { v: number; l: string }[] = [
+          { v: 10, l: "10" }, { v: 20, l: "20" }, { v: 50, l: "50" },
+          { v: 100, l: "100" }, { v: 99999, l: "Alle" },
+        ];
         return (
           <div style={{ marginBottom: 14 }}>
-            <div style={SECTION_TITLE}>🆕 Neu von Telekom (Top 20)</div>
+            <div style={{ ...SECTION_TITLE, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <span>🆕 Neu von Telekom ({showAll ? sorted.length : `Top ${neuTopN}`})</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                {OPTIONS.map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setNeuTopN(o.v)}
+                    style={{
+                      padding: "3px 8px", fontSize: 11, fontWeight: 700, borderRadius: 6,
+                      border: "1px solid " + (neuTopN === o.v ? "#1e40af" : "#cbd5e1"),
+                      background: neuTopN === o.v ? "#1e40af" : "white",
+                      color: neuTopN === o.v ? "white" : "#475569",
+                      cursor: "pointer",
+                    }}
+                  >{o.l}</button>
+                ))}
+              </div>
+            </div>
             <div style={{ ...CARD, padding: 0, overflow: "hidden" }}>
               <button
                 type="button"
@@ -585,7 +616,7 @@ export default function NvtTab({
                   padding: "10px 14px", color: "#1e3a8a", fontSize: 13, fontWeight: 800,
                 }}
               >
-                📋 {neu.length} neueste Datensätze — zur Liste →
+                📋 {neu.length} {showAll ? "Datensätze" : "neueste Datensätze"} — zur Liste →
               </button>
               <div style={{ maxHeight: 360, overflowY: "auto" }}>
                 {neu.map((c) => {
