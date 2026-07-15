@@ -118,23 +118,48 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
 
   const contacts = await fetchAllContacts();
   const byBid = new Set<string>();
-  const addrMap = new Map<string, string>();
+  // Adresse+NVT → bid. Ohne NVT nur wenn eindeutig.
+  const addrNvtMap = new Map<string, string>();
+  const addrOnlyMap = new Map<string, string[]>();
   for (const c of contacts) {
     byBid.add(c.bid);
-    addrMap.set(normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? ""), c.bid);
+    const addr = normAddr(c.strasse, c.hnr, c.hnr_zusatz ?? "");
+    const nvt = (c.nvt ?? "").trim().toLowerCase();
+    addrNvtMap.set(`${addr}|${nvt}`, c.bid);
+    const arr = addrOnlyMap.get(addr) ?? [];
+    arr.push(c.bid);
+    addrOnlyMap.set(addr, arr);
   }
 
   const payload: Record<string, unknown>[] = [];
-  let neu = 0, upd = 0;
+  let neu = 0, upd = 0, matchedByKls = 0, matchedByAddr = 0;
   for (const r of rows) {
     const kls = String(r["KLS ID"] ?? "").trim();
     const strasse = (r["Straße"] ?? "").trim();
     const hnr = String(r["Hausnummer"] ?? "").trim();
     const hnr_z = (r["Hausnummer Z."] ?? "").trim();
+    const nvt = (r["NVT Gebiet"] ?? "").trim();
     if (!kls || !strasse || !hnr) continue;
-    const addrBid = addrMap.get(normAddr(strasse, hnr, hnr_z));
-    const bid = addrBid ?? `KLS-${kls}`;
-    if (byBid.has(bid)) upd++; else neu++;
+
+    // 1) KLS-ID Match (mit oder ohne "KLS-" Prefix)
+    let bid: string | undefined;
+    if (byBid.has(`KLS-${kls}`)) { bid = `KLS-${kls}`; matchedByKls++; }
+    else if (byBid.has(kls)) { bid = kls; matchedByKls++; }
+    else {
+      // 2) Adresse + NVT Fallback
+      const addr = normAddr(strasse, hnr, hnr_z);
+      const addrHit = addrNvtMap.get(`${addr}|${nvt.toLowerCase()}`);
+      if (addrHit) { bid = addrHit; matchedByAddr++; }
+      else {
+        // 3) Nur Adresse (falls eindeutig) — NVT ggf. leer/anders
+        const onlyHits = addrOnlyMap.get(addr) ?? [];
+        if (onlyHits.length === 1) { bid = onlyHits[0]; matchedByAddr++; }
+      }
+    }
+    // 4) Kein Match → echter Neubau
+    if (!bid) { bid = `KLS-${kls}`; neu++; }
+    else { upd++; }
+
     payload.push({
       bid,
       strasse, hnr, hnr_zusatz: hnr_z,
@@ -143,7 +168,7 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
       typ: (r["Typ"] ?? "").trim(),
       we: Number(r["WE"] ?? 0) || 0,
       ge: Number(r["GE"] ?? 0) || 0,
-      nvt: (r["NVT Gebiet"] ?? "").trim(),
+      nvt,
       zustimmung: zustMap(r["Eigentümerentscheidung"] ?? ""),
       auskundung_erforderlich: (r["Auskundung erforderlich"] ?? "").trim().toLowerCase() === "true",
       auskundung_status: auskStatusMap(r["Auskundungs-Status"] ?? ""),
@@ -154,7 +179,8 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
       auftrag_erstellt_am: parseGermanDate(r["Erstellungsdatum"] ?? ""),
     });
   }
-  log(`  → ${payload.length} Kontakte (${neu} neu · ${upd} update)`);
+  log(`  → ${payload.length} Kontakte (${neu} neu · ${upd} update · KLS-Match:${matchedByKls} · Adress-Match:${matchedByAddr})`);
+
 
   let ok = 0;
   const CHUNK = 60;
