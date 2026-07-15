@@ -103,7 +103,9 @@ const auskStatusMap = (v: string): string => {
  * Eigentümer-Felder (Zustimmung, Auskundung, NVT, Typ, WE/GE).
  */
 async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; neu: number; upd: number }> {
-  const sheetName = wb.SheetNames.find((n) => /schm[uü]cke/i.test(n));
+  // Bei CSV-Import gibt es nur ein Sheet ohne "Schmücke" im Namen → dann dieses nehmen.
+  let sheetName = wb.SheetNames.find((n) => /schm[uü]cke/i.test(n));
+  if (!sheetName && wb.SheetNames.length === 1) sheetName = wb.SheetNames[0];
   if (!sheetName) {
     log("⚠ Kein Schmücke-Sheet gefunden – Pass 1 übersprungen");
     return { ok: 0, neu: 0, upd: 0 };
