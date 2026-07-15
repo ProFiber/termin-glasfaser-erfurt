@@ -345,14 +345,25 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
 
 export async function runFullProFiberImport(file: File, log: Log = () => {}): Promise<ImportResult> {
   log(`Lese ${file.name} …`);
-  const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array", cellDates: true });
+  const isCsv = /\.csv$/i.test(file.name);
+  let wb: XLSX.WorkBook;
+  if (isCsv) {
+    // CSV: als Text lesen, XLSX-Parser mit Auto-Delimiter (Telekom-Export nutzt Semikolon).
+    const text = await file.text();
+    wb = XLSX.read(text, { type: "string", cellDates: true, raw: false });
+    log(`  CSV erkannt – nur Pass 1 (Kontakte / Zustimmung / NVT)`);
+  } else {
+    const buf = await file.arrayBuffer();
+    wb = XLSX.read(buf, { type: "array", cellDates: true });
+  }
 
   const errors: string[] = [];
   let c = { ok: 0, neu: 0, upd: 0 };
   let s: { ok: number; unmatched: number; dokuIssues: DokuIssue[] } = { ok: 0, unmatched: 0, dokuIssues: [] };
   try { c = await importSchmueckeContacts(wb, log); } catch (e) { errors.push(`Pass 1: ${(e as Error).message}`); }
-  try { s = await importAlleGfStates(wb, log); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
+  if (!isCsv) {
+    try { s = await importAlleGfStates(wb, log); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
+  }
 
   return {
     contactsNew: c.neu, contactsUpd: c.upd, contactsOk: c.ok,
@@ -360,4 +371,5 @@ export async function runFullProFiberImport(file: File, log: Log = () => {}): Pr
     dokuIssues: s.dokuIssues,
   };
 }
+
 
