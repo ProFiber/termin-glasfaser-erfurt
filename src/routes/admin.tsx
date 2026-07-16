@@ -628,6 +628,8 @@ function Admin() {
 
         const row: Record<string, unknown> = {
           bid,
+          kls_id: kls,
+          fol_id: fol || null,
           strasse, hnr, hnr_zusatz: hnr_z,
           plz: (r["Postleitzahl"] ?? "").trim(),
           ort: (r["Ort"] ?? "").trim(),
@@ -688,6 +690,129 @@ function Admin() {
     }
   }
 
+  async function importBotCsv(file: File) {
+    setBusy(true);
+    setLog([]);
+    try {
+      append(`Lese Bot-Export ${file.name} …`);
+      const text = (await file.text()).replace(/^\uFEFF/, "");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length < 2) { append("❌ Datei hat keine Zeilen"); setBusy(false); return; }
+      // Naiver Splitter reicht: Semikolons in Feldern kommen im Bot-Export nicht vor
+      const headers = lines[0].split(";").map((h) => h.trim().replace(/^"|"$/g, ""));
+      const idx = (n: string) => headers.findIndex((h) => h.toLowerCase() === n.toLowerCase());
+      const H = {
+        kls: idx("KLS-ID"),
+        bid: idx("BID"),
+        fol: idx("FoL-ID"),
+        naechster: idx("Nächster Schritt"),
+        kommentar: idx("Kommentar"),
+        wartegrund: idx("Wartegrund"),
+        wartegrund_k: idx("Wartegrund-Kommentar"),
+        wiedervorlage: idx("Wiedervorlage"),
+        hausstich_s: idx("Hausstich Status"),
+        hausstich_d: idx("Hausstich Datum"),
+        storniert: idx("Storniert (abgeleitet)"),
+        eig_name: idx("Eigentümer Name"),
+        eig_mail: idx("Eigentümer Email"),
+        eig_mob: idx("Eigentümer Mobil"),
+        eig_fnl: idx("Eigentümer Festnetz"),
+        eig_str: idx("Eigentümer Straße"),
+        eig_hnr: idx("Eigentümer Hausnummer"),
+        eig_plz: idx("Eigentümer PLZ"),
+        eig_ort: idx("Eigentümer Ort"),
+        strasse: idx("Straße"),
+        hnr: idx("Hausnummer"),
+        c2_name: idx("contact2_name"),
+        c2_mail: idx("contact2_email"),
+        c2_mob: idx("contact2_mobile"),
+        c2_fnl: idx("contact2_fixedLine"),
+        c3_name: idx("contact3_name"),
+        c3_mail: idx("contact3_email"),
+        c3_mob: idx("contact3_mobile"),
+        c3_fnl: idx("contact3_fixedLine"),
+        c_name: idx("contact_name"),
+        c_mail: idx("contact_email"),
+        c_mob: idx("contact_mobile"),
+        c_fnl: idx("contact_fixedLine"),
+      };
+      if (H.kls < 0) { append("❌ Spalte 'KLS-ID' fehlt"); setBusy(false); return; }
+
+      const clean = (s: string) => (s ?? "").trim().replace(/^"|"$/g, "");
+      const toISODate = (s: string): string => {
+        const t = clean(s);
+        if (!t) return "";
+        const m = t.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+        const d = new Date(t);
+        return isNaN(d.getTime()) ? "" : d.toISOString().slice(0,10);
+      };
+
+      const payload: Record<string, unknown>[] = [];
+      let skipped = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].split(";");
+        const kls = clean(cells[H.kls]);
+        if (!kls) { skipped++; continue; }
+        // Prefer explicit owner fields; else fall back to contact_ (rolle=eigentümer)
+        const owner_name = clean(cells[H.eig_name] ?? "") || clean(cells[H.c_name] ?? "");
+        const owner_mail = clean(cells[H.eig_mail] ?? "") || clean(cells[H.c_mail] ?? "");
+        const owner_mob  = clean(cells[H.eig_mob] ?? "")  || clean(cells[H.c_mob] ?? "");
+        const owner_fnl  = clean(cells[H.eig_fnl] ?? "")  || clean(cells[H.c_fnl] ?? "");
+
+        payload.push({
+          kls_id: kls,
+          strasse: clean(cells[H.strasse] ?? ""),
+          hnr: clean(cells[H.hnr] ?? ""),
+          name: owner_name,
+          email: owner_mail,
+          mobil: owner_mob,
+          festnetz: owner_fnl,
+          fol_id: clean(cells[H.fol] ?? ""),
+          telekom_bid: clean(cells[H.bid] ?? ""),
+          naechster_schritt: clean(cells[H.naechster] ?? ""),
+          telekom_kommentar: clean(cells[H.kommentar] ?? ""),
+          wartegrund: clean(cells[H.wartegrund] ?? ""),
+          wartegrund_kommentar: clean(cells[H.wartegrund_k] ?? ""),
+          wiedervorlage: toISODate(cells[H.wiedervorlage] ?? ""),
+          hausstich_status: clean(cells[H.hausstich_s] ?? ""),
+          hausstich_datum: toISODate(cells[H.hausstich_d] ?? ""),
+          storniert: /true|ja|1/i.test(clean(cells[H.storniert] ?? "")),
+          contact2_name: clean(cells[H.c2_name] ?? ""),
+          contact2_email: clean(cells[H.c2_mail] ?? ""),
+          contact2_mobil: clean(cells[H.c2_mob] ?? ""),
+          contact2_festnetz: clean(cells[H.c2_fnl] ?? ""),
+          contact3_name: clean(cells[H.c3_name] ?? ""),
+          contact3_email: clean(cells[H.c3_mail] ?? ""),
+          contact3_mobil: clean(cells[H.c3_mob] ?? ""),
+          contact3_festnetz: clean(cells[H.c3_fnl] ?? ""),
+          eig_strasse: clean(cells[H.eig_str] ?? ""),
+          eig_hnr: clean(cells[H.eig_hnr] ?? ""),
+          eig_plz: clean(cells[H.eig_plz] ?? ""),
+          eig_ort: clean(cells[H.eig_ort] ?? ""),
+        });
+      }
+      append(`✓ ${payload.length} Zeilen geparst · ${skipped} ohne KLS-ID`);
+
+      let matched = 0, unmatched = 0;
+      const CHUNK = 80;
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const part = payload.slice(i, i + CHUNK);
+        const { data, error } = await supabase.rpc("bulk_import_bot_contacts", { payload: part as never });
+        if (error) { append(`  ⚠ Chunk ${i/CHUNK+1}: ${error.message}`); continue; }
+        const r = data as { matched: number; unmatched: number };
+        matched += r?.matched ?? 0;
+        unmatched += r?.unmatched ?? 0;
+        append(`  ✓ Chunk ${i/CHUNK+1}: ${r?.matched} gematcht, ${r?.unmatched} ohne KLS-Treffer`);
+      }
+      append(`✅ Fertig: ${matched} Kontakte ergänzt, ${unmatched} kein KLS-Match in DB`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function counts() {
 
     const [{ count: cContacts }, { count: cStates }] = await Promise.all([
@@ -706,64 +831,54 @@ function Admin() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <button onClick={counts} disabled={busy} style={btn("#1f2937")}>📊 Datenbank-Stand prüfen</button>
-        <button onClick={importContacts} disabled={busy} style={btn("#e20074")}>
-          1️⃣ Kontakte aus Excel importieren (541 Einträge)
-        </button>
-        <button onClick={applyMarkings} disabled={busy} style={btn("#16a34a")}>
-          2️⃣ Hauptstr. 3/15/17/46/47 → Erledigt &nbsp;·&nbsp; Hauptstr. 9 → Mi VM
-        </button>
-        <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
-          3️⃣ An der Schmücke: 203 „erledigt"-Einträge importieren
-        </button>
-        <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
-          5️⃣ Grabenlängen importieren (37 Objekte · 04.–06.05.)
-        </button>
+
+        <div style={{ marginTop: 12, marginBottom: 4, fontSize: 13, fontWeight: 700, color: "#0f172a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+          📥 Regelmäßige Imports (Empfohlene Reihenfolge)
+        </div>
+
+        <label style={{ ...btn("#db2777"), display: "block" }}>
+          [1] Telekom-Export (Property_…csv/xlsx)
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Adressen, NVT, Auskundung, KLS-/FoL-ID</div>
+          <input type="file" accept=".csv,.xlsx,.xls,text/csv" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importPropertyFile(f); e.target.value = ""; }} />
+        </label>
 
         <label style={{ ...btn("#0891b2"), display: "block" }}>
-          6️⃣ Master-CSV (Schmücke) hochladen · Zustimmung + Auskundung aktualisieren
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importMasterCsv(f);
-              e.target.value = "";
-            }}
-          />
+          [2] Bot-Export (schmücke_kontaktdaten…csv)
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Eigentümer-Kontakt, 2./3. Ansprechpartner, Kommentare, Wartegrund, Storniert</div>
+          <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importBotCsv(f); e.target.value = ""; }} />
         </label>
 
         <label style={{ ...btn("#7c3aed"), display: "block" }}>
-          7️⃣ Pro-Fiber Database.xlsx hochladen · Status/Umsatz/Doku komplett aktualisieren
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importDatabaseXlsx(f);
-              e.target.value = "";
-            }}
-          />
+          [3] Pro-Fiber Database.xlsx
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Umsatz, Grabenlänge, Doku, Buchhaltung (Sheet „Alle GF+ HA")</div>
+          <input type="file" accept=".xlsx,.xls" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importDatabaseXlsx(f); e.target.value = ""; }} />
         </label>
 
-        <label style={{ ...btn("#db2777"), display: "block" }}>
-          8️⃣ Property-CSV/XLSX nachziehen · neue Objekte anlegen + Zustimmung/Auskundung
-          <input
-            type="file"
-            accept=".csv,.xlsx,.xls,text/csv"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importPropertyFile(f);
-              e.target.value = "";
-            }}
-          />
-        </label>
-
+        <details style={{ marginTop: 16 }}>
+          <summary style={{ fontSize: 12, color: "#666", cursor: "pointer", padding: "4px 0" }}>Einmalige / Legacy-Aktionen</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <button onClick={importContacts} disabled={busy} style={btn("#e20074")}>
+              Kontakte aus Excel importieren (541 Einträge)
+            </button>
+            <button onClick={applyMarkings} disabled={busy} style={btn("#16a34a")}>
+              Hauptstr. 3/15/17/46/47 → Erledigt · Hauptstr. 9 → Mi VM
+            </button>
+            <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
+              An der Schmücke: 203 „erledigt"-Einträge importieren
+            </button>
+            <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
+              Grabenlängen importieren (37 Objekte · 04.–06.05.)
+            </button>
+            <label style={{ ...btn("#0891b2"), display: "block" }}>
+              Master-CSV (Schmücke) hochladen · Zustimmung + Auskundung
+              <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) importMasterCsv(f); e.target.value = ""; }} />
+            </label>
+          </div>
+        </details>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>

@@ -26,6 +26,29 @@ export type Contact = {
   kls_id?: string | null;
   anschluss_typ?: string | null;
   auftragsquelle?: "gf_plus" | "bulk";
+  // Bot-Export (Telekom-Portal, read-only)
+  fol_id?: string | null;
+  telekom_bid?: string | null;
+  naechster_schritt?: string | null;
+  telekom_kommentar?: string | null;
+  wartegrund?: string | null;
+  wartegrund_kommentar?: string | null;
+  wiedervorlage?: string | null;
+  hausstich_status?: string | null;
+  hausstich_datum?: string | null;
+  storniert?: boolean;
+  contact2_name?: string | null;
+  contact2_mobil?: string | null;
+  contact2_festnetz?: string | null;
+  contact2_email?: string | null;
+  contact3_name?: string | null;
+  contact3_mobil?: string | null;
+  contact3_festnetz?: string | null;
+  contact3_email?: string | null;
+  eig_strasse?: string | null;
+  eig_hnr?: string | null;
+  eig_plz?: string | null;
+  eig_ort?: string | null;
 };
 
 export type CallStatus =
