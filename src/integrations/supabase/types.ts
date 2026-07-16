@@ -127,23 +127,45 @@ export type Database = {
           auskundung_status: string
           auskundung_von: string | null
           bid: string
+          contact2_email: string | null
+          contact2_festnetz: string | null
+          contact2_mobil: string | null
+          contact2_name: string | null
+          contact3_email: string | null
+          contact3_festnetz: string | null
+          contact3_mobil: string | null
+          contact3_name: string | null
           created_at: string
+          eig_hnr: string | null
+          eig_ort: string | null
+          eig_plz: string | null
+          eig_strasse: string | null
           email: string
           festnetz: string
+          fol_id: string | null
           ge: number
+          hausstich_datum: string | null
+          hausstich_status: string | null
           hnr: string
           hnr_zusatz: string
           kls_id: string | null
           lat: number | null
           lng: number | null
           mobil: string
+          naechster_schritt: string | null
           name: string
           nvt: string
           ort: string
           plz: string
+          storniert: boolean
           strasse: string
+          telekom_bid: string | null
+          telekom_kommentar: string | null
           typ: string
+          wartegrund: string | null
+          wartegrund_kommentar: string | null
           we: number
+          wiedervorlage: string | null
           zustimmung: string
         }
         Insert: {
@@ -157,23 +179,45 @@ export type Database = {
           auskundung_status?: string
           auskundung_von?: string | null
           bid: string
+          contact2_email?: string | null
+          contact2_festnetz?: string | null
+          contact2_mobil?: string | null
+          contact2_name?: string | null
+          contact3_email?: string | null
+          contact3_festnetz?: string | null
+          contact3_mobil?: string | null
+          contact3_name?: string | null
           created_at?: string
+          eig_hnr?: string | null
+          eig_ort?: string | null
+          eig_plz?: string | null
+          eig_strasse?: string | null
           email?: string
           festnetz?: string
+          fol_id?: string | null
           ge?: number
+          hausstich_datum?: string | null
+          hausstich_status?: string | null
           hnr?: string
           hnr_zusatz?: string
           kls_id?: string | null
           lat?: number | null
           lng?: number | null
           mobil?: string
+          naechster_schritt?: string | null
           name?: string
           nvt?: string
           ort?: string
           plz?: string
+          storniert?: boolean
           strasse?: string
+          telekom_bid?: string | null
+          telekom_kommentar?: string | null
           typ?: string
+          wartegrund?: string | null
+          wartegrund_kommentar?: string | null
           we?: number
+          wiedervorlage?: string | null
           zustimmung?: string
         }
         Update: {
@@ -187,23 +231,45 @@ export type Database = {
           auskundung_status?: string
           auskundung_von?: string | null
           bid?: string
+          contact2_email?: string | null
+          contact2_festnetz?: string | null
+          contact2_mobil?: string | null
+          contact2_name?: string | null
+          contact3_email?: string | null
+          contact3_festnetz?: string | null
+          contact3_mobil?: string | null
+          contact3_name?: string | null
           created_at?: string
+          eig_hnr?: string | null
+          eig_ort?: string | null
+          eig_plz?: string | null
+          eig_strasse?: string | null
           email?: string
           festnetz?: string
+          fol_id?: string | null
           ge?: number
+          hausstich_datum?: string | null
+          hausstich_status?: string | null
           hnr?: string
           hnr_zusatz?: string
           kls_id?: string | null
           lat?: number | null
           lng?: number | null
           mobil?: string
+          naechster_schritt?: string | null
           name?: string
           nvt?: string
           ort?: string
           plz?: string
+          storniert?: boolean
           strasse?: string
+          telekom_bid?: string | null
+          telekom_kommentar?: string | null
           typ?: string
+          wartegrund?: string | null
+          wartegrund_kommentar?: string | null
           we?: number
+          wiedervorlage?: string | null
           zustimmung?: string
         }
         Relationships: []
@@ -310,6 +376,7 @@ export type Database = {
     }
     Functions: {
       bulk_fill_contact_info: { Args: { payload: Json }; Returns: number }
+      bulk_import_bot_contacts: { Args: { payload: Json }; Returns: Json }
       bulk_import_call_states_from_excel: {
         Args: { payload: Json }
         Returns: Json
