@@ -2027,6 +2027,64 @@ function Index() {
                     );
                   })()}
 
+                  {(() => {
+                    const hasBotInfo = c.telekom_kommentar || c.wartegrund || c.wartegrund_kommentar
+                      || c.wiedervorlage || c.fol_id || c.naechster_schritt || c.hausstich_status
+                      || c.contact2_name || c.contact2_mobil || c.contact2_festnetz
+                      || c.contact3_name || c.contact3_mobil || c.contact3_festnetz
+                      || (c.eig_strasse && `${c.eig_strasse} ${c.eig_hnr ?? ""}`.trim() !== `${c.strasse} ${c.hnr}`.trim());
+                    if (!hasBotInfo) return null;
+                    const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
+                      <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: 6, fontSize: 12, padding: "3px 0" }}>
+                        <div style={{ color: "#64748b", fontWeight: 600 }}>{k}</div>
+                        <div style={{ color: "#0f172a" }}>{v}</div>
+                      </div>
+                    );
+                    return (
+                      <details style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 9, padding: "9px 12px", marginBottom: 12 }}>
+                        <summary style={{ fontSize: 10, fontWeight: 900, color: "#0369a1", letterSpacing: 1.2, cursor: "pointer", listStyle: "none" }}>
+                          🔒 TELEKOM-PORTAL-INFO (READ-ONLY) ▾
+                        </summary>
+                        <div style={{ marginTop: 8 }}>
+                          {c.naechster_schritt && <Row k="Nächster Schritt" v={c.naechster_schritt} />}
+                          {c.fol_id && <Row k="FoL-ID" v={<code style={{ fontSize: 11 }}>{c.fol_id}</code>} />}
+                          {c.telekom_bid && <Row k="Telekom-BID" v={<code style={{ fontSize: 11 }}>{c.telekom_bid}</code>} />}
+                          {c.hausstich_status && <Row k="Hausstich" v={`${c.hausstich_status}${c.hausstich_datum ? ` · ${new Date(c.hausstich_datum).toLocaleDateString("de-DE")}` : ""}`} />}
+                          {c.wartegrund && <Row k="Wartegrund" v={c.wartegrund} />}
+                          {c.wartegrund_kommentar && <Row k="Warte-Kommentar" v={<span style={{ whiteSpace: "pre-wrap" }}>{c.wartegrund_kommentar}</span>} />}
+                          {c.wiedervorlage && <Row k="Wiedervorlage" v={new Date(c.wiedervorlage).toLocaleDateString("de-DE")} />}
+                          {c.telekom_kommentar && <Row k="Kommentar" v={<span style={{ whiteSpace: "pre-wrap" }}>{c.telekom_kommentar}</span>} />}
+                          {c.eig_strasse && `${c.eig_strasse} ${c.eig_hnr ?? ""}`.trim() !== `${c.strasse} ${c.hnr}`.trim() && (
+                            <Row k="Eig.-Anschrift" v={`${c.eig_strasse} ${c.eig_hnr ?? ""}, ${c.eig_plz ?? ""} ${c.eig_ort ?? ""}`.trim()} />
+                          )}
+                          {(c.contact2_name || c.contact2_mobil || c.contact2_festnetz || c.contact2_email) && (
+                            <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed #bae6fd" }}>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: "#0369a1", marginBottom: 3 }}>👤 2. ANSPRECHPARTNER</div>
+                              {c.contact2_name && <Row k="Name" v={c.contact2_name} />}
+                              {c.contact2_mobil && <Row k="Mobil" v={<a href={`tel:${c.contact2_mobil}`}>{c.contact2_mobil}</a>} />}
+                              {c.contact2_festnetz && <Row k="Festnetz" v={<a href={`tel:${c.contact2_festnetz}`}>{c.contact2_festnetz}</a>} />}
+                              {c.contact2_email && <Row k="Email" v={c.contact2_email} />}
+                            </div>
+                          )}
+                          {(c.contact3_name || c.contact3_mobil || c.contact3_festnetz || c.contact3_email) && (
+                            <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed #bae6fd" }}>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: "#0369a1", marginBottom: 3 }}>👤 3. ANSPRECHPARTNER</div>
+                              {c.contact3_name && <Row k="Name" v={c.contact3_name} />}
+                              {c.contact3_mobil && <Row k="Mobil" v={<a href={`tel:${c.contact3_mobil}`}>{c.contact3_mobil}</a>} />}
+                              {c.contact3_festnetz && <Row k="Festnetz" v={<a href={`tel:${c.contact3_festnetz}`}>{c.contact3_festnetz}</a>} />}
+                              {c.contact3_email && <Row k="Email" v={c.contact3_email} />}
+                            </div>
+                          )}
+                          {c.storniert && (
+                            <div style={{ marginTop: 8, padding: "6px 10px", background: "#fee2e2", color: "#7c2d12", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                              ⊘ Objekt laut Telekom-Portal storniert (Grund unbekannt · manuell prüfen)
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })()}
+
                   <details style={{ background: "#eef2ff", borderRadius: 9, padding: "9px 12px", marginBottom: 12, fontSize: 13, lineHeight: 1.7, color: "#1e293b" }}>
                     <summary style={{ fontSize: 9, fontWeight: 800, color: "#6366f1", letterSpacing: 1.2, cursor: "pointer", listStyle: "none" }}>LEITFADEN ▾</summary>
                     <div style={{ marginTop: 6 }}>
