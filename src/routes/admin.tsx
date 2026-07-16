@@ -831,64 +831,54 @@ function Admin() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <button onClick={counts} disabled={busy} style={btn("#1f2937")}>📊 Datenbank-Stand prüfen</button>
-        <button onClick={importContacts} disabled={busy} style={btn("#e20074")}>
-          1️⃣ Kontakte aus Excel importieren (541 Einträge)
-        </button>
-        <button onClick={applyMarkings} disabled={busy} style={btn("#16a34a")}>
-          2️⃣ Hauptstr. 3/15/17/46/47 → Erledigt &nbsp;·&nbsp; Hauptstr. 9 → Mi VM
-        </button>
-        <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
-          3️⃣ An der Schmücke: 203 „erledigt"-Einträge importieren
-        </button>
-        <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
-          5️⃣ Grabenlängen importieren (37 Objekte · 04.–06.05.)
-        </button>
+
+        <div style={{ marginTop: 12, marginBottom: 4, fontSize: 13, fontWeight: 700, color: "#0f172a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+          📥 Regelmäßige Imports (Empfohlene Reihenfolge)
+        </div>
+
+        <label style={{ ...btn("#db2777"), display: "block" }}>
+          [1] Telekom-Export (Property_…csv/xlsx)
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Adressen, NVT, Auskundung, KLS-/FoL-ID</div>
+          <input type="file" accept=".csv,.xlsx,.xls,text/csv" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importPropertyFile(f); e.target.value = ""; }} />
+        </label>
 
         <label style={{ ...btn("#0891b2"), display: "block" }}>
-          6️⃣ Master-CSV (Schmücke) hochladen · Zustimmung + Auskundung aktualisieren
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importMasterCsv(f);
-              e.target.value = "";
-            }}
-          />
+          [2] Bot-Export (schmücke_kontaktdaten…csv)
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Eigentümer-Kontakt, 2./3. Ansprechpartner, Kommentare, Wartegrund, Storniert</div>
+          <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importBotCsv(f); e.target.value = ""; }} />
         </label>
 
         <label style={{ ...btn("#7c3aed"), display: "block" }}>
-          7️⃣ Pro-Fiber Database.xlsx hochladen · Status/Umsatz/Doku komplett aktualisieren
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importDatabaseXlsx(f);
-              e.target.value = "";
-            }}
-          />
+          [3] Pro-Fiber Database.xlsx
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Umsatz, Grabenlänge, Doku, Buchhaltung (Sheet „Alle GF+ HA")</div>
+          <input type="file" accept=".xlsx,.xls" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importDatabaseXlsx(f); e.target.value = ""; }} />
         </label>
 
-        <label style={{ ...btn("#db2777"), display: "block" }}>
-          8️⃣ Property-CSV/XLSX nachziehen · neue Objekte anlegen + Zustimmung/Auskundung
-          <input
-            type="file"
-            accept=".csv,.xlsx,.xls,text/csv"
-            disabled={busy}
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importPropertyFile(f);
-              e.target.value = "";
-            }}
-          />
-        </label>
-
+        <details style={{ marginTop: 16 }}>
+          <summary style={{ fontSize: 12, color: "#666", cursor: "pointer", padding: "4px 0" }}>Einmalige / Legacy-Aktionen</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <button onClick={importContacts} disabled={busy} style={btn("#e20074")}>
+              Kontakte aus Excel importieren (541 Einträge)
+            </button>
+            <button onClick={applyMarkings} disabled={busy} style={btn("#16a34a")}>
+              Hauptstr. 3/15/17/46/47 → Erledigt · Hauptstr. 9 → Mi VM
+            </button>
+            <button onClick={migrateSchmueckeErledigt} disabled={busy} style={btn("#2563eb")}>
+              An der Schmücke: 203 „erledigt"-Einträge importieren
+            </button>
+            <button onClick={importGrabenlaengen} disabled={busy} style={btn("#a16207")}>
+              Grabenlängen importieren (37 Objekte · 04.–06.05.)
+            </button>
+            <label style={{ ...btn("#0891b2"), display: "block" }}>
+              Master-CSV (Schmücke) hochladen · Zustimmung + Auskundung
+              <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) importMasterCsv(f); e.target.value = ""; }} />
+            </label>
+          </div>
+        </details>
       </div>
 
       <div style={{ background: "#0f172a", color: "#a7f3d0", padding: 12, borderRadius: 8, fontFamily: "ui-monospace,monospace", fontSize: 12, minHeight: 200, whiteSpace: "pre-wrap" }}>
