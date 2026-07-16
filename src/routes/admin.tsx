@@ -628,6 +628,8 @@ function Admin() {
 
         const row: Record<string, unknown> = {
           bid,
+          kls_id: kls,
+          fol_id: fol || null,
           strasse, hnr, hnr_zusatz: hnr_z,
           plz: (r["Postleitzahl"] ?? "").trim(),
           ort: (r["Ort"] ?? "").trim(),
