@@ -1,45 +1,97 @@
-## Ziel
+# Import-Pipeline & UI-Erweiterung
 
-In jedem Datensatz sichtbar machen: „Dieser Kontakt hat noch N weitere Objekte" — z. B. **Schäffer WohnART GmbH** → Thomas-Müntzer-Str. 5 + Hauptstr. 19, oder **Patrick Taube** → TMS 17 + Hauptstr. 40. Rein clientseitig, keine DB-Änderung.
+Nach dem erfolgreichen Dedup (811 → 777 Kontakte) folgt jetzt der Ausbau: Neue Felder aus dem Bot-Export, drei separate Importer, und UI-Anpassungen für Terminierbarkeit / Storniert.
 
-## Erkennung — wann gelten zwei Objekte als verknüpft?
+## Was gebaut wird
 
-Zwei `contacts` gelten als verknüpft, wenn **mindestens eines** dieser Merkmale übereinstimmt (nach Normalisierung):
+### 1. Datenbank-Erweiterung (Migration)
 
-1. **Name** — lowercase, getrimmt, Mehrfach-Spaces entfernt, Anrede-Präfixe („Herr", „Frau") weg. Nur wenn Name ≥ 3 Zeichen und nicht leer.
-2. **Mobil** — normalisiert zu reinen Ziffern; führendes `+49` / `0049` → `0`. Nur bei ≥ 6 Ziffern.
-3. **Festnetz** — gleiche Normalisierung wie Mobil.
-4. **E-Mail** — lowercase, getrimmt. (Wird nur ausgewertet falls vorhanden — neue Kontakte legen wir bewusst ohne E-Mail an, aber Altbestand enthält sie.)
+Neue Spalten auf `contacts`:
 
-Ein Merkmal reicht — z. B. reicht die identische Firmenrufnummer, um Filiale + Privat zu verknüpfen. Der Match-Grund wird pro Verknüpfung mitgespeichert und angezeigt, damit du bei häufigen Namen einschätzen kannst, ob es wirklich dieselbe Person ist.
+| Spalte | Zweck | Quelle |
+|---|---|---|
+| `kls_id` | Eindeutige Telekom-KLS-ID (Primärschlüssel-Logik) | Telekom + Bot |
+| `fol_id` | Fibre-optic Location ID | Bot |
+| `telekom_bid` | Numerische Telekom-BID (Referenz) | Bot |
+| `contact2_name`, `contact2_mobil`, `contact2_festnetz`, `contact2_email` | 2. Ansprechpartner | Bot |
+| `contact3_name`, `contact3_mobil`, `contact3_festnetz`, `contact3_email` | 3. Ansprechpartner | Bot |
+| `telekom_kommentar` | Freitext aus Telekom-Portal (read-only) | Bot |
+| `wartegrund`, `wartegrund_kommentar` | Warum wartet das Objekt? (read-only) | Bot |
+| `wiedervorlage` | Datum Wiedervorlage | Bot |
+| `hausstich_status`, `hausstich_datum` | Trench-Status | Bot |
+| `eig_strasse`, `eig_hnr`, `eig_plz`, `eig_ort` | Eigentümer-Anschrift (falls ≠ Objekt) | Bot |
+| `storniert` (bool) | Nur importieren, keine UI-Filterung | Bot |
+| `naechster_schritt` | Kurzstatus aus Portal | Bot |
 
-Selbst-Referenz (gleiche `bid`) wird gefiltert. Reine Duplikate desselben Objekts (z. B. `2225880` + `KLS-15552382` beide Nicolle Müller, Hauptstr. 59) tauchen ebenfalls als Verknüpfung auf — praktisch, um Doubletten zu erkennen.
+Neue RPCs:
+- `bulk_import_telekom_v2` — KLS-first Matching, Fallback Adresse+NVT
+- `bulk_import_bot_contacts` — matcht per KLS, ergänzt Kontakt2/3, fol_id, Kommentare
+- `bulk_import_profiber_db` — matcht per KLS, aktualisiert call_states/doku_states (nur Schmücke-Sheet)
 
-## Umsetzung
+### 2. Drei Import-Buttons im /admin
 
-**Neue Datei** `src/lib/relatedContacts.ts`:
-- `normalizePhone(s): string` — nur Ziffern, `+49`/`0049` → `0`.
-- `normalizeName(s): string` — lowercase, trim, Anreden weg.
-- `buildRelationIndex(contacts): Record<bid, Array<{ bid, reasons: ('name'|'mobil'|'festnetz'|'email')[] }>>` — baut invertierte Maps (nameKey → bids, phoneKey → bids, emailKey → bids), verrechnet sie zu Verknüpfungen pro BID.
+```
+┌─────────────────────────────────────────────┐
+│ Datenimport                                 │
+├─────────────────────────────────────────────┤
+│ [1] Telekom-Export (Property_...csv)   [↑]  │
+│      → Adressen, NVT, Auskundung-Status     │
+│                                             │
+│ [2] Bot-Export (schmücke_kontakt...csv) [↑] │
+│      → Eigentümer, Kontakt2/3, fol_id,      │
+│        Kommentare, Wartegrund               │
+│                                             │
+│ [3] Pro-Fiber DB (Pro-Fiber_...xlsx)   [↑]  │
+│      → Umsatz, Doku-Status, Notizen         │
+│      (nur Sheet "Alle GF+ HA", Schmücke)    │
+└─────────────────────────────────────────────┘
+```
 
-**In `src/routes/index.tsx`:**
-- `const relations = useMemo(() => buildRelationIndex(contacts), [contacts])`.
-- An `KarteTab` und die Kontakt-Kartenliste durchreichen.
+Jeder Button unabhängig. Reihenfolge empfohlen 1→2→3, aber nicht erzwungen. Import-Log zeigt: `neu / geupdatet / no-match` pro Datei.
 
-**Anzeige in der Kontakt-Liste** (aufgeklappte Karte, `index.tsx` ~L1643 ff.):
-Neue Sektion **„🔗 Verknüpfte Objekte (N)"** — pro Verknüpfung eine Zeile mit Adresse, Status-Punkt und Grund-Chips („Name" · „Mobil"). Klick springt zum verknüpften Kontakt (nutzt bestehende `openContactInList`).
+### 3. Kontakt-Karte (Detail) — neue Read-Only-Sektion
 
-**Anzeige im Karten-Bottom-Sheet** (`KarteTab.tsx`): Gleiche Sektion, Klick zentriert die Karte auf den verknüpften Pin.
+Neuer aufklappbarer Block „Telekom-Portal-Info" (nur wenn Daten vorhanden):
+- **Kommentar** (aus Portal)
+- **Wartegrund** + **Wartegrund-Kommentar**
+- **Wiedervorlage** (Datum)
+- **FoL-ID**
+- **Nächster Schritt**
+- **Hausstich-Status**
+- **Kontakt 2** (Name, Mobil, Festnetz, Email — wenn vorhanden)
+- **Kontakt 3** (dito)
+- **Eigentümer-Anschrift** (wenn abweichend)
 
-**Kleines Badge in der eingeklappten Listenzeile**: `🔗 2` neben BID/Status, damit man Verknüpfungen sieht, ohne die Karte aufzuklappen. Nur wenn N ≥ 1.
+Alles read-only, wird bei jedem Bot-Import überschrieben.
 
-## Kosten / Grenzen
+### 4. Terminierbarkeits-Logik in Liste & Karte
 
-- O(n) Aufbau, ~600 Kontakte → wenige ms, wird gecached via `useMemo`.
-- Falsch-Positive bei sehr generischen Namen möglich (z. B. mehrere „B Schaller") — deshalb wird der **Grund** angezeigt und mehrere Merkmale zählen additiv, aber schon eines reicht für den Hinweis.
-- Keine Fuzzy-Suche (Tippfehler wie „Müller" vs. „Mueller" werden nicht gematcht). Kann später ergänzt werden, wenn nötig.
+Objekt ist **tabu** (nicht terminierbar) wenn:
+```
+auskundung_erforderlich = true AND auskundung_von IS NULL
+```
+→ In der Liste: grauer Hintergrund, ausgegrautes Icon, Badge „Auskundung ausstehend"
+→ In der Karte: „Terminieren"-Button disabled mit Tooltip „Objekt benötigt erst Auskundungstermin"
 
-## Nicht Teil dieses Schritts
+Objekt ist **terminierbar** wenn:
+- keine Auskundung erforderlich, ODER
+- Auskundung erforderlich UND `auskundung_von` gesetzt (Termin steht)
 
-- Kein Merge-/Zusammenführ-Feature (wir zeigen nur an, ändern nichts).
-- Keine DB-Spalte, keine Migration, keine Server-Function.
+### 5. Storniert
+
+Feld wird importiert und in der Karte als Info-Badge gezeigt („Storniert lt. Portal"), aber keine UI-Filterung — Objekt bleibt normal sichtbar/bedienbar. Grund unklar, daher keine automatischen Aktionen.
+
+## Technische Details
+
+- **KLS als kanonischer Key**: Alle drei Importer matchen primär auf `kls_id`. Fallback nur bei Telekom-Import: Adresse+NVT.
+- **Bot-CSV-Parser**: Semikolon-Trenner, BOM, UTF-8. 113 Spalten, wir mappen ~20. FoL-ID, Kontakt2/3, Wartegrund, Hausstich, Eigentümer-Adresse.
+- **Pro-Fiber XLSX-Parser**: Nur Sheet `Alle GF+ HA` einlesen, dann pro Zeile Adresse+HNr → KLS auflösen. Fremdprojekte (Kirchenlamitz, Kalchreuth, Wendelstein) werden ignoriert (per Scope-Constraint).
+- **Storniert**: Boolean-Spalte, keine RLS-Sonderregel.
+- **Migration**: Alle neuen Spalten `NULL` erlaubt, kein Default-Wert. Existierende Zeilen bleiben unverändert.
+
+## Was NICHT gebaut wird
+
+- Keine Auto-Termine bei Bot-Import.
+- Keine Löschung stornierter Objekte.
+- Keine E-Mail-Übernahme im UI-Kontakt-Anlege-Flow (Constraint bleibt).
+- Keine Fremdprojekte (nur „An der Schmücke").
