@@ -1859,9 +1859,21 @@ function Index() {
                             ⚠ KEINE ZUSTIMMUNG
                           </span>
                         )}
-                        {ai.required && !ai.done && (
+                        {ai.required && !ai.done && !ai.plan && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#6b7280", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
+                            title="Objekt darf nicht terminiert werden, solange kein Auskundungstermin bekannt ist">
+                            🚫 TABU · AUSKUNDUNG OFFEN
+                          </span>
+                        )}
+                        {ai.required && !ai.done && ai.plan && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#ea580c", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}>
-                            🔍 AUSKUNDUNG NÖTIG{ai.plan ? ` · ${ai.plan}` : ""}
+                            🔍 AUSKUNDUNG · {ai.plan}
+                          </span>
+                        )}
+                        {c.storniert && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#7c2d12", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
+                            title="Laut Telekom-Portal storniert">
+                            ⊘ STORNIERT
                           </span>
                         )}
                         {ai.required && ai.done && (
