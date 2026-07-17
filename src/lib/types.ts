@@ -29,6 +29,7 @@ export type Contact = {
   // Bot-Export (Telekom-Portal, read-only)
   fol_id?: string | null;
   telekom_bid?: string | null;
+  bulk_id?: string | null;
   naechster_schritt?: string | null;
   telekom_kommentar?: string | null;
   wartegrund?: string | null;
