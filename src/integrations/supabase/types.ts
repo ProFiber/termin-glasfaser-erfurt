@@ -127,6 +127,7 @@ export type Database = {
           auskundung_status: string
           auskundung_von: string | null
           bid: string
+          bulk_id: string | null
           contact2_email: string | null
           contact2_festnetz: string | null
           contact2_mobil: string | null
@@ -179,6 +180,7 @@ export type Database = {
           auskundung_status?: string
           auskundung_von?: string | null
           bid: string
+          bulk_id?: string | null
           contact2_email?: string | null
           contact2_festnetz?: string | null
           contact2_mobil?: string | null
@@ -231,6 +233,7 @@ export type Database = {
           auskundung_status?: string
           auskundung_von?: string | null
           bid?: string
+          bulk_id?: string | null
           contact2_email?: string | null
           contact2_festnetz?: string | null
           contact2_mobil?: string | null
