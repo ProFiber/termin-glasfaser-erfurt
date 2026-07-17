@@ -2045,7 +2045,7 @@ function Index() {
 
                   {(() => {
                     const hasBotInfo = c.telekom_kommentar || c.wartegrund || c.wartegrund_kommentar
-                      || c.wiedervorlage || c.fol_id || c.naechster_schritt || c.hausstich_status
+                      || c.wiedervorlage || c.fol_id || c.telekom_bid || c.bulk_id || c.naechster_schritt || c.hausstich_status
                       || c.contact2_name || c.contact2_mobil || c.contact2_festnetz
                       || c.contact3_name || c.contact3_mobil || c.contact3_festnetz
                       || (c.eig_strasse && `${c.eig_strasse} ${c.eig_hnr ?? ""}`.trim() !== `${c.strasse} ${c.hnr}`.trim());
