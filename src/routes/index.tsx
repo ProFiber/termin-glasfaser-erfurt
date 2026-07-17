@@ -1659,10 +1659,10 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
-            const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
+            const baseStyle = (f === "klarfall" || f === "terminVergangen" || f === "storniert") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
               ? { ...baseStyle, fontSize: 11, borderColor: isActive ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
               : baseStyle;
@@ -1673,6 +1673,7 @@ function Index() {
               : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
               : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
               : f === "bulk" ? `📦 Bulk (${bulkCount})`
+              : f === "storniert" ? `⊘ Storniert (${storniertCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
@@ -1681,6 +1682,7 @@ function Index() {
               : f === "erlOhneAuftrag" ? `📄 Erl. ohne Auftrag (${erlOhneAuftragCount})`
               : f === "imBauHeute" ? `🚧 Im Bau heute (${imBauHeuteCount})`
               : f === "offen" ? "Ausstehend"
+              : f === "nichtErledigt" ? "🎯 Noch offen (bis 100%)"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
               : STATUS_META[f as CallStatus].label;
