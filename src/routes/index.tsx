@@ -1046,9 +1046,11 @@ function Index() {
       // AND-Constraints (engen das Ergebnis ein, statt mit anderen Chips ODER-verknüpft zu sein)
       if (filter.has("nurGE") && !(c.ge > 0)) return false;
       if (filter.has("offen") && !(st !== "erledigt" && st !== "abgelehnt")) return false;
+      if (filter.has("nichtErledigt") && st === "erledigt") return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
       orFilters.delete("offen");
+      orFilters.delete("nichtErledigt");
       orFilters.delete("neuTelekom20");
       if (orFilters.size > 0) {
         let matchesAny = false;
@@ -1066,6 +1068,7 @@ function Index() {
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
+        if (orFilters.has("storniert") && c.storniert) matchesAny = true;
         if (orFilters.has("angerufen") && st === "angerufen") matchesAny = true;
         if (orFilters.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
         if (orFilters.has("terminVergangen") && st === "termin") {
@@ -1319,6 +1322,10 @@ function Index() {
     () => contacts.reduce((n, c) => n + (c.auftragsquelle === "bulk" ? 1 : 0), 0),
     [contacts],
   );
+  const storniertCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.storniert ? 1 : 0), 0),
+    [contacts],
+  );
   const bulkStats = useMemo(() => {
     const bulkBids = contacts.filter(c => c.auftragsquelle === "bulk").map(c => c.bid);
     let erledigt = 0, termin = 0, offen = 0, abgelehnt = 0;
@@ -1487,6 +1494,13 @@ function Index() {
           onOpenDoku={() => { setActiveTab("doku"); }}
           onOpenNeuTelekom20={() => { setFilter(new Set(["neuTelekom20"])); setActiveTab("objekte"); }}
           onOpenContact={(bid) => openContactInList(bid)}
+          onOpenAbgelehnt={() => { setFilter(new Set(["abgelehnt"])); setActiveTab("objekte"); }}
+          onOpenStorniert={() => { setFilter(new Set(["storniert"])); setActiveTab("objekte"); }}
+          onOpenNvtOffen={(nvt) => {
+            setNvtSel(new Set([nvt]));
+            setFilter(new Set(["nichtErledigt"]));
+            setActiveTab("objekte");
+          }}
 
           onTeamAction={(team, action) => {
             setTeamFilter(team);
@@ -1652,10 +1666,10 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "termin", "terminVergangen", "erledigt", "abgelehnt", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt";
+          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
-            const baseStyle = (f === "klarfall" || f === "terminVergangen") ? klarfallPill(isActive) : pill(isActive);
+            const baseStyle = (f === "klarfall" || f === "terminVergangen" || f === "storniert") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
               ? { ...baseStyle, fontSize: 11, borderColor: isActive ? (baseStyle as React.CSSProperties).borderColor : "#e5e7eb" }
               : baseStyle;
@@ -1666,6 +1680,7 @@ function Index() {
               : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
               : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
               : f === "bulk" ? `📦 Bulk (${bulkCount})`
+              : f === "storniert" ? `⊘ Storniert (${storniertCount})`
               : f === "terminVergangen" ? `⏰ Überfällig (${terminVergangenCount})`
               : f === "ohneZustimmung" ? `🚫 Ohne Zustimmung (${ohneZustimmungCount})`
               : f === "nurGE" ? `🏢 GE (${gewerbeCount})`
@@ -1674,6 +1689,7 @@ function Index() {
               : f === "erlOhneAuftrag" ? `📄 Erl. ohne Auftrag (${erlOhneAuftragCount})`
               : f === "imBauHeute" ? `🚧 Im Bau heute (${imBauHeuteCount})`
               : f === "offen" ? "Ausstehend"
+              : f === "nichtErledigt" ? "🎯 Noch offen (bis 100%)"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
               : STATUS_META[f as CallStatus].label;

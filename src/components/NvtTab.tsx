@@ -132,6 +132,9 @@ export default function NvtTab({
   onOpenDoku,
   onOpenNeuTelekom20,
   onOpenContact,
+  onOpenAbgelehnt,
+  onOpenStorniert,
+  onOpenNvtOffen,
   onTeamAction,
   onPickKalenderDate,
   onOpenPlan,
@@ -144,6 +147,9 @@ export default function NvtTab({
   onOpenDoku?: () => void;
   onOpenNeuTelekom20?: () => void;
   onOpenContact?: (bid: string) => void;
+  onOpenAbgelehnt?: () => void;
+  onOpenStorniert?: () => void;
+  onOpenNvtOffen?: (nvt: string) => void;
   onTeamAction?: (team: "team1" | "team2", action: "auftraege" | "karte" | "doku") => void;
   onPickKalenderDate?: (dateISO: string) => void;
   onOpenPlan?: () => void;
@@ -272,6 +278,10 @@ export default function NvtTab({
   const totalTermin = rows.reduce((s, r) => s + r.termin, 0);
   const totalOffen = rows.reduce((s, r) => s + r.offen, 0);
   const totalAbgelehnt = rows.reduce((s, r) => s + r.abgelehnt, 0);
+  const totalStorniert = useMemo(
+    () => contacts.reduce((n, c) => n + (c.storniert ? 1 : 0), 0),
+    [contacts],
+  );
   const totalPct = totalGesamt ? Math.round((totalErledigt / totalGesamt) * 100) : 0;
 
   // ─── Einsatzplanung ──────────────────────────────────────────────
@@ -791,8 +801,37 @@ export default function NvtTab({
         </div>
       </div>
 
+
+
+      {/* ══════════════ 4b) ABGELEHNT / STORNIERT ══════════════ */}
+      {(totalAbgelehnt > 0 || totalStorniert > 0) && (
+        <div style={{ ...CARD, padding: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#111", marginBottom: 8 }}>
+            🚫 Nicht realisierbar
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <KpiCard
+              color="#ef4444"
+              icon="🔴"
+              label="Abgelehnt (Eigentümer)"
+              value={totalAbgelehnt}
+              sub="Zustimmung verweigert"
+              onClick={onOpenAbgelehnt}
+            />
+            <KpiCard
+              color="#7c3aed"
+              icon="⊘"
+              label="Storniert (Telekom)"
+              value={totalStorniert}
+              sub="Auftrag zurückgezogen"
+              onClick={onOpenStorniert}
+            />
+          </div>
+        </div>
+      )}
+
       {/* ══════════════ 5) NVT-FORTSCHRITT ══════════════ */}
-      <div style={SECTION_TITLE}>📡 NVT Fortschritt</div>
+      <div style={SECTION_TITLE}>📡 NVT Fortschritt · Tippen für Restliste</div>
 
       {(() => {
         const rest = rows.filter((r) => !isPriorityNvt(r.nvt));
@@ -802,13 +841,22 @@ export default function NvtTab({
           const emoji = kind === "urgent" ? "🔴 " : kind === "prio" ? "🔥 " : "";
           const nvtPrio = getNvtPriority(r.nvt) as PriorityLevel;
           const stars = priorityStars(nvtPrio);
+          const restBis100 = r.gesamt - r.erledigt;
+          const clickable = !!onOpenNvtOffen && restBis100 > 0;
           return (
-            <div key={r.nvt} style={{
-              background: cardBg(r.pct),
-              border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
-              borderLeft: accent ? `4px solid ${accent}` : undefined,
-              borderRadius: 12, padding: 10, marginBottom: 8,
-            }}>
+            <button
+              key={r.nvt}
+              type="button"
+              onClick={clickable ? () => onOpenNvtOffen!(r.nvt) : undefined}
+              disabled={!clickable}
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                background: cardBg(r.pct),
+                border: `1px solid ${r.pct >= 100 ? "#10b981" : "#e5e7eb"}`,
+                borderLeft: accent ? `4px solid ${accent}` : undefined,
+                borderRadius: 12, padding: 10, marginBottom: 8,
+                cursor: clickable ? "pointer" : "default",
+              }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
@@ -827,8 +875,13 @@ export default function NvtTab({
                 <span style={{ color: "#3b82f6" }}>📅 {r.termin}</span>
                 <span style={{ color: "#6b7280" }}>⚪ {r.offen}</span>
                 {r.abgelehnt > 0 && <span style={{ color: "#ef4444" }}>🔴 {r.abgelehnt}</span>}
+                {clickable && (
+                  <span style={{ marginLeft: "auto", color: "#e20074", fontWeight: 800 }}>
+                    → {restBis100} bis 100%
+                  </span>
+                )}
               </div>
-            </div>
+            </button>
           );
         };
         return (
