@@ -278,6 +278,10 @@ export default function NvtTab({
   const totalTermin = rows.reduce((s, r) => s + r.termin, 0);
   const totalOffen = rows.reduce((s, r) => s + r.offen, 0);
   const totalAbgelehnt = rows.reduce((s, r) => s + r.abgelehnt, 0);
+  const totalStorniert = useMemo(
+    () => contacts.reduce((n, c) => n + (c.storniert ? 1 : 0), 0),
+    [contacts],
+  );
   const totalPct = totalGesamt ? Math.round((totalErledigt / totalGesamt) * 100) : 0;
 
   // ─── Einsatzplanung ──────────────────────────────────────────────
