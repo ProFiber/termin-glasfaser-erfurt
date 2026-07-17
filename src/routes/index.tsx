@@ -1068,6 +1068,7 @@ function Index() {
         if (orFilters.has("termin") && st === "termin") matchesAny = true;
         if (orFilters.has("erledigt") && st === "erledigt") matchesAny = true;
         if (orFilters.has("abgelehnt") && st === "abgelehnt") matchesAny = true;
+        if (orFilters.has("storniert") && c.storniert) matchesAny = true;
         if (orFilters.has("angerufen") && st === "angerufen") matchesAny = true;
         if (orFilters.has("nichtErreicht") && st === "nichtErreicht") matchesAny = true;
         if (orFilters.has("terminVergangen") && st === "termin") {
