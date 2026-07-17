@@ -1046,9 +1046,11 @@ function Index() {
       // AND-Constraints (engen das Ergebnis ein, statt mit anderen Chips ODER-verknüpft zu sein)
       if (filter.has("nurGE") && !(c.ge > 0)) return false;
       if (filter.has("offen") && !(st !== "erledigt" && st !== "abgelehnt")) return false;
+      if (filter.has("nichtErledigt") && st === "erledigt") return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
       orFilters.delete("offen");
+      orFilters.delete("nichtErledigt");
       orFilters.delete("neuTelekom20");
       if (orFilters.size > 0) {
         let matchesAny = false;
