@@ -1322,6 +1322,10 @@ function Index() {
     () => contacts.reduce((n, c) => n + (c.auftragsquelle === "bulk" ? 1 : 0), 0),
     [contacts],
   );
+  const storniertCount = useMemo(
+    () => contacts.reduce((n, c) => n + (c.storniert ? 1 : 0), 0),
+    [contacts],
+  );
   const bulkStats = useMemo(() => {
     const bulkBids = contacts.filter(c => c.auftragsquelle === "bulk").map(c => c.bid);
     let erledigt = 0, termin = 0, offen = 0, abgelehnt = 0;
