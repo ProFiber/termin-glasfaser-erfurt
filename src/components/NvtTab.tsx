@@ -801,8 +801,7 @@ export default function NvtTab({
         </div>
       </div>
 
-      {/* ══════════════ 5) NVT-FORTSCHRITT ══════════════ */}
-      <div style={SECTION_TITLE}>📡 NVT Fortschritt</div>
+
 
       {/* ══════════════ 4b) ABGELEHNT / STORNIERT ══════════════ */}
       {(totalAbgelehnt > 0 || totalStorniert > 0) && (
