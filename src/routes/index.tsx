@@ -1494,6 +1494,13 @@ function Index() {
           onOpenDoku={() => { setActiveTab("doku"); }}
           onOpenNeuTelekom20={() => { setFilter(new Set(["neuTelekom20"])); setActiveTab("objekte"); }}
           onOpenContact={(bid) => openContactInList(bid)}
+          onOpenAbgelehnt={() => { setFilter(new Set(["abgelehnt"])); setActiveTab("objekte"); }}
+          onOpenStorniert={() => { setFilter(new Set(["storniert"])); setActiveTab("objekte"); }}
+          onOpenNvtOffen={(nvt) => {
+            setNvtSel(new Set([nvt]));
+            setFilter(new Set(["nichtErledigt"]));
+            setActiveTab("objekte");
+          }}
 
           onTeamAction={(team, action) => {
             setTeamFilter(team);
