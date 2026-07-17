@@ -2065,6 +2065,7 @@ function Index() {
                           {c.naechster_schritt && <Row k="Nächster Schritt" v={c.naechster_schritt} />}
                           {c.fol_id && <Row k="FoL-ID" v={<code style={{ fontSize: 11 }}>{c.fol_id}</code>} />}
                           {c.telekom_bid && <Row k="Telekom-BID" v={<code style={{ fontSize: 11 }}>{c.telekom_bid}</code>} />}
+                          {c.bulk_id && <Row k="Bulk-ID" v={<code style={{ fontSize: 11 }}>{c.bulk_id}</code>} />}
                           {c.hausstich_status && <Row k="Hausstich" v={`${c.hausstich_status}${c.hausstich_datum ? ` · ${new Date(c.hausstich_datum).toLocaleDateString("de-DE")}` : ""}`} />}
                           {c.wartegrund && <Row k="Wartegrund" v={c.wartegrund} />}
                           {c.wartegrund_kommentar && <Row k="Warte-Kommentar" v={<span style={{ whiteSpace: "pre-wrap" }}>{c.wartegrund_kommentar}</span>} />}
