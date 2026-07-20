@@ -364,9 +364,25 @@ export default function FinanzTab() {
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(110);
         pdf.text(sub, x + 5, y + 19);
       };
+      // Diese Woche: HA + Meter
+      const wocheMeter = wocheErledigt.reduce((n, w) => n + (w.graben || 0), 0);
+      // Bautempo: Ø HA/Arbeitstag der letzten 4 Wochen (Mo–Sa)
+      const fourWeeksAgo = new Date(today); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      const fwIso = toIso(fourWeeksAgo);
+      const last4wCount = ((states as S[]) || []).filter(
+        (s) => s.status === "erledigt" && s.erledigt_datum && s.erledigt_datum >= fwIso,
+      ).length;
+      let workdays4w = 0;
+      for (let i = 0; i < 28; i++) {
+        const d = new Date(fourWeeksAgo); d.setDate(d.getDate() + i);
+        const dow = d.getDay();
+        if (dow !== 0) workdays4w++;
+      }
+      const tempo = workdays4w > 0 ? last4wCount / workdays4w : 0;
+
       drawKpi(margin + (tileW + 3) * 0, "Erledigt", `${totals.erledigt}`, `${gesPct.toFixed(1)}% von ${totals.total}`, [34, 197, 94]);
-      drawKpi(margin + (tileW + 3) * 1, "In Arbeit", `${totals.in_arbeit}`, `HA aktiv`, [59, 130, 246]);
-      drawKpi(margin + (tileW + 3) * 2, "Offen", `${totals.offen}`, `noch zu bauen`, [148, 163, 184]);
+      drawKpi(margin + (tileW + 3) * 1, "Diese Woche", `${wocheErledigt.length} HA`, `${wocheMeter} m gebaut`, [59, 130, 246]);
+      drawKpi(margin + (tileW + 3) * 2, "Bautempo", `${tempo.toFixed(1)}`, `HA/Tag (Ø 4 Wo.)`, [168, 85, 247]);
       drawKpi(
         margin + (tileW + 3) * 3, "Klärfälle", `${klaerfaelle.length}`,
         aeltesterKlarfall != null ? `ältester: ${aeltesterKlarfall} Tage` : "—",
