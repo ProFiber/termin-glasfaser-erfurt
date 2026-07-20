@@ -290,7 +290,6 @@ export default function FinanzTab() {
       function kategorienFuer(s: S, c: C | undefined): string[] {
         const out: string[] = [];
         if (s.status === "erledigt") {
-          if (c?.auskundung_erforderlich && !c.auskundung_erfolgt) out.push("🚫 Ohne Auskundung");
           const d = dokuMap.get(s.bid);
           if (!d?.foto) out.push("📸 Foto fehlt");
           if (!d?.protokoll) out.push("📄 Protokoll fehlt");
