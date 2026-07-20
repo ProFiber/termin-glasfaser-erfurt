@@ -1445,7 +1445,68 @@ function Index() {
 
       {activeTab === "dashboard" && (
         <>
+        {(() => {
+          const total = contacts.length;
+          let erledigt = 0, abStorno = 0, ausk = 0, kz = 0;
+          let baubar = 0, bKontaktiert = 0, bTermin = 0, bNichtErreicht = 0, bOffen = 0;
+          for (const c of contacts) {
+            const cs = states[c.bid];
+            const z = (c.zustimmung || "").toUpperCase();
+            if (cs?.status === "erledigt") { erledigt++; continue; }
+            if (cs?.status === "abgelehnt" || c.storniert) { abStorno++; continue; }
+            if (c.auskundung_erforderlich && !c.auskundung_erfolgt) { ausk++; continue; }
+            if (z !== "AGREED" && z !== "ZUGESTIMMT") { kz++; continue; }
+            baubar++;
+            if (cs?.status === "termin") bTermin++;
+            else if (cs?.status === "angerufen") bKontaktiert++;
+            else if (cs?.status === "nichtErreicht") bNichtErreicht++;
+            else bOffen++;
+          }
+          const row = (label: string, val: number, color: string, onClick?: () => void) => (
+            <div
+              onClick={onClick}
+              style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "8px 10px", borderRadius: 8, background: "#f8fafc",
+                borderLeft: `4px solid ${color}`, cursor: onClick ? "pointer" : "default",
+              }}
+            >
+              <span style={{ fontSize: 12, color: "#334155" }}>{label}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{val}</span>
+            </div>
+          );
+          return (
+            <div style={{ margin: "10px 12px 0", padding: 12, borderRadius: 12, background: "white", border: "1px solid #e5e7eb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>🧭 Bestand & Kontakt-Funnel</div>
+                <div style={{ fontSize: 11, color: "#64748b" }}>Gesamt {total}</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {row(`✅ Erledigt`, erledigt, "#16a34a")}
+                {row(`❌ Abgelehnt / Storno`, abStorno, "#ef4444", () => { setFilter(new Set(["abgelehnt"])); setActiveTab("objekte"); })}
+                {row(`🔎 Auskundung offen`, ausk, "#f59e0b")}
+                {row(`✋ Keine Zustimmung`, kz, "#a855f7")}
+              </div>
+              <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "linear-gradient(135deg,#eff6ff,#dbeafe)", border: "1px solid #93c5fd" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#1e3a8a" }}>🎯 Tatsächlich offen (baubar)</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#1e3a8a" }}>{baubar}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {row(`📅 Termin vereinbart`, bTermin, "#3b82f6")}
+                  {row(`📞 Kontaktiert`, bKontaktiert, "#0ea5e9")}
+                  {row(`📵 Nicht erreichbar`, bNichtErreicht, "#f97316")}
+                  {row(`⏳ Noch offen`, bOffen, "#94a3b8")}
+                </div>
+                <div style={{ marginTop: 6, fontSize: 10, color: "#475569" }}>
+                  Kontaktiert insgesamt: <b>{bKontaktiert + bTermin}</b> · Noch nie erreicht: <b>{bOffen + bNichtErreicht}</b>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         {bulkStats.total > 0 && (
+
           <div style={{
             margin: "10px 12px 0", padding: 12, borderRadius: 12,
             background: "linear-gradient(135deg,#fef3c7,#fde68a)",
