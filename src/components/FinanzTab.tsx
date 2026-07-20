@@ -227,14 +227,14 @@ export default function FinanzTab() {
 
       // Daten holen
       const [{ data: contacts }, { data: states }, { data: doku }] = await Promise.all([
-        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt"),
+        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt,storniert"),
         supabase
           .from("call_states")
           .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz,pruefung_status,pruefung_nachforderung,pruefung_notiz,avis_am,verguetet_am"),
         supabase.from("doku_states").select("bid,foto,protokoll"),
       ]);
 
-      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean };
+      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean; storniert: boolean };
       type S = {
         bid: string; status: string; team: string; team_status: string;
         termin_datum: string | null; erledigt_datum: string | null;
@@ -350,22 +350,41 @@ export default function FinanzTab() {
       pdf.setDrawColor(226, 0, 116); pdf.setLineWidth(0.8);
       pdf.line(margin, y, pageW - margin, y); y += 8;
 
-      // KPI-Kacheln
-      const tileW = (pageW - margin * 2 - 9) / 4;
+      // KPI-Kacheln (5 in einer Reihe)
+      const tileW = (pageW - margin * 2 - 12) / 5;
       const tileH = 24;
       const drawKpi = (x: number, label: string, big: string, sub: string, color: [number, number, number]) => {
         pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.3);
         pdf.roundedRect(x, y, tileW, tileH, 2, 2, "FD");
         pdf.setFillColor(...color); pdf.rect(x, y, 2.5, tileH, "F");
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(110);
-        pdf.text(label, x + 5, y + 5);
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(15, 23, 42);
-        pdf.text(big, x + 5, y + 13);
         pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(110);
+        pdf.text(label, x + 5, y + 5);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(15, 23, 42);
+        pdf.text(big, x + 5, y + 13);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setTextColor(110);
         pdf.text(sub, x + 5, y + 19);
       };
       // Diese Woche: HA + Meter
       const wocheMeter = wocheErledigt.reduce((n, w) => n + (w.graben || 0), 0);
+      // Letzte Woche
+      const lastWeekStart = new Date(weekStart); lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+      const lastWeekEnd = new Date(weekStart); lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+      const lwsIso = toIso(lastWeekStart);
+      const lweIso = toIso(lastWeekEnd);
+      const letzteWoche = ((states as S[]) || [])
+        .filter((s) => s.status === "erledigt" && s.erledigt_datum && s.erledigt_datum >= lwsIso && s.erledigt_datum <= lweIso)
+        .map((s) => {
+          const c = contactMap.get(s.bid);
+          const adr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim() : s.bid;
+          const nvt = c?.nvt || "—";
+          return { datum: s.erledigt_datum!, adresse: adr, nvt, graben: Number(s.grabenlaenge || 0), prio: getNvtPriority(nvt) };
+        })
+        .sort((a, b) => a.datum.localeCompare(b.datum));
+      const letzteWocheMeter = letzteWoche.reduce((n, w) => n + (w.graben || 0), 0);
+      // Nicht realisierbar: abgelehnt + storniert
+      const abgCount = ((states as S[]) || []).filter((s) => s.status === "abgelehnt").length;
+      const stoCount = ((contacts as C[]) || []).filter((c) => c.storniert).length;
+      const nichtRealisierbar = abgCount + stoCount;
       // Bautempo: Ø HA/Arbeitstag der letzten 4 Wochen (Mo–Sa)
       const fourWeeksAgo = new Date(today); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
       const fwIso = toIso(fourWeeksAgo);
@@ -382,13 +401,26 @@ export default function FinanzTab() {
 
       drawKpi(margin + (tileW + 3) * 0, "Erledigt", `${totals.erledigt}`, `${gesPct.toFixed(1)}% von ${totals.total}`, [34, 197, 94]);
       drawKpi(margin + (tileW + 3) * 1, "Diese Woche", `${wocheErledigt.length} HA`, `${wocheMeter} m gebaut`, [59, 130, 246]);
-      drawKpi(margin + (tileW + 3) * 2, "Bautempo", `${tempo.toFixed(1)}`, `HA/Tag (Ø 4 Wo.)`, [168, 85, 247]);
+      drawKpi(margin + (tileW + 3) * 2, "Letzte Woche", `${letzteWoche.length} HA`, `${letzteWocheMeter} m gebaut`, [14, 165, 233]);
+      drawKpi(margin + (tileW + 3) * 3, "Bautempo", `${tempo.toFixed(1)}`, `HA/Tag (Ø 4 Wo.)`, [168, 85, 247]);
       drawKpi(
-        margin + (tileW + 3) * 3, "Klärfälle", `${klaerfaelle.length}`,
-        aeltesterKlarfall != null ? `ältester: ${aeltesterKlarfall} Tage` : "—",
-        [234, 88, 12],
+        margin + (tileW + 3) * 4, "Nicht realisierb.", `${nichtRealisierbar}`,
+        `${abgCount} abg. · ${stoCount} storn.`,
+        [220, 38, 38],
       );
-      y += tileH + 6;
+      y += tileH + 4;
+      // 2. Reihe: Klärfälle als eigene Zeile
+      const kpiW2 = pageW - margin * 2;
+      pdf.setFillColor(255, 247, 237); pdf.setDrawColor(234, 88, 12); pdf.setLineWidth(0.4);
+      pdf.roundedRect(margin, y, kpiW2, 12, 2, 2, "FD");
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10); pdf.setTextColor(154, 52, 18);
+      pdf.text(`Klärfälle: ${klaerfaelle.length}`, margin + 4, y + 8);
+      if (aeltesterKlarfall != null) {
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
+        pdf.text(`ältester: ${aeltesterKlarfall} Tage`, margin + 60, y + 8);
+      }
+      y += 16;
+
 
       // Gesamt-Fortschrittsbalken
       ensureSpace(14);
@@ -529,6 +561,44 @@ export default function FinanzTab() {
           y += 5;
         });
       }
+
+      // Letzte Woche erledigt
+      ensureSpace(20);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      const lwKw = getWeek(lastWeekStart);
+      pdf.text(`Letzte Woche erledigt (KW ${lwKw})`, margin, y); y += 6;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(90);
+      pdf.text(`${letzteWoche.length} HA · ${letzteWocheMeter} m Graben`, margin, y); y += 6;
+
+      if (letzteWoche.length === 0) {
+        pdf.setFont("helvetica", "italic"); pdf.setTextColor(140);
+        pdf.text("In der letzten Woche wurden keine Hausanschlüsse abgeschlossen.", margin, y);
+        y += 6;
+      } else {
+        const wX = { dat: margin, adr: margin + 22, nvt: margin + 120, gra: margin + 160 };
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(110);
+        pdf.text("Datum", wX.dat, y);
+        pdf.text("Adresse", wX.adr, y);
+        pdf.text("NVT", wX.nvt, y);
+        pdf.text("Graben", wX.gra, y);
+        y += 2;
+        pdf.setDrawColor(200); pdf.line(margin, y, pageW - margin, y); y += 3;
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
+        letzteWoche.forEach((r) => {
+          ensureSpace(6);
+          const d = new Date(r.datum);
+          const dStr = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+          pdf.text(dStr, wX.dat, y);
+          const adr = r.adresse.length > 52 ? r.adresse.slice(0, 50) + "…" : r.adresse;
+          pdf.text(adr, wX.adr, y);
+          const stars = r.prio > 0 ? " " + "*".repeat(r.prio) : "";
+          pdf.text(`${r.nvt}${stars}`, wX.nvt, y);
+          pdf.text(`${r.graben} m`, wX.gra, y);
+          y += 5;
+        });
+      }
+
+
 
       // Footer
       const totalPages = pdf.getNumberOfPages();
