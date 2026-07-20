@@ -227,7 +227,7 @@ export default function FinanzTab() {
 
       // Daten holen
       const [{ data: contacts }, { data: states }, { data: doku }] = await Promise.all([
-        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt"),
+        supabase.from("contacts").select("bid,strasse,hnr,hnr_zusatz,nvt,ort,zustimmung,auskundung_erforderlich,auskundung_erfolgt,storniert"),
         supabase
           .from("call_states")
           .select("bid,status,team,team_status,termin_datum,erledigt_datum,grabenlaenge,klarfall,klarfall_notiz,pruefung_status,pruefung_nachforderung,pruefung_notiz,avis_am,verguetet_am"),
