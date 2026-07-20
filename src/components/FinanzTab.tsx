@@ -234,7 +234,7 @@ export default function FinanzTab() {
         supabase.from("doku_states").select("bid,foto,protokoll"),
       ]);
 
-      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean };
+      type C = { bid: string; strasse: string; hnr: string; hnr_zusatz: string; nvt: string; ort: string; zustimmung: string; auskundung_erforderlich: boolean; auskundung_erfolgt: boolean; storniert: boolean };
       type S = {
         bid: string; status: string; team: string; team_status: string;
         termin_datum: string | null; erledigt_datum: string | null;
