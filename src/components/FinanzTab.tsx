@@ -562,6 +562,44 @@ export default function FinanzTab() {
         });
       }
 
+      // Letzte Woche erledigt
+      ensureSpace(20);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20);
+      const lwKw = getWeek(lastWeekStart);
+      pdf.text(`Letzte Woche erledigt (KW ${lwKw})`, margin, y); y += 6;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(90);
+      pdf.text(`${letzteWoche.length} HA · ${letzteWocheMeter} m Graben`, margin, y); y += 6;
+
+      if (letzteWoche.length === 0) {
+        pdf.setFont("helvetica", "italic"); pdf.setTextColor(140);
+        pdf.text("In der letzten Woche wurden keine Hausanschlüsse abgeschlossen.", margin, y);
+        y += 6;
+      } else {
+        const wX = { dat: margin, adr: margin + 22, nvt: margin + 120, gra: margin + 160 };
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(110);
+        pdf.text("Datum", wX.dat, y);
+        pdf.text("Adresse", wX.adr, y);
+        pdf.text("NVT", wX.nvt, y);
+        pdf.text("Graben", wX.gra, y);
+        y += 2;
+        pdf.setDrawColor(200); pdf.line(margin, y, pageW - margin, y); y += 3;
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
+        letzteWoche.forEach((r) => {
+          ensureSpace(6);
+          const d = new Date(r.datum);
+          const dStr = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+          pdf.text(dStr, wX.dat, y);
+          const adr = r.adresse.length > 52 ? r.adresse.slice(0, 50) + "…" : r.adresse;
+          pdf.text(adr, wX.adr, y);
+          const stars = r.prio > 0 ? " " + "*".repeat(r.prio) : "";
+          pdf.text(`${r.nvt}${stars}`, wX.nvt, y);
+          pdf.text(`${r.graben} m`, wX.gra, y);
+          y += 5;
+        });
+      }
+
+
+
       // Footer
       const totalPages = pdf.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
