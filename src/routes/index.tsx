@@ -1305,6 +1305,10 @@ function Index() {
     () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
     [contacts, states],
   );
+  const telUngueltigCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.telefon_ungueltig ? 1 : 0), 0),
+    [contacts, states],
+  );
 
   const terminVergangenCount = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
