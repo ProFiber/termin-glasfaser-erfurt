@@ -1045,7 +1045,16 @@ function Index() {
       const kf = !!states[c.bid]?.klarfall;
       // AND-Constraints (engen das Ergebnis ein, statt mit anderen Chips ODER-verknüpft zu sein)
       if (filter.has("nurGE") && !(c.ge > 0)) return false;
-      if (filter.has("offen") && !(st !== "erledigt" && st !== "abgelehnt")) return false;
+      if (filter.has("offen")) {
+        // "Ausstehend" = nur wirklich offene Objekte:
+        // Status offen oder nichtErreicht, KEINE Storno/Abgelehnt/Erledigt,
+        // KEIN TABU (Auskundung erforderlich, aber noch nicht erfolgt),
+        // KEIN "ohne Zustimmung"
+        if (!(st === "offen" || st === "nichtErreicht")) return false;
+        if (c.storniert) return false;
+        if (c.auskundung_erforderlich && !c.auskundung_erfolgt) return false;
+        if (zustimmungStatus(c.zustimmung, c.bid) === "fehlt") return false;
+      }
       if (filter.has("nichtErledigt") && st === "erledigt") return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
