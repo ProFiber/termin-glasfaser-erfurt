@@ -1064,6 +1064,7 @@ function Index() {
       if (orFilters.size > 0) {
         let matchesAny = false;
         if (orFilters.has("klarfall") && kf) matchesAny = true;
+        if (orFilters.has("telUngueltig") && states[c.bid]?.telefon_ungueltig) matchesAny = true;
         if (orFilters.has("dokuOffen")) {
           const cs = states[c.bid];
           const fertig = cs?.team_status === "fertig";
