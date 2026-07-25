@@ -918,6 +918,7 @@ function Index() {
       erledigt_datum: changes.erledigt_datum !== undefined ? changes.erledigt_datum : (prev?.erledigt_datum ?? null),
       umsatz_eur: changes.umsatz_eur !== undefined ? changes.umsatz_eur : (prev?.umsatz_eur ?? 0),
       zusatz_eur: changes.zusatz_eur !== undefined ? changes.zusatz_eur : (prev?.zusatz_eur ?? 0),
+      telefon_ungueltig: changes.telefon_ungueltig !== undefined ? changes.telefon_ungueltig : (prev?.telefon_ungueltig ?? false),
       updated_at: new Date().toISOString(),
     };
     setStates((s) => ({ ...s, [bid]: optimistic }));
