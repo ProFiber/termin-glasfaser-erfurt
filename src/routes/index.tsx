@@ -1558,6 +1558,10 @@ function Index() {
           onOpenAbgelehnt={() => { setFilter(new Set(["abgelehnt"])); setActiveTab("objekte"); }}
           onOpenStorniert={() => { setFilter(new Set(["storniert"])); setActiveTab("objekte"); }}
           onOpenNvtOffen={(nvt) => {
+            const ort = ortOf(nvt);
+            setOrtSel(ort ?? "alle");
+            setStreetSel(new Set());
+            setTeamFilter("alle");
             setNvtSel(new Set([nvt]));
             setFilter(new Set(["nichtErledigt"]));
             setActiveTab("objekte");
