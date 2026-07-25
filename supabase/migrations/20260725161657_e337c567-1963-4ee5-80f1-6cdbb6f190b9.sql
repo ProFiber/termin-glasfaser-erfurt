@@ -1,0 +1,1 @@
+ALTER TABLE public.call_states ADD COLUMN IF NOT EXISTS telefon_ungueltig boolean NOT NULL DEFAULT false;
