@@ -1750,6 +1750,7 @@ function Index() {
             const label =
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
+              : f === "telUngueltig" ? `📵 Rufnummer falsch (${telUngueltigCount})`
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
               : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
