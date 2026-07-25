@@ -199,6 +199,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [heuteOnly, setHeuteOnly] = useState(false);
+  const [phoneInvalidOnly, setPhoneInvalidOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routeLineRef = useRef<any>(null);
@@ -679,10 +680,37 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
+      if (phoneInvalidOnly && !states[c.bid]?.telefon_ungueltig) return false;
       return true;
     }),
-    [contacts, states, filter, priorityOnly, heuteOnly, todayStr],
+    [contacts, states, filter, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
   );
+
+  const phoneInvalidCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.telefon_ungueltig ? 1 : 0), 0),
+    [contacts, states],
+  );
+
+  const buildDoorRouteUrl = () => {
+    const pts = visibleContacts
+      .map((c) => ({ c, co: coords[c.bid] }))
+      .filter((p) => p.co) as { c: Contact; co: { lat: number; lng: number } }[];
+    if (pts.length === 0) return null;
+    const origin = lastPosRef.current
+      ? `${lastPosRef.current.lat},${lastPosRef.current.lng}`
+      : `${pts[0].co.lat},${pts[0].co.lng}`;
+    const dest = pts[pts.length - 1].co;
+    const waypoints = pts.slice(0, -1).map((p) => `${p.co.lat},${p.co.lng}`).join("|");
+    const params = new URLSearchParams({
+      api: "1",
+      origin,
+      destination: `${dest.lat},${dest.lng}`,
+      travelmode: "driving",
+    });
+    if (waypoints) params.set("waypoints", waypoints);
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  };
+
 
   // Render markers
   useEffect(() => {
@@ -836,6 +864,31 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
           }}
         >🔥 Nur Priorität</button>
+        <button
+          onClick={() => setPhoneInvalidOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${phoneInvalidOnly ? "#dc2626" : "#e5e7eb"}`,
+            background: phoneInvalidOnly ? "#dc2626" : "white",
+            color: phoneInvalidOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+          title="Nur Objekte mit ungültiger Rufnummer (für Tür-Ansprache)"
+        >📵 Nr. falsch{phoneInvalidCount ? ` (${phoneInvalidCount})` : ""}</button>
+        {phoneInvalidOnly && visibleContacts.length > 0 && (
+          <button
+            onClick={() => {
+              const url = buildDoorRouteUrl();
+              if (url) window.open(url, "_blank", "noreferrer");
+            }}
+            style={{
+              padding: "5px 10px", borderRadius: 999,
+              border: "1.5px solid #16a34a", background: "#16a34a",
+              color: "white", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+            }}
+            title="Route für Tür-Ansprache in Google Maps öffnen"
+          >🚗 Route ({visibleContacts.length})</button>
+        )}
         {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
           const active = k === "alle" ? filter.size === 0 : filter.has(k as CallStatus);
           const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];
