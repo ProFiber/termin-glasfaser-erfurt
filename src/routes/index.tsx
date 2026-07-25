@@ -2220,6 +2220,28 @@ function Index() {
                     </a>
                   )}
 
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+                    <button
+                      onClick={() => shareSingleInternal(c)}
+                      style={{ background: "#128C7E", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                      title="Objekt-Info per WhatsApp an Kollegen teilen"
+                    >
+                      💬 Objekt teilen<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Adresse + Info</span>
+                    </button>
+                    <button
+                      onClick={() => patch(c.bid, { telefon_ungueltig: !cs?.telefon_ungueltig } as Parameters<typeof patch>[1])}
+                      style={{
+                        background: cs?.telefon_ungueltig ? "#dc2626" : "#f1f5f9",
+                        color: cs?.telefon_ungueltig ? "white" : "#475569",
+                        border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2,
+                      }}
+                      title="Wenn Rufnummer nicht mehr gültig ist, markieren – Team klingelt vor Ort"
+                    >
+                      📵 {cs?.telefon_ungueltig ? "Nr. falsch ✓" : "Nr. falsch?"}<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.85 }}>{cs?.telefon_ungueltig ? "markiert" : "als ungültig markieren"}</span>
+                    </button>
+                  </div>
+
+
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
                       <button key={s} onClick={() => {
