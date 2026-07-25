@@ -89,6 +89,7 @@ export type CallState = {
   pruefung_nachforderung?: NachforderungGrund[];
   pruefung_notiz?: string;
   eingereicht_am?: string | null;
+  telefon_ungueltig?: boolean;
   updated_at: string;
 };
 
