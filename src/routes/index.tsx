@@ -888,7 +888,7 @@ function Index() {
   }
 
   
-  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override" | "erledigt_datum" | "umsatz_eur" | "zusatz_eur">>) {
+  async function patch(bid: string, changes: Partial<Pick<CallState, "status" | "termin_slot" | "notiz" | "termin_datum" | "termin_zeit" | "klarfall" | "klarfall_notiz" | "grabenlaenge" | "team" | "team_status" | "fotos_erhalten" | "protokoll_erhalten" | "priority_override" | "erledigt_datum" | "umsatz_eur" | "zusatz_eur" | "telefon_ungueltig">>) {
     const prev = states[bid];
     // Auto-Fill beim Wechsel auf "erledigt": Datum + Umsatz-Pauschale
     const becomingErledigt = changes.status === "erledigt" && prev?.status !== "erledigt";
@@ -918,6 +918,7 @@ function Index() {
       erledigt_datum: changes.erledigt_datum !== undefined ? changes.erledigt_datum : (prev?.erledigt_datum ?? null),
       umsatz_eur: changes.umsatz_eur !== undefined ? changes.umsatz_eur : (prev?.umsatz_eur ?? 0),
       zusatz_eur: changes.zusatz_eur !== undefined ? changes.zusatz_eur : (prev?.zusatz_eur ?? 0),
+      telefon_ungueltig: changes.telefon_ungueltig !== undefined ? changes.telefon_ungueltig : (prev?.telefon_ungueltig ?? false),
       updated_at: new Date().toISOString(),
     };
     setStates((s) => ({ ...s, [bid]: optimistic }));
@@ -943,6 +944,7 @@ function Index() {
           erledigt_datum: optimistic.erledigt_datum,
           umsatz_eur: optimistic.umsatz_eur,
           zusatz_eur: optimistic.zusatz_eur,
+          telefon_ungueltig: optimistic.telefon_ungueltig,
         },
         { onConflict: "bid" }
       );
@@ -1045,7 +1047,16 @@ function Index() {
       const kf = !!states[c.bid]?.klarfall;
       // AND-Constraints (engen das Ergebnis ein, statt mit anderen Chips ODER-verknüpft zu sein)
       if (filter.has("nurGE") && !(c.ge > 0)) return false;
-      if (filter.has("offen") && !(st !== "erledigt" && st !== "abgelehnt")) return false;
+      if (filter.has("offen")) {
+        // "Ausstehend" = nur wirklich offene Objekte:
+        // Status offen oder nichtErreicht, KEINE Storno/Abgelehnt/Erledigt,
+        // KEIN TABU (Auskundung erforderlich, aber noch nicht erfolgt),
+        // KEIN "ohne Zustimmung"
+        if (!(st === "offen" || st === "nichtErreicht")) return false;
+        if (c.storniert) return false;
+        if (c.auskundung_erforderlich && !c.auskundung_erfolgt) return false;
+        if (zustimmungStatus(c.zustimmung, c.bid) === "fehlt") return false;
+      }
       if (filter.has("nichtErledigt") && st === "erledigt") return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
@@ -1055,6 +1066,7 @@ function Index() {
       if (orFilters.size > 0) {
         let matchesAny = false;
         if (orFilters.has("klarfall") && kf) matchesAny = true;
+        if (orFilters.has("telUngueltig") && states[c.bid]?.telefon_ungueltig) matchesAny = true;
         if (orFilters.has("dokuOffen")) {
           const cs = states[c.bid];
           const fertig = cs?.team_status === "fertig";
@@ -1293,6 +1305,10 @@ function Index() {
 
   const klarfallCount = useMemo(
     () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall ? 1 : 0), 0),
+    [contacts, states],
+  );
+  const telUngueltigCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.telefon_ungueltig ? 1 : 0), 0),
     [contacts, states],
   );
 
@@ -1731,8 +1747,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "klarfall", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt";
+          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "klarfall", "telUngueltig", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "telUngueltig" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen" || f === "storniert") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
@@ -1741,6 +1757,7 @@ function Index() {
             const label =
               f === "alle" ? "Alle"
               : f === "klarfall" ? `⚠️ Klärfall (${klarfallCount})`
+              : f === "telUngueltig" ? `📵 Rufnummer falsch (${telUngueltigCount})`
               : f === "kurzKandidat" ? `📞 Kurz (${kurzKandidatCount})`
               : f === "kurzAnschluss" ? `🟢 Kurz <10m (${kurzAnschlussCount})`
               : f === "langAnschluss" ? `🟠 Lang ≥10m (${langAnschlussCount})`
@@ -2204,6 +2221,28 @@ function Index() {
                       💬 WhatsApp · Rückruf-Bitte senden
                     </a>
                   )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+                    <button
+                      onClick={() => shareSingleInternal(c)}
+                      style={{ background: "#128C7E", color: "white", border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2 }}
+                      title="Objekt-Info per WhatsApp an Kollegen teilen"
+                    >
+                      💬 Objekt teilen<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.9 }}>Adresse + Info</span>
+                    </button>
+                    <button
+                      onClick={() => patch(c.bid, { telefon_ungueltig: !cs?.telefon_ungueltig } as Parameters<typeof patch>[1])}
+                      style={{
+                        background: cs?.telefon_ungueltig ? "#dc2626" : "#f1f5f9",
+                        color: cs?.telefon_ungueltig ? "white" : "#475569",
+                        border: "none", borderRadius: 8, padding: "9px 6px", fontSize: 12, fontWeight: 700, cursor: "pointer", lineHeight: 1.2,
+                      }}
+                      title="Wenn Rufnummer nicht mehr gültig ist, markieren – Team klingelt vor Ort"
+                    >
+                      📵 {cs?.telefon_ungueltig ? "Nr. falsch ✓" : "Nr. falsch?"}<br /><span style={{ fontSize: 9, fontWeight: 500, opacity: 0.85 }}>{cs?.telefon_ungueltig ? "markiert" : "als ungültig markieren"}</span>
+                    </button>
+                  </div>
+
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {(["nichtErreicht", "abgelehnt", "erledigt"] as const).map((s) => (
