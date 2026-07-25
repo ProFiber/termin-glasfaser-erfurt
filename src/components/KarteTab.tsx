@@ -864,6 +864,31 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
           }}
         >🔥 Nur Priorität</button>
+        <button
+          onClick={() => setPhoneInvalidOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${phoneInvalidOnly ? "#dc2626" : "#e5e7eb"}`,
+            background: phoneInvalidOnly ? "#dc2626" : "white",
+            color: phoneInvalidOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+          title="Nur Objekte mit ungültiger Rufnummer (für Tür-Ansprache)"
+        >📵 Nr. falsch{phoneInvalidCount ? ` (${phoneInvalidCount})` : ""}</button>
+        {phoneInvalidOnly && visibleContacts.length > 0 && (
+          <button
+            onClick={() => {
+              const url = buildDoorRouteUrl();
+              if (url) window.open(url, "_blank", "noreferrer");
+            }}
+            style={{
+              padding: "5px 10px", borderRadius: 999,
+              border: "1.5px solid #16a34a", background: "#16a34a",
+              color: "white", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+            }}
+            title="Route für Tür-Ansprache in Google Maps öffnen"
+          >🚗 Route ({visibleContacts.length})</button>
+        )}
         {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
           const active = k === "alle" ? filter.size === 0 : filter.has(k as CallStatus);
           const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];
