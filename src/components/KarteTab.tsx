@@ -680,10 +680,37 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
+      if (phoneInvalidOnly && !states[c.bid]?.telefon_ungueltig) return false;
       return true;
     }),
-    [contacts, states, filter, priorityOnly, heuteOnly, todayStr],
+    [contacts, states, filter, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
   );
+
+  const phoneInvalidCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.telefon_ungueltig ? 1 : 0), 0),
+    [contacts, states],
+  );
+
+  const buildDoorRouteUrl = () => {
+    const pts = visibleContacts
+      .map((c) => ({ c, co: coords[c.bid] }))
+      .filter((p) => p.co) as { c: Contact; co: { lat: number; lng: number } }[];
+    if (pts.length === 0) return null;
+    const origin = lastPosRef.current
+      ? `${lastPosRef.current.lat},${lastPosRef.current.lng}`
+      : `${pts[0].co.lat},${pts[0].co.lng}`;
+    const dest = pts[pts.length - 1].co;
+    const waypoints = pts.slice(0, -1).map((p) => `${p.co.lat},${p.co.lng}`).join("|");
+    const params = new URLSearchParams({
+      api: "1",
+      origin,
+      destination: `${dest.lat},${dest.lng}`,
+      travelmode: "driving",
+    });
+    if (waypoints) params.set("waypoints", waypoints);
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  };
+
 
   // Render markers
   useEffect(() => {
