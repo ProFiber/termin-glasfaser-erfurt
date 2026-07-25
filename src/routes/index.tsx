@@ -944,6 +944,7 @@ function Index() {
           erledigt_datum: optimistic.erledigt_datum,
           umsatz_eur: optimistic.umsatz_eur,
           zusatz_eur: optimistic.zusatz_eur,
+          telefon_ungueltig: optimistic.telefon_ungueltig,
         },
         { onConflict: "bid" }
       );
