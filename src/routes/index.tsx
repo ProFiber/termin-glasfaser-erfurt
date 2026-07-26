@@ -1097,6 +1097,9 @@ function Index() {
           if (cs && ((cs.termin_datum === today && !!cs.team) || cs.erledigt_datum === today)) matchesAny = true;
         }
         if (orFilters.has("auskundungErledigt") && c.auskundung_erfolgt) matchesAny = true;
+        if (orFilters.has("auskundungOffen") && c.auskundung_erforderlich && !c.auskundung_erfolgt && st !== "erledigt" && st !== "abgelehnt" && !c.storniert) matchesAny = true;
+        if (orFilters.has("nochOffen") && st === "offen" && !c.storniert && !(c.auskundung_erforderlich && !c.auskundung_erfolgt) && zustimmungStatus(c.zustimmung, c.bid) === "ok") matchesAny = true;
+        if (orFilters.has("abgelehntStorno") && st !== "erledigt" && (st === "abgelehnt" || c.storniert)) matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
