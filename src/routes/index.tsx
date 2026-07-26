@@ -1750,8 +1750,8 @@ function Index() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "klarfall", "telUngueltig", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt"] as const).map((f) => {
-            const secondary = f === "klarfall" || f === "telUngueltig" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt";
+          {(["alle", "offen", "nichtErledigt", "termin", "terminVergangen", "erledigt", "abgelehnt", "storniert", "abgelehntStorno", "klarfall", "telUngueltig", "kurzKandidat", "kurzAnschluss", "langAnschluss", "bulk", "angerufen", "nichtErreicht", "ohneZustimmung", "erlOhneZustimmung", "erlOhneAuftrag", "imBauHeute", "nurGE", "auskundungErledigt", "auskundungOffen", "nochOffen"] as const).map((f) => {
+            const secondary = f === "klarfall" || f === "telUngueltig" || f === "kurzKandidat" || f === "kurzAnschluss" || f === "langAnschluss" || f === "bulk" || f === "angerufen" || f === "nichtErreicht" || f === "terminVergangen" || f === "ohneZustimmung" || f === "erlOhneZustimmung" || f === "erlOhneAuftrag" || f === "imBauHeute" || f === "nurGE" || f === "auskundungErledigt" || f === "storniert" || f === "nichtErledigt" || f === "abgelehntStorno" || f === "auskundungOffen" || f === "nochOffen";
             const isActive = f === "alle" ? filter.size === 0 : filter.has(f);
             const baseStyle = (f === "klarfall" || f === "terminVergangen" || f === "storniert") ? klarfallPill(isActive) : pill(isActive);
             const style = secondary
