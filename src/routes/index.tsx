@@ -306,7 +306,7 @@ function ImportButton() {
         </span>
       )}
       {report && (
-        <div onClick={closeReport} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
+        <div onClick={report.dryRun ? abortImport : closeReport} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: 12, maxWidth: 760, width: "100%", maxHeight: "85vh", overflow: "auto", padding: 16, color: "#111" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <h3 style={{ margin: 0, fontSize: 16 }}>{report.dryRun ? "🔎 Import-Analyse (noch nichts geschrieben)" : "📋 Import-Bericht"}</h3>
