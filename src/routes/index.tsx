@@ -1501,10 +1501,10 @@ function Index() {
                 <div style={{ fontSize: 11, color: "#64748b" }}>Gesamt {total}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {row(`✅ Erledigt`, erledigt, "#16a34a")}
-                {row(`❌ Abgelehnt / Storno`, abStorno, "#ef4444", () => { setFilter(new Set(["abgelehnt"])); setActiveTab("objekte"); })}
-                {row(`🔎 Auskundung offen`, ausk, "#f59e0b")}
-                {row(`✋ Keine Zustimmung`, kz, "#a855f7")}
+                {row(`✅ Erledigt`, erledigt, "#16a34a", () => { setFilter(new Set(["erledigt"])); setActiveTab("objekte"); })}
+                {row(`❌ Abgelehnt / Storno`, abStorno, "#ef4444", () => { setFilter(new Set(["abgelehntStorno"])); setActiveTab("objekte"); })}
+                {row(`🔎 Auskundung offen`, ausk, "#f59e0b", () => { setFilter(new Set(["auskundungOffen"])); setActiveTab("objekte"); })}
+                {row(`✋ Keine Zustimmung`, kz, "#a855f7", () => { setFilter(new Set(["ohneZustimmung"])); setActiveTab("objekte"); })}
               </div>
               <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "linear-gradient(135deg,#eff6ff,#dbeafe)", border: "1px solid #93c5fd" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -1512,10 +1512,10 @@ function Index() {
                   <div style={{ fontSize: 18, fontWeight: 900, color: "#1e3a8a" }}>{baubar}</div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                  {row(`📅 Termin vereinbart`, bTermin, "#3b82f6")}
-                  {row(`📞 Kontaktiert`, bKontaktiert, "#0ea5e9")}
-                  {row(`📵 Nicht erreichbar`, bNichtErreicht, "#f97316")}
-                  {row(`⏳ Noch offen`, bOffen, "#94a3b8")}
+                  {row(`📅 Termin vereinbart`, bTermin, "#3b82f6", () => { setFilter(new Set(["termin"])); setActiveTab("objekte"); })}
+                  {row(`📞 Kontaktiert`, bKontaktiert, "#0ea5e9", () => { setFilter(new Set(["angerufen"])); setActiveTab("objekte"); })}
+                  {row(`📵 Nicht erreichbar`, bNichtErreicht, "#f97316", () => { setFilter(new Set(["nichtErreicht"])); setActiveTab("objekte"); })}
+                  {row(`⏳ Noch offen`, bOffen, "#94a3b8", () => { setFilter(new Set(["nochOffen"])); setActiveTab("objekte"); })}
                 </div>
                 <div style={{ marginTop: 6, fontSize: 10, color: "#475569" }}>
                   Kontaktiert insgesamt: <b>{bKontaktiert + bTermin}</b> · Noch nie erreicht: <b>{bOffen + bNichtErreicht}</b>
