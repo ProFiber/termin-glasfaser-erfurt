@@ -1775,6 +1775,9 @@ function Index() {
               : f === "imBauHeute" ? `🚧 Im Bau heute (${imBauHeuteCount})`
               : f === "offen" ? "Ausstehend"
               : f === "nichtErledigt" ? "🎯 Noch offen (bis 100%)"
+              : f === "abgelehntStorno" ? "❌ Abgelehnt / Storno"
+              : f === "auskundungOffen" ? "🔎 Auskundung offen"
+              : f === "nochOffen" ? "⏳ Noch offen"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
               : f === "erledigt" ? `✓ ${STATUS_META.erledigt.label}`
               : STATUS_META[f as CallStatus].label;
