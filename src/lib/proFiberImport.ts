@@ -15,6 +15,9 @@ export type DokuIssue = {
 };
 
 export type ImportResult = {
+  dryRun: boolean;
+  newAddresses: string[];
+  synthAddresses: string[];
   contactsNew: number;
   contactsUpd: number;
   contactsOk: number;
@@ -103,13 +106,13 @@ const auskStatusMap = (v: string): string => {
  * Pass 1: Lese Schmücke_<date>-Sheet und lege neue Objekte an / aktualisiere
  * Eigentümer-Felder (Zustimmung, Auskundung, NVT, Typ, WE/GE).
  */
-async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; neu: number; upd: number }> {
+async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log, dry = false): Promise<{ ok: number; neu: number; upd: number; newAddresses: string[] }> {
   // Bei CSV-Import gibt es nur ein Sheet ohne "Schmücke" im Namen → dann dieses nehmen.
   let sheetName = wb.SheetNames.find((n) => /schm[uü]cke/i.test(n));
   if (!sheetName && wb.SheetNames.length === 1) sheetName = wb.SheetNames[0];
   if (!sheetName) {
     log("⚠ Kein Schmücke-Sheet gefunden – Pass 1 übersprungen");
-    return { ok: 0, neu: 0, upd: 0 };
+    return { ok: 0, neu: 0, upd: 0, newAddresses: [] };
   }
   log(`📋 Pass 1 · Property-Sheet: ${sheetName}`);
   type Row = Record<string, string>;
@@ -133,6 +136,7 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
 
   const payload: Record<string, unknown>[] = [];
   let neu = 0, upd = 0, matchedByKls = 0, matchedByAddr = 0;
+  const newAddresses: string[] = [];
   for (const r of rows) {
     const kls = String(r["KLS ID"] ?? "").trim();
     const strasse = (r["Straße"] ?? "").trim();
@@ -157,7 +161,10 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
       }
     }
     // 4) Kein Match → echter Neubau
-    if (!bid) { bid = `KLS-${kls}`; neu++; }
+    if (!bid) {
+      bid = `KLS-${kls}`; neu++;
+      newAddresses.push(`${strasse} ${hnr}${hnr_z ? " " + hnr_z : ""}${nvt ? ` · ${nvt}` : ""}`);
+    }
     else { upd++; }
 
     payload.push({
@@ -182,6 +189,11 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
   log(`  → ${payload.length} Kontakte (${neu} neu · ${upd} update · KLS-Match:${matchedByKls} · Adress-Match:${matchedByAddr})`);
 
 
+  if (dry) {
+    log(`  🔎 Analyse-Modus – es wurde NICHTS geschrieben`);
+    return { ok: payload.length, neu, upd, newAddresses };
+  }
+
   let ok = 0;
   const CHUNK = 60;
   for (let i = 0; i < payload.length; i += CHUNK) {
@@ -191,18 +203,18 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log): Promise<{ o
     else ok += part.length;
   }
   log(`  ✅ ${ok} Kontakte gespeichert`);
-  return { ok, neu, upd };
+  return { ok, neu, upd, newAddresses };
 }
 
 /**
  * Pass 2: Lese "Alle GF+ HA"-Sheet (nur Projekt = An der Schmücke!) und
  * aktualisiere Status, Grabenlänge, Umsatz, Doku, Buchhaltung.
  */
-async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: number; unmatched: number; dokuIssues: DokuIssue[] }> {
+async function importAlleGfStates(wb: XLSX.WorkBook, log: Log, dry = false): Promise<{ ok: number; unmatched: number; dokuIssues: DokuIssue[]; synthAddresses: string[] }> {
   const sheetName = wb.SheetNames.find((n) => n.toLowerCase().includes("alle gf"));
   if (!sheetName) {
     log("⚠ Kein 'Alle GF+ HA'-Sheet gefunden – Pass 2 übersprungen");
-    return { ok: 0, unmatched: 0, dokuIssues: [] };
+    return { ok: 0, unmatched: 0, dokuIssues: [], synthAddresses: [] };
   }
   log(`📊 Pass 2 · Status-Sheet: ${sheetName} (nur Projekt 'An der Schmücke')`);
   const sh = wb.Sheets[sheetName];
@@ -272,6 +284,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   const syntheticContacts: Record<string, unknown>[] = [];
   const dokuIssues: DokuIssue[] = [];
   let unmatched = 0, skipProj = 0, skipStatus = 0, synthCreated = 0;
+  const synthAddresses: string[] = [];
   const slug = (s: string) => s.toLowerCase()
     .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
     .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -306,6 +319,7 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
         auftragsquelle: "gf_plus",
       });
       map.set(normAddr(strasse, nr, abc), bid);
+      synthAddresses.push(`${strasse} ${nr}${abc ? " " + abc : ""}`);
       synthCreated++;
       unmatched++;
     }
@@ -345,6 +359,11 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
   log(`  → ${payload.length} erledigte Schmücke-Zeilen · ${skipProj} andere Projekte · ${skipStatus} andere Status · ${unmatched} ohne Contact-Match (davon ${synthCreated} als synthetischer Kontakt angelegt)`);
   log(`  📋 Doku-Check: ${dokuIssues.length} unvollständig (${badFmt} Format-Fehler)`);
 
+  if (dry) {
+    log(`  🔎 Analyse-Modus – es wurde NICHTS geschrieben`);
+    return { ok: payload.length, unmatched, dokuIssues, synthAddresses };
+  }
+
   // Erst synthetische Kontakte anlegen, dann call_states schreiben (FK würde sonst greifen)
   if (syntheticContacts.length > 0) {
     const CHUNK_C = 60;
@@ -367,10 +386,10 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log): Promise<{ ok: nu
     else ok += part.length;
   }
   log(`  ✅ ${ok} Status-Einträge aktualisiert`);
-  return { ok, unmatched, dokuIssues };
+  return { ok, unmatched, dokuIssues, synthAddresses };
 }
 
-export async function runFullProFiberImport(file: File, log: Log = () => {}): Promise<ImportResult> {
+export async function runFullProFiberImport(file: File, log: Log = () => {}, dry = false): Promise<ImportResult> {
   log(`Lese ${file.name} …`);
   const isCsv = /\.csv$/i.test(file.name);
   let wb: XLSX.WorkBook;
@@ -385,14 +404,17 @@ export async function runFullProFiberImport(file: File, log: Log = () => {}): Pr
   }
 
   const errors: string[] = [];
-  let c = { ok: 0, neu: 0, upd: 0 };
-  let s: { ok: number; unmatched: number; dokuIssues: DokuIssue[] } = { ok: 0, unmatched: 0, dokuIssues: [] };
-  try { c = await importSchmueckeContacts(wb, log); } catch (e) { errors.push(`Pass 1: ${(e as Error).message}`); }
+  let c: { ok: number; neu: number; upd: number; newAddresses: string[] } = { ok: 0, neu: 0, upd: 0, newAddresses: [] };
+  let s: { ok: number; unmatched: number; dokuIssues: DokuIssue[]; synthAddresses: string[] } = { ok: 0, unmatched: 0, dokuIssues: [], synthAddresses: [] };
+  try { c = await importSchmueckeContacts(wb, log, dry); } catch (e) { errors.push(`Pass 1: ${(e as Error).message}`); }
   if (!isCsv) {
-    try { s = await importAlleGfStates(wb, log); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
+    try { s = await importAlleGfStates(wb, log, dry); } catch (e) { errors.push(`Pass 2: ${(e as Error).message}`); }
   }
 
   return {
+    dryRun: dry,
+    newAddresses: c.newAddresses,
+    synthAddresses: s.synthAddresses,
     contactsNew: c.neu, contactsUpd: c.upd, contactsOk: c.ok,
     statesOk: s.ok, statesUnmatched: s.unmatched, errors,
     dokuIssues: s.dokuIssues,
