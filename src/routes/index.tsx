@@ -221,21 +221,19 @@ function ImportButton() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>("");
   const [report, setReport] = useState<Awaited<ReturnType<typeof runFullProFiberImport>> | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
     setBusy(true);
-    setMsg("Importiere…");
+    setMsg("Analysiere…");
     try {
-      const res = await runFullProFiberImport(f, () => {});
-      const parts: string[] = [];
-      if (res.contactsOk) parts.push(`${res.contactsOk} Kontakte (${res.contactsNew} neu)`);
-      if (res.statesOk) parts.push(`${res.statesOk} Status`);
-      if (res.statesUnmatched) parts.push(`${res.statesUnmatched} ohne Match`);
-      setMsg(parts.length ? `✅ ${parts.join(" · ")}` : "✅ Fertig");
-      if (res.errors.length) setMsg(`⚠ ${res.errors[0]}`);
+      // Phase 1: Dry-Run — nur lesen, nichts schreiben
+      const res = await runFullProFiberImport(f, () => {}, true);
+      setPendingFile(f);
+      setMsg(res.errors.length ? `⚠ ${res.errors[0]}` : "🔎 Analyse fertig – Freigabe nötig");
       setReport(res);
     } catch (err) {
       setMsg(`❌ ${(err as Error).message}`);
@@ -244,8 +242,36 @@ function ImportButton() {
     }
   }
 
+  async function confirmImport() {
+    if (!pendingFile) return;
+    setBusy(true);
+    setMsg("Importiere…");
+    try {
+      const res = await runFullProFiberImport(pendingFile, () => {}, false);
+      const parts: string[] = [];
+      if (res.contactsOk) parts.push(`${res.contactsOk} Kontakte (${res.contactsNew} neu)`);
+      if (res.statesOk) parts.push(`${res.statesOk} Status`);
+      if (res.statesUnmatched) parts.push(`${res.statesUnmatched} ohne Match`);
+      setMsg(parts.length ? `✅ ${parts.join(" · ")}` : "✅ Fertig");
+      if (res.errors.length) setMsg(`⚠ ${res.errors[0]}`);
+      setPendingFile(null);
+      setReport(res);
+    } catch (err) {
+      setMsg(`❌ ${(err as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function abortImport() {
+    setPendingFile(null);
+    setReport(null);
+    setMsg("Abgebrochen – nichts geändert");
+  }
+
   function closeReport() {
     setReport(null);
+    setPendingFile(null);
     // Cache-busting Reload: iOS-Safari serviert sonst häufig alten JS-Bundle
     const u = new URL(window.location.href);
     u.searchParams.set("_r", String(Date.now()));
@@ -266,7 +292,7 @@ function ImportButton() {
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        title={msg || "Pro-Fiber Database (.xlsx) oder Property-Export (.csv) importieren · nur Schmücke"}
+        title={msg || "Analyse zuerst · Pro-Fiber Database (.xlsx) oder Property-Export (.csv) importieren · nur Schmücke"}
         style={{
           fontSize: 11, background: busy ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.22)",
           borderRadius: 8, padding: "4px 8px", color: "white", border: "none", cursor: busy ? "wait" : "pointer",
@@ -283,13 +309,40 @@ function ImportButton() {
         <div onClick={closeReport} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: 12, maxWidth: 760, width: "100%", maxHeight: "85vh", overflow: "auto", padding: 16, color: "#111" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>📋 Import-Bericht</h3>
-              <button onClick={closeReport} style={{ background: "#111", color: "white", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}>Schließen & neu laden</button>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{report.dryRun ? "🔎 Import-Analyse (noch nichts geschrieben)" : "📋 Import-Bericht"}</h3>
+              {report.dryRun ? (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={abortImport} style={{ background: "#e5e7eb", color: "#111", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}>Abbrechen</button>
+                  <button disabled={busy} onClick={confirmImport} style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: busy ? "wait" : "pointer" }}>{busy ? "⏳ Importiere…" : "✅ Freigeben & importieren"}</button>
+                </div>
+              ) : (
+                <button onClick={closeReport} style={{ background: "#111", color: "white", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}>Schließen & neu laden</button>
+              )}
             </div>
             <div style={{ fontSize: 12, color: "#374151", marginBottom: 12 }}>
-              {report.contactsOk} Kontakte ({report.contactsNew} neu · {report.contactsUpd} update) · {report.statesOk} Status aktualisiert
+              {report.dryRun
+                ? `Würde schreiben: ${report.contactsOk} Kontakte (${report.contactsNew} NEU · ${report.contactsUpd} Update) · ${report.statesOk} Status`
+                : `${report.contactsOk} Kontakte (${report.contactsNew} neu · ${report.contactsUpd} update) · ${report.statesOk} Status aktualisiert`}
               {report.statesUnmatched ? ` · ${report.statesUnmatched} ohne Match` : ""}
             </div>
+            {(report.newAddresses.length > 0 || report.synthAddresses.length > 0) && (
+              <div style={{ background: report.newAddresses.length > 50 ? "#fef2f2" : "#f0fdf4", border: "1px solid #e5e7eb", borderRadius: 8, padding: 8, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                  🆕 {report.newAddresses.length} neue Objekte {report.newAddresses.length > 50 ? "⚠ auffällig viele – bitte prüfen!" : ""}
+                </div>
+                <div style={{ maxHeight: 180, overflow: "auto", fontSize: 12, color: "#374151" }}>
+                  {report.newAddresses.map((a, i) => <div key={i}>• {a}</div>)}
+                </div>
+                {report.synthAddresses.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 600, margin: "8px 0 4px" }}>🏷️ {report.synthAddresses.length} „Ohne GF+ Auftrag"-Objekte (aus Excel-Status)</div>
+                    <div style={{ maxHeight: 140, overflow: "auto", fontSize: 12, color: "#374151" }}>
+                      {report.synthAddresses.map((a, i) => <div key={i}>• {a}</div>)}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {report.errors.length > 0 && (
               <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", padding: 8, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
                 {report.errors.map((e, i) => <div key={i}>⚠ {e}</div>)}
