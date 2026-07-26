@@ -221,6 +221,25 @@ async function importAlleGfStates(wb: XLSX.WorkBook, log: Log, dry = false): Pro
   const raw = XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, defval: null, raw: true });
   const dataRows = raw.slice(4) as unknown[][];
 
+  // Spalten dynamisch aus der Kopfzeile (Zeile 4) lesen — die Excel bekommt
+  // gelegentlich neue Spalten, feste Indizes würden dann verrutschen.
+  const headerRow = (raw[3] ?? []) as unknown[];
+  const colIdx = (name: string, fallback: number): number => {
+    const i = headerRow.findIndex((h) => String(h ?? "").trim().toLowerCase() === name.toLowerCase());
+    return i >= 0 ? i : fallback;
+  };
+  const C = {
+    umsatz: colIdx("Umsatz", 7),
+    meter: colIdx("m", 8),
+    eingereicht: colIdx("Eingereicht am", 20),
+    aufmass: colIdx("Aufmaß", 21),
+    gutschrift: colIdx("Gutschrift", 22),
+    avis: colIdx("AVIS", 23),
+    verguetet: colIdx("Vergütet", 24),
+    bemerkung: colIdx("Bemerkung", 26),
+  };
+
+
   const statusMap: Record<string, string> = {
     erledigt: "erledigt", terminiert: "termin", "nicht erreicht": "nichtErreicht",
     SMS: "angerufen", "SMS + AB": "angerufen", "Rückruf": "angerufen", "Ruft zurück": "angerufen",
