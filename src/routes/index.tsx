@@ -1534,7 +1534,7 @@ function Index() {
             if (cs?.status === "erledigt") { erledigt++; continue; }
             if (cs?.status === "abgelehnt" || c.storniert) { abStorno++; continue; }
             if (c.auskundung_erforderlich && !c.auskundung_erfolgt) { ausk++; continue; }
-            if (z !== "AGREED" && z !== "ZUGESTIMMT") { kz++; continue; }
+            if (z !== "AGREED" && z !== "ZUGESTIMMT" && !isBulkAuftrag(c.bid)) { kz++; continue; }
             baubar++;
             if (cs?.status === "termin") bTermin++;
             else if (cs?.status === "angerufen") bKontaktiert++;
