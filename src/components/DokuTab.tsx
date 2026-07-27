@@ -219,7 +219,8 @@ export default function DokuTab({ contacts: contactsProp, callStates, focusBid, 
       if (!d?.protokoll) protokollFehlt.push(c);
       if (!d?.gf_plus) ohneAuftrag.push(c);
       const z = (c.zustimmung || "").trim().toUpperCase();
-      if (z !== "AGREED") zustimmungFehlt.push(c);
+      // Bulk-Aufträge haben systembedingt immer Zustimmung
+      if (z !== "AGREED" && !/^BULK-/i.test(c.bid)) zustimmungFehlt.push(c);
       if (cs.pruefung_status === "nachforderung") nachforderung.push(c);
     }
     return { auskundung, fotoFehlt, protokollFehlt, zustimmungFehlt, nachforderung, manuell, ohneAuftrag };

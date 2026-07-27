@@ -734,13 +734,20 @@ function isOhneTelekomAuftrag(bid: string): boolean {
 // "ok" = AGREED/Zugestimmt/ja; "fehlt" nur bei echten Telekom-Aufträgen mit
 // Status ausstehend/pending/leer; "na" = manuelle/TTA-Objekte (kein Auftrag,
 // werden separat in "Ohne Telekom-Auftrag" geführt).
+// Bulk-Aufträge (Telekom-Bulk) haben systembedingt immer Zustimmung.
+function isBulkAuftrag(bid?: string): boolean {
+  return !!bid && /^BULK-/i.test(bid);
+}
+
 function zustimmungStatus(z: string | null | undefined, bid?: string): "ok" | "fehlt" | "na" {
   const v = (z ?? "").trim().toLowerCase();
   if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
+  if (isBulkAuftrag(bid)) return "ok";
   if (bid && isOhneTelekomAuftrag(bid)) return "na";
   if (v === "" || v === "ausstehend" || v === "pending" || v === "initial" || v === "offen") return "fehlt";
   return "na";
 }
+
 
 function auskundungInfo(c: Contact): {
   required: boolean;
@@ -1527,7 +1534,7 @@ function Index() {
             if (cs?.status === "erledigt") { erledigt++; continue; }
             if (cs?.status === "abgelehnt" || c.storniert) { abStorno++; continue; }
             if (c.auskundung_erforderlich && !c.auskundung_erfolgt) { ausk++; continue; }
-            if (z !== "AGREED" && z !== "ZUGESTIMMT") { kz++; continue; }
+            if (z !== "AGREED" && z !== "ZUGESTIMMT" && !isBulkAuftrag(c.bid)) { kz++; continue; }
             baubar++;
             if (cs?.status === "termin") bTermin++;
             else if (cs?.status === "angerufen") bKontaktiert++;
