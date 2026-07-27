@@ -734,13 +734,20 @@ function isOhneTelekomAuftrag(bid: string): boolean {
 // "ok" = AGREED/Zugestimmt/ja; "fehlt" nur bei echten Telekom-Aufträgen mit
 // Status ausstehend/pending/leer; "na" = manuelle/TTA-Objekte (kein Auftrag,
 // werden separat in "Ohne Telekom-Auftrag" geführt).
+// Bulk-Aufträge (Telekom-Bulk) haben systembedingt immer Zustimmung.
+function isBulkAuftrag(bid?: string): boolean {
+  return !!bid && /^BULK-/i.test(bid);
+}
+
 function zustimmungStatus(z: string | null | undefined, bid?: string): "ok" | "fehlt" | "na" {
   const v = (z ?? "").trim().toLowerCase();
   if (v === "agreed" || v === "zugestimmt" || v === "ja") return "ok";
+  if (isBulkAuftrag(bid)) return "ok";
   if (bid && isOhneTelekomAuftrag(bid)) return "na";
   if (v === "" || v === "ausstehend" || v === "pending" || v === "initial" || v === "offen") return "fehlt";
   return "na";
 }
+
 
 function auskundungInfo(c: Contact): {
   required: boolean;
