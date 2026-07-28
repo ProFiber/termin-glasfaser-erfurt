@@ -1719,11 +1719,14 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "Heldrungen", "Oldisleben"] as const).map((o) => {
+          {(["alle", "Heldrungen", "Oldisleben", "Umland"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
-              : `${o} (${ortCounts[o]})`;
+              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Umland})`
+              : o === "Umland"
+                ? `Umland (${ortCounts.Umland})`
+                : `${o} (${ortCounts[o]})`;
+
             return (
               <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
                 {label}
