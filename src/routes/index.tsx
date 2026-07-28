@@ -679,18 +679,20 @@ const TIME_OPTIONS: string[] = (() => {
   return out;
 })();
 
-type Ort = "Heldrungen" | "Oldisleben" | "Umland";
-// NVT → Ortsteil. 8001–8021 = Heldrungen · 8031–8043 = Oldisleben
-// 8022–8030 = Umland (Sachsenburg / Gorsleben / Harras) – aktuell nicht im Fokus.
+type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben";
+// NVT → Ortsteil. 8001–8021 = Heldrungen · 8022–8025 = Sachsenburg
+// 8026–8030 = Gorsleben · 8031–8043 = Oldisleben
 const ortOf = (nvt: string): Ort | null => {
   const m = /^2V(\d{4})$/.exec((nvt ?? "").trim());
   if (!m) return null;
   const n = Number(m[1]);
   if (n >= 8001 && n <= 8021) return "Heldrungen";
-  if (n >= 8022 && n <= 8030) return "Umland";
+  if (n >= 8022 && n <= 8025) return "Sachsenburg";
+  if (n >= 8026 && n <= 8030) return "Gorsleben";
   if (n >= 8031 && n <= 8043) return "Oldisleben";
   return null;
 };
+
 
 
 
@@ -1049,15 +1051,14 @@ function Index() {
   }, [ortContacts, nvtSel]);
 
   const ortCounts = useMemo(() => {
-    let h = 0, o = 0, u = 0;
+    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0 };
     contacts.forEach((c) => {
       const x = ortOf(c.nvt);
-      if (x === "Heldrungen") h++;
-      else if (x === "Oldisleben") o++;
-      else if (x === "Umland") u++;
+      if (x) c0[x]++;
     });
-    return { Heldrungen: h, Oldisleben: o, Umland: u };
+    return c0;
   }, [contacts]);
+
 
 
   const nvts = useMemo(() => {
@@ -1719,13 +1720,12 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "Heldrungen", "Oldisleben", "Umland"] as const).map((o) => {
+          {(["alle", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Umland})`
-              : o === "Umland"
-                ? `Umland (${ortCounts.Umland})`
-                : `${o} (${ortCounts[o]})`;
+              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              : `${o} (${ortCounts[o]})`;
+
 
             return (
               <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
