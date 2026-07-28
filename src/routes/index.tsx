@@ -1049,14 +1049,16 @@ function Index() {
   }, [ortContacts, nvtSel]);
 
   const ortCounts = useMemo(() => {
-    let h = 0, o = 0;
+    let h = 0, o = 0, u = 0;
     contacts.forEach((c) => {
       const x = ortOf(c.nvt);
       if (x === "Heldrungen") h++;
       else if (x === "Oldisleben") o++;
+      else if (x === "Umland") u++;
     });
-    return { Heldrungen: h, Oldisleben: o };
+    return { Heldrungen: h, Oldisleben: o, Umland: u };
   }, [contacts]);
+
 
   const nvts = useMemo(() => {
     const counts = new Map<string, number>();
