@@ -1051,15 +1051,14 @@ function Index() {
   }, [ortContacts, nvtSel]);
 
   const ortCounts = useMemo(() => {
-    let h = 0, o = 0, u = 0;
+    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0 };
     contacts.forEach((c) => {
       const x = ortOf(c.nvt);
-      if (x === "Heldrungen") h++;
-      else if (x === "Oldisleben") o++;
-      else if (x === "Umland") u++;
+      if (x) c0[x]++;
     });
-    return { Heldrungen: h, Oldisleben: o, Umland: u };
+    return c0;
   }, [contacts]);
+
 
 
   const nvts = useMemo(() => {
