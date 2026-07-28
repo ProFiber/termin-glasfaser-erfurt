@@ -144,6 +144,10 @@ async function importSchmueckeContacts(wb: XLSX.WorkBook, log: Log, dry = false)
     const hnr_z = (r["Hausnummer Z."] ?? "").trim();
     const nvt = (r["NVT Gebiet"] ?? "").trim();
     if (!kls || !strasse || !hnr) continue;
+    // Nur unsere freigeschalteten NVT-Gebiete 2V8001–2V8043
+    const nvtNum = /^2V(\d{4})$/.exec(nvt)?.[1];
+    if (!nvtNum || Number(nvtNum) < 8001 || Number(nvtNum) > 8043) continue;
+
 
     // 1) KLS-ID Match (mit oder ohne "KLS-" Prefix)
     let bid: string | undefined;
