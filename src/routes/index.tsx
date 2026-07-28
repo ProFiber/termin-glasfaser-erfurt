@@ -679,18 +679,20 @@ const TIME_OPTIONS: string[] = (() => {
   return out;
 })();
 
-type Ort = "Heldrungen" | "Oldisleben" | "Umland";
-// NVT → Ortsteil. 8001–8021 = Heldrungen · 8031–8043 = Oldisleben
-// 8022–8030 = Umland (Sachsenburg / Gorsleben / Harras) – aktuell nicht im Fokus.
+type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben";
+// NVT → Ortsteil. 8001–8021 = Heldrungen · 8022–8025 = Sachsenburg
+// 8026–8030 = Gorsleben · 8031–8043 = Oldisleben
 const ortOf = (nvt: string): Ort | null => {
   const m = /^2V(\d{4})$/.exec((nvt ?? "").trim());
   if (!m) return null;
   const n = Number(m[1]);
   if (n >= 8001 && n <= 8021) return "Heldrungen";
-  if (n >= 8022 && n <= 8030) return "Umland";
+  if (n >= 8022 && n <= 8025) return "Sachsenburg";
+  if (n >= 8026 && n <= 8030) return "Gorsleben";
   if (n >= 8031 && n <= 8043) return "Oldisleben";
   return null;
 };
+
 
 
 
