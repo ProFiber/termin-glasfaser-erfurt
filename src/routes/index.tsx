@@ -865,19 +865,42 @@ function Index() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: cs, error: e1 }, { data: ss, error: e2 }, { data: zl }, { data: doku }] = await Promise.all([
-        supabase.from("contacts").select("*").order("strasse").order("hnr"),
+      // Supabase/PostgREST liefert maximal 1000 Zeilen pro Request.
+      // Kontakte werden daher seitenweise geladen, bis alle vorhanden sind.
+      const PAGE = 1000;
+      const allContacts: Contact[] = [];
+      let offset = 0;
+      let done = false;
+      while (!done) {
+        const { data: page, error } = await supabase
+          .from("contacts")
+          .select("*")
+          .order("strasse")
+          .order("hnr")
+          .range(offset, offset + PAGE - 1);
+        if (error) {
+          console.error("Load contacts error", error);
+          break;
+        }
+        if (page && page.length > 0) {
+          allContacts.push(...(page as Contact[]));
+          offset += page.length;
+        }
+        done = !page || page.length < PAGE;
+      }
+
+      const [{ data: ss, error: e2 }, { data: zl }, { data: doku }] = await Promise.all([
         supabase.from("call_states").select("*"),
         supabase.from("umsatz_ziele").select("*").eq("scope", "ha_preis").maybeSingle(),
         supabase.from("doku_states").select("bid,gf_plus").eq("gf_plus", false),
       ]);
       if (cancelled) return;
-      if (e1 || e2) {
-        console.error("Load error", e1 || e2);
+      if (e2) {
+        console.error("Load error", e2);
         setLoading(false);
         return;
       }
-      setContacts((cs as Contact[]) || []);
+      setContacts(allContacts);
       const map: Record<string, CallState> = {};
       (ss as CallState[] | null)?.forEach((s) => (map[s.bid] = s));
       setStates(map);
