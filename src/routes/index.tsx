@@ -2217,6 +2217,9 @@ function Index() {
                         </summary>
                         <div style={{ marginTop: 8 }}>
                           {c.naechster_schritt && <Row k="Nächster Schritt" v={c.naechster_schritt} />}
+                          {c.auftrag_status && <Row k="Auftragsstatus" v={`${c.auftrag_status}${c.auftrag_typ ? ` · ${c.auftrag_typ}` : ""}`} />}
+                          {c.installation_faellig && <Row k="Fällig (Inst.)" v={new Date(c.installation_faellig).toLocaleDateString("de-DE")} />}
+                          {c.bestellnummer && <Row k="Bestellnr." v={<code style={{ fontSize: 11 }}>{c.bestellnummer}</code>} />}
                           {c.fol_id && <Row k="FoL-ID" v={<code style={{ fontSize: 11 }}>{c.fol_id}</code>} />}
                           {c.telekom_bid && <Row k="Telekom-BID" v={<code style={{ fontSize: 11 }}>{c.telekom_bid}</code>} />}
                           {c.bulk_id && <Row k="Bulk-ID" v={<code style={{ fontSize: 11 }}>{c.bulk_id}</code>} />}
