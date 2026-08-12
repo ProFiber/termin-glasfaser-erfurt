@@ -37,6 +37,11 @@ export type Contact = {
   wiedervorlage?: string | null;
   hausstich_status?: string | null;
   hausstich_datum?: string | null;
+  // Bauauftrags-Export (Order.csv, read-only)
+  auftrag_status?: string | null;
+  auftrag_typ?: string | null;
+  bestellnummer?: string | null;
+  installation_faellig?: string | null;
   storniert?: boolean;
   contact2_name?: string | null;
   contact2_mobil?: string | null;
