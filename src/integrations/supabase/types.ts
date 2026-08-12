@@ -400,6 +400,7 @@ export type Database = {
         Returns: Json
       }
       bulk_import_contacts: { Args: { payload: Json }; Returns: number }
+      bulk_import_orders: { Args: { payload: Json }; Returns: Json }
       mark_eingereicht: { Args: { bids: string[] }; Returns: number }
     }
     Enums: {
