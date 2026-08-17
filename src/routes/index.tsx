@@ -1068,7 +1068,7 @@ function Index() {
   }
 
   const ortContacts = useMemo(
-    () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
+    () => ortSel === "alle" ? contacts : contacts.filter((c) => matchesOrtSel(c.nvt, ortSel)),
     [contacts, ortSel]
   );
 
