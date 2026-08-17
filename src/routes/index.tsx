@@ -789,7 +789,7 @@ function Index() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
-  const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
+  const [ortSel, setOrtSel] = useState<"alle" | "fokus" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
