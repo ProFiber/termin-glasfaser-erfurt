@@ -43,6 +43,9 @@ export type Contact = {
   bestellnummer?: string | null;
   installation_faellig?: string | null;
   storniert?: boolean;
+  storniert_telekom?: boolean;
+  storniert_intern?: boolean;
+  storno_grund?: string | null;
   contact2_name?: string | null;
   contact2_mobil?: string | null;
   contact2_festnetz?: string | null;
