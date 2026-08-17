@@ -692,6 +692,15 @@ const ortOf = (nvt: string): Ort | null => {
   if (n >= 8031 && n <= 8043) return "Oldisleben";
   return null;
 };
+// Alle vier sind Ortsteile der Landgemeinde „An der Schmücke".
+// Aktueller Baufokus: Heldrungen + Oldisleben zuerst fertigstellen.
+const FOKUS_ORTE: Ort[] = ["Heldrungen", "Oldisleben"];
+const matchesOrtSel = (nvt: string, sel: "alle" | "fokus" | Ort) => {
+  if (sel === "alle") return true;
+  const o = ortOf(nvt);
+  if (sel === "fokus") return o !== null && FOKUS_ORTE.includes(o);
+  return o === sel;
+};
 
 
 
