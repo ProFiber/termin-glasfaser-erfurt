@@ -1205,7 +1205,7 @@ function Index() {
         const offen2 = !cs2?.fotos_erhalten || !cs2?.protokoll_erhalten;
         if (!(fertig2 && offen2)) return false;
       }
-      if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
+      if (!matchesOrtSel(c.nvt, ortSel)) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
