@@ -692,6 +692,15 @@ const ortOf = (nvt: string): Ort | null => {
   if (n >= 8031 && n <= 8043) return "Oldisleben";
   return null;
 };
+// Alle vier sind Ortsteile der Landgemeinde „An der Schmücke".
+// Aktueller Baufokus: Heldrungen + Oldisleben zuerst fertigstellen.
+const FOKUS_ORTE: Ort[] = ["Heldrungen", "Oldisleben"];
+const matchesOrtSel = (nvt: string, sel: "alle" | "fokus" | Ort) => {
+  if (sel === "alle") return true;
+  const o = ortOf(nvt);
+  if (sel === "fokus") return o !== null && FOKUS_ORTE.includes(o);
+  return o === sel;
+};
 
 
 
@@ -780,7 +789,7 @@ function Index() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<Set<string>>(new Set());
   const [teamFilter, setTeamFilter] = useState<"alle" | "team1" | "team2" | "dokuOffen">("alle");
-  const [ortSel, setOrtSel] = useState<"alle" | Ort>("alle");
+  const [ortSel, setOrtSel] = useState<"alle" | "fokus" | Ort>("alle");
   const [streetSel, setStreetSel] = useState<Set<string>>(new Set());
   const [nvtSel, setNvtSel] = useState<Set<string>>(new Set());
   const [priorityOnly, setPriorityOnly] = useState(false);
@@ -1059,7 +1068,7 @@ function Index() {
   }
 
   const ortContacts = useMemo(
-    () => ortSel === "alle" ? contacts : contacts.filter((c) => ortOf(c.nvt) === ortSel),
+    () => ortSel === "alle" ? contacts : contacts.filter((c) => matchesOrtSel(c.nvt, ortSel)),
     [contacts, ortSel]
   );
 
@@ -1196,7 +1205,7 @@ function Index() {
         const offen2 = !cs2?.fotos_erhalten || !cs2?.protokoll_erhalten;
         if (!(fertig2 && offen2)) return false;
       }
-      if (ortSel !== "alle" && ortOf(c.nvt) !== ortSel) return false;
+      if (!matchesOrtSel(c.nvt, ortSel)) return false;
       if (nvtSel.size > 0 && !nvtSel.has(c.nvt)) return false;
       if (urgentOnly && !isUrgentNvt(c.nvt)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
@@ -1743,15 +1752,22 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
+          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              : o === "fokus"
+              ? `🎯 Fokus: Heldrungen + Oldisleben (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
               : `${o} (${ortCounts[o]})`;
 
 
             return (
-              <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
+              <button
+                key={o}
+                onClick={() => setOrtSel(o)}
+                title={o === "fokus" ? "Zuerst fertigstellen, bevor Sachsenburg/Gorsleben angegangen wird" : undefined}
+                style={chip(active, o === "fokus" ? "#0d9488" : "#7c3aed")}
+              >
                 {label}
               </button>
             );
@@ -2064,8 +2080,12 @@ function Index() {
                         )}
                         {c.storniert && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#7c2d12", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
-                            title="Laut Telekom-Portal storniert">
-                            ⊘ STORNIERT
+                            title={c.storniert_telekom && c.storniert_intern
+                              ? "Storno von uns UND laut Telekom-Portal"
+                              : c.storniert_telekom
+                              ? "Storno laut Telekom-Portal (Auftrag abgebrochen)"
+                              : "Storno von uns gemeldet (Kunde abgesagt / nicht baubar)"}>
+                            ⊘ STORNIERT{c.storniert_telekom && c.storniert_intern ? " · TK+WIR" : c.storniert_telekom ? " · TK" : " · WIR"}
                           </span>
                         )}
                         {ai.required && ai.done && (
@@ -2274,7 +2294,12 @@ function Index() {
                           )}
                           {c.storniert && (
                             <div style={{ marginTop: 8, padding: "6px 10px", background: "#fee2e2", color: "#7c2d12", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                              ⊘ Objekt laut Telekom-Portal storniert (Grund unbekannt · manuell prüfen)
+                              ⊘ Storno-Quelle: {c.storniert_telekom && c.storniert_intern
+                                ? "Telekom-Portal + wir"
+                                : c.storniert_telekom
+                                ? "Telekom-Portal (Auftrag abgebrochen)"
+                                : "wir (Kunde abgesagt / nicht baubar)"}
+                              {c.storno_grund ? ` · ${c.storno_grund}` : ""}
                             </div>
                           )}
                         </div>

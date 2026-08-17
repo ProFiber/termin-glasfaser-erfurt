@@ -166,6 +166,9 @@ export type Database = {
           ort: string
           plz: string
           storniert: boolean
+          storniert_intern: boolean
+          storniert_telekom: boolean
+          storno_grund: string | null
           strasse: string
           telekom_bid: string | null
           telekom_kommentar: string | null
@@ -223,6 +226,9 @@ export type Database = {
           ort?: string
           plz?: string
           storniert?: boolean
+          storniert_intern?: boolean
+          storniert_telekom?: boolean
+          storno_grund?: string | null
           strasse?: string
           telekom_bid?: string | null
           telekom_kommentar?: string | null
@@ -280,6 +286,9 @@ export type Database = {
           ort?: string
           plz?: string
           storniert?: boolean
+          storniert_intern?: boolean
+          storniert_telekom?: boolean
+          storno_grund?: string | null
           strasse?: string
           telekom_bid?: string | null
           telekom_kommentar?: string | null
