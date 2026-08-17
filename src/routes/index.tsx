@@ -1752,15 +1752,22 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
+          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Orte (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              : o === "fokus"
+              ? `🎯 Fokus: Heldrungen + Oldisleben (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
               : `${o} (${ortCounts[o]})`;
 
 
             return (
-              <button key={o} onClick={() => setOrtSel(o)} style={chip(active, "#7c3aed")}>
+              <button
+                key={o}
+                onClick={() => setOrtSel(o)}
+                title={o === "fokus" ? "Zuerst fertigstellen, bevor Sachsenburg/Gorsleben angegangen wird" : undefined}
+                style={chip(active, o === "fokus" ? "#0d9488" : "#7c3aed")}
+              >
                 {label}
               </button>
             );
