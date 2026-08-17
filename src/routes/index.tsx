@@ -2080,8 +2080,12 @@ function Index() {
                         )}
                         {c.storniert && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#7c2d12", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
-                            title="Laut Telekom-Portal storniert">
-                            ⊘ STORNIERT
+                            title={c.storniert_telekom && c.storniert_intern
+                              ? "Storno von uns UND laut Telekom-Portal"
+                              : c.storniert_telekom
+                              ? "Storno laut Telekom-Portal (Auftrag abgebrochen)"
+                              : "Storno von uns gemeldet (Kunde abgesagt / nicht baubar)"}>
+                            ⊘ STORNIERT{c.storniert_telekom && c.storniert_intern ? " · TK+WIR" : c.storniert_telekom ? " · TK" : " · WIR"}
                           </span>
                         )}
                         {ai.required && ai.done && (
