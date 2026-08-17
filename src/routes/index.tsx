@@ -2294,7 +2294,12 @@ function Index() {
                           )}
                           {c.storniert && (
                             <div style={{ marginTop: 8, padding: "6px 10px", background: "#fee2e2", color: "#7c2d12", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                              ⊘ Objekt laut Telekom-Portal storniert (Grund unbekannt · manuell prüfen)
+                              ⊘ Storno-Quelle: {c.storniert_telekom && c.storniert_intern
+                                ? "Telekom-Portal + wir"
+                                : c.storniert_telekom
+                                ? "Telekom-Portal (Auftrag abgebrochen)"
+                                : "wir (Kunde abgesagt / nicht baubar)"}
+                              {c.storno_grund ? ` · ${c.storno_grund}` : ""}
                             </div>
                           )}
                         </div>
