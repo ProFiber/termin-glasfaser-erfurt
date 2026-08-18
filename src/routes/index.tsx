@@ -8,6 +8,7 @@ import KarteTab from "@/components/KarteTab";
 import NvtTab from "@/components/NvtTab";
 import GrabenStepper from "@/components/GrabenStepper";
 import GrabenPromptSheet from "@/components/GrabenPromptSheet";
+import { waPhone } from "@/lib/waPhone";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
 import TeamSection from "@/components/TeamSection";
@@ -1357,9 +1358,9 @@ function Index() {
       `Störmer Bau – im Auftrag der Telekom`,
     ];
     const text = lines.join("\n");
-    const phone = (c.mobil || c.festnetz || "").replace(/[^\d+]/g, "");
+    const phone = waPhone(c.mobil) || waPhone(c.festnetz);
     const url = phone
-      ? `https://wa.me/${phone.replace(/^\+/, "")}?text=${encodeURIComponent(text)}`
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       : `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
   }
@@ -2333,7 +2334,7 @@ function Index() {
 
                   {c.mobil && (
                     <a
-                      href={`https://wa.me/${c.mobil.replace(/[^\d]/g, "").replace(/^0/, "49")}?text=${encodeURIComponent(
+                      href={`https://wa.me/${waPhone(c.mobil)}?text=${encodeURIComponent(
                         `Guten Tag Herr/Frau ${lastName(c.name)},\n\nhier ist Störmer Bau im Auftrag der Telekom. Wir haben versucht Sie telefonisch zu erreichen bezüglich Ihres Glasfaser-Hausanschlusses in der ${c.strasse} ${c.hnr}${c.hnr_zusatz}.\n\nBitte melden Sie sich kurz zurück, damit wir zeitnah einen Termin vereinbaren können.\n\nVielen Dank!`
                       )}`}
                       target="_blank"
