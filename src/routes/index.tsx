@@ -430,13 +430,15 @@ function ExportMenu({
   const baseList = onlyPriority ? contacts.filter((c) => isPriorityNvt(c.nvt)) : contacts;
   const erlCount = baseList.filter((c) => callStates[c.bid]?.status === "erledigt").length;
   const abgCount = baseList.filter((c) => callStates[c.bid]?.status === "abgelehnt").length;
-  const offenCount = baseList.length - erlCount - abgCount;
+  const storniertCount = baseList.filter((c) => c.storniert && callStates[c.bid]?.status !== "erledigt" && callStates[c.bid]?.status !== "abgelehnt").length;
+  const offenCount = baseList.length - erlCount - abgCount - storniertCount;
   const aktuellCount = filteredView?.length ?? 0;
   const filteredCount =
     isAktuell ? aktuellCount :
     statusFilter === "alle" ? baseList.length :
     statusFilter === "erledigt" ? erlCount :
     statusFilter === "abgelehnt" ? abgCount : offenCount;
+
 
   const doExport = () => {
     if (fields.length === 0) return;
