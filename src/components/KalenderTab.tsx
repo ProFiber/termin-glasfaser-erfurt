@@ -304,10 +304,11 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
       <div
         style={{
           position: "sticky",
-          top: 0,
-          zIndex: 20,
+          top: headerOffset,
+          zIndex: 15,
           background: "#fff",
           borderRadius: 10,
+
           padding: 12,
           marginBottom: 12,
           boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
