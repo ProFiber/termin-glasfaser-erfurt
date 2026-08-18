@@ -157,7 +157,22 @@ function injectStyles() {
     }
     .today-pin-inarbeit {
       animation: todayInArbeitPulse 1.4s ease-in-out infinite;
+    }
+    /* Zoom-Control aus der Filterleiste heraus nach unten versetzen */
+    .leaflet-top.leaflet-left { top: 104px; }
+    .leaflet-control-zoom { box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important; border: none !important; }
+    .leaflet-control-zoom a {
+      width: 34px !important; height: 34px !important; line-height: 34px !important;
+      font-size: 18px !important; border-radius: 8px !important;
+    }
+    /* Attribution über den Floating-Buttons halten */
+    .leaflet-bottom.leaflet-right { bottom: 64px; }
+    .leaflet-control-attribution {
+      font-size: 9px !important; background: rgba(255,255,255,0.75) !important;
+      padding: 0 4px !important; border-radius: 4px 0 0 0 !important;
+    }
   `;
+
   document.head.appendChild(style);
 }
 
