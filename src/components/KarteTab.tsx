@@ -696,12 +696,15 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
-      if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
+      if (openOnly) {
+        const status = states[c.bid]?.status;
+        if (status === "erledigt" || status === "abgelehnt" || c.storniert) return false;
+      } else if (filter.size > 0 && !filter.has((states[c.bid]?.status ?? "offen") as CallStatus)) return false;
       if (priorityOnly && !isPriorityNvt(c.nvt)) return false;
       if (phoneInvalidOnly && !states[c.bid]?.telefon_ungueltig) return false;
       return true;
     }),
-    [contacts, states, filter, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
+    [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
   );
 
   const phoneInvalidCount = useMemo(
