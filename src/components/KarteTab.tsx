@@ -232,6 +232,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     return (localStorage.getItem("karte_layer") as MapLayer) || "standard";
   });
   const [layerMenu, setLayerMenu] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseLayerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
