@@ -1107,22 +1107,45 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       )}
 
       {/* Legend top-right */}
-      <div
-        style={{
-          position: "absolute",
-          top: Math.abs(bearing) > 0.5 ? 248 : 200,
-          right: 8, zIndex: 1000,
-          background: "rgba(255,255,255,0.95)", borderRadius: 8, padding: 8,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 11,
-        }}
-      >
-        {(Object.keys(STATUS_COLOR) as CallStatus[]).map((s) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLOR[s], display: "inline-block" }} />
-            <span style={{ color: "#334155" }}>{STATUS_LABEL[s]}</span>
-          </div>
-        ))}
-      </div>
+      {/* Legende: einklappbar, links unter dem Zoom-Control */}
+      {!selectedContact && (
+        <div
+          style={{
+            position: "absolute", top: 186, left: 8, zIndex: 1000,
+            display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
+          }}
+        >
+          <button
+            onClick={() => setLegendOpen((v) => !v)}
+            aria-label="Legende"
+            title={legendOpen ? "Legende ausblenden" : "Legende anzeigen"}
+            style={{
+              width: 34, height: 34, borderRadius: 8, border: "none",
+              background: legendOpen ? MAGENTA : "white",
+              color: legendOpen ? "white" : "#334155",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.2)", cursor: "pointer",
+              fontSize: 15, fontWeight: 700,
+            }}
+          >
+            {legendOpen ? "✕" : "🎨"}
+          </button>
+          {legendOpen && (
+            <div
+              style={{
+                background: "rgba(255,255,255,0.96)", borderRadius: 8, padding: 8,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.15)", fontSize: 11,
+              }}
+            >
+              {(Object.keys(STATUS_COLOR) as CallStatus[]).map((s) => (
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLOR[s], display: "inline-block" }} />
+                  <span style={{ color: "#334155", whiteSpace: "nowrap" }}>{STATUS_LABEL[s]}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Map */}
       <div ref={mapEl} style={{ position: "absolute", inset: 0, background: "#e5e7eb" }} />
@@ -1131,10 +1154,13 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       {selectedContact && (
         <div
           style={{
-            position: "absolute", left: 8, right: 8, bottom: 8, zIndex: 1000,
+            position: "absolute", left: 8, right: 8, bottom: 76, zIndex: 1000,
+            maxHeight: "calc(100% - 130px)", overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
             background: "white", borderRadius: 11, padding: 14,
             boxShadow: "0 -2px 12px rgba(0,0,0,0.15)",
           }}
+
         >
           <button
             onClick={() => setSelected(null)}
