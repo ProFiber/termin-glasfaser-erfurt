@@ -979,7 +979,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       })()}
 
       {/* Action buttons (stacked top-right) */}
-      <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: selectedContact ? "none" : "flex", flexDirection: "column", gap: 8 }}>
         <button
           onClick={handleLocate}
           aria-label="Mein Standort"
