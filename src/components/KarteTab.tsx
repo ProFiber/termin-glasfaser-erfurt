@@ -212,6 +212,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const statesRef = useRef(states);
   useEffect(() => { statesRef.current = states; }, [states]);
   const [filter, setFilter] = useState<Set<CallStatus>>(new Set());
+  const [openOnly, setOpenOnly] = useState(false);
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [heuteOnly, setHeuteOnly] = useState(false);
   const [phoneInvalidOnly, setPhoneInvalidOnly] = useState(false);
