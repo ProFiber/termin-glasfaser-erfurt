@@ -979,7 +979,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       })()}
 
       {/* Action buttons (stacked top-right) */}
-      <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "absolute", top: 56, right: 8, zIndex: 1001, display: selectedContact ? "none" : "flex", flexDirection: "column", gap: 8 }}>
         <button
           onClick={handleLocate}
           aria-label="Mein Standort"
@@ -1152,38 +1152,60 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
       {/* Bottom sheet */}
       {selectedContact && (
+        <>
+          {/* Backdrop – Tap schließt das Detail-Fenster */}
+          <div
+            onClick={() => setSelected(null)}
+            style={{ position: "absolute", inset: 0, zIndex: 1390, background: "rgba(15,23,42,0.35)" }}
+          />
         <div
           style={{
-            position: "absolute", left: 8, right: 8, bottom: 76, zIndex: 1000,
-            maxHeight: "calc(100% - 130px)", overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            background: "white", borderRadius: 11, padding: 14,
-            boxShadow: "0 -2px 12px rgba(0,0,0,0.15)",
+            position: "absolute", left: 8, right: 8, bottom: 8, zIndex: 1400,
+            maxHeight: "calc(100% - 72px)",
+            display: "flex", flexDirection: "column",
+            background: "white", borderRadius: 14,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.25)",
+            overflow: "hidden",
           }}
 
         >
-          <button
-            onClick={() => setSelected(null)}
+          {/* Sticky Kopf mit Schließen-Button */}
+          <div
             style={{
-              position: "absolute", top: 8, right: 8, border: "none", background: "#f1f5f9",
-              width: 28, height: 28, borderRadius: "50%", cursor: "pointer", fontWeight: 700, color: "#475569",
+              display: "flex", alignItems: "flex-start", gap: 8,
+              padding: "12px 12px 8px", borderBottom: "1px solid #e5e7eb",
+              background: "white", flexShrink: 0,
             }}
-            aria-label="Schließen"
-          >×</button>
-
-          <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", paddingRight: 32, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-            <span>{selectedContact.strasse} {selectedContact.hnr}{selectedContact.hnr_zusatz}</span>
-            {selectedContact.auftragsquelle === "bulk" && (
-              <span style={{
-                fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
-                padding: "2px 7px", borderRadius: 999,
-                background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
-              }}>
-                Bulk
-              </span>
-            )}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                <span>{selectedContact.strasse} {selectedContact.hnr}{selectedContact.hnr_zusatz}</span>
+                {selectedContact.auftragsquelle === "bulk" && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                    padding: "2px 7px", borderRadius: 999,
+                    background: "#fef3c7", color: "#92400e", textTransform: "uppercase",
+                  }}>
+                    Bulk
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: "#475569" }}>{selectedContact.name}</div>
+            </div>
+            <button
+              onClick={() => setSelected(null)}
+              style={{
+                flexShrink: 0, border: "none", background: "#f1f5f9",
+                width: 36, height: 36, borderRadius: "50%", cursor: "pointer",
+                fontWeight: 700, fontSize: 18, color: "#475569", lineHeight: 1,
+              }}
+              aria-label="Schließen"
+            >×</button>
           </div>
-          <div style={{ fontSize: 13, color: "#475569" }}>{selectedContact.name}</div>
+
+          {/* Scrollbarer Inhalt */}
+          <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "10px 14px 4px", flex: 1, minHeight: 0 }}>
+
           <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
             {[selectedContact.typ, selectedContact.we ? `${selectedContact.we} WE` : ""].filter(Boolean).join(" · ")}
             {selectedContact.nvt ? ` · NVT ${selectedContact.nvt}` : ""}
@@ -1246,9 +1268,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
               </div>
             </div>
           ) : null}
+          </div>
 
-
-          <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+          {/* Feste Aktionsleiste */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid #e5e7eb", background: "white", flexShrink: 0 }}>
             {(selectedContact.mobil || selectedContact.festnetz) && (
               <a
                 href={`tel:${selectedContact.mobil || selectedContact.festnetz}`}
@@ -1279,7 +1302,9 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             >📞 Zur Call-Liste</button>
           </div>
         </div>
+        </>
       )}
+
     </div>
   );
 }

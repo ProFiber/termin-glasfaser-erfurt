@@ -54,6 +54,9 @@ type Props = {
   onShowOnMap?: (bid: string) => void;
   focusDate?: string | null;
   onClearFocusDate?: () => void;
+  /** Höhe des App-Headers, damit die Wochen-Leiste darunter klebt statt darüber */
+  headerOffset?: number;
+
 };
 
 const navBtn: CSSProperties = {
@@ -95,7 +98,7 @@ const iconStyle: CSSProperties = {
 const VIEW_MODE_KEY = "kalender:viewMode";
 const DAY_MODES_KEY = "kalender:dayModes";
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, headerOffset = 0 }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
@@ -301,10 +304,11 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
       <div
         style={{
           position: "sticky",
-          top: 0,
-          zIndex: 20,
+          top: headerOffset,
+          zIndex: 15,
           background: "#fff",
           borderRadius: 10,
+
           padding: 12,
           marginBottom: 12,
           boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
