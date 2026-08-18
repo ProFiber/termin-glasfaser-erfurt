@@ -1268,9 +1268,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
               </div>
             </div>
           ) : null}
+          </div>
 
-
-          <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+          {/* Feste Aktionsleiste */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid #e5e7eb", background: "white", flexShrink: 0 }}>
             {(selectedContact.mobil || selectedContact.festnetz) && (
               <a
                 href={`tel:${selectedContact.mobil || selectedContact.festnetz}`}
@@ -1301,7 +1302,9 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             >📞 Zur Call-Liste</button>
           </div>
         </div>
+        </>
       )}
+
     </div>
   );
 }
