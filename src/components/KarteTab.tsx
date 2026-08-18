@@ -910,30 +910,42 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             title="Route für Tür-Ansprache in Google Maps öffnen"
           >🚗 Route ({visibleContacts.length})</button>
         )}
-        {(["alle", "offen", "angerufen", "termin", "nichtErreicht", "abgelehnt", "erledigt"] as const).map((k) => {
-          const active = k === "alle" ? filter.size === 0 : filter.has(k as CallStatus);
-          const color = k === "alle" ? MAGENTA : STATUS_COLOR[k as CallStatus];
+        {([
+          { key: "offen", label: "Offen", color: MAGENTA, combined: true },
+          { key: "alle", label: "Alle", color: MAGENTA, combined: false },
+          { key: "angerufen", label: STATUS_LABEL.angerufen, color: STATUS_COLOR.angerufen, combined: false },
+          { key: "termin", label: STATUS_LABEL.termin, color: STATUS_COLOR.termin, combined: false },
+          { key: "nichtErreicht", label: STATUS_LABEL.nichtErreicht, color: STATUS_COLOR.nichtErreicht, combined: false },
+          { key: "abgelehnt", label: STATUS_LABEL.abgelehnt, color: STATUS_COLOR.abgelehnt, combined: false },
+          { key: "erledigt", label: STATUS_LABEL.erledigt, color: STATUS_COLOR.erledigt, combined: false },
+        ] as const).map((k) => {
+          const active = k.key === "offen" ? openOnly : k.key === "alle" ? filter.size === 0 && !openOnly : filter.has(k.key as CallStatus);
           return (
             <button
-              key={k}
+              key={k.key}
               onClick={() => {
-                if (k === "alle") { setFilter(new Set()); return; }
+                if (k.key === "offen") {
+                  setOpenOnly((prev) => !prev);
+                  return;
+                }
+                setOpenOnly(false);
+                if (k.key === "alle") { setFilter(new Set()); return; }
                 setFilter((prev) => {
                   const next = new Set(prev);
-                  if (next.has(k as CallStatus)) next.delete(k as CallStatus);
-                  else next.add(k as CallStatus);
+                  if (next.has(k.key as CallStatus)) next.delete(k.key as CallStatus);
+                  else next.add(k.key as CallStatus);
                   return next;
                 });
               }}
               style={{
                 padding: "5px 10px", borderRadius: 999,
-                border: `1.5px solid ${active ? color : "#e5e7eb"}`,
-                background: active ? color : "white",
+                border: `1.5px solid ${active ? k.color : "#e5e7eb"}`,
+                background: active ? k.color : "white",
                 color: active ? "white" : "#475569",
                 fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
               }}
             >
-              {k === "alle" ? "Alle" : STATUS_LABEL[k as CallStatus]}
+              {k.label}
             </button>
           );
         })}
