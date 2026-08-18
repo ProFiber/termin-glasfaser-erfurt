@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Contact, CallState } from "@/lib/types";
 import GrabenPromptSheet from "./GrabenPromptSheet";
+import { waPhone } from "@/lib/waPhone";
 
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -741,7 +742,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             {c.mobil && (
               <a
                 style={menuRow}
-                href={`https://wa.me/${c.mobil.replace(/[^\d]/g, "")}?text=${waMsg}`}
+                href={`https://wa.me/${waPhone(c.mobil) || waPhone(c.festnetz)}?text=${waMsg}`}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => setTimeout(closeAll, 0)}
