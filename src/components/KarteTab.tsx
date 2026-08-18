@@ -1106,7 +1106,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         </div>
       )}
 
-      {/* Legend top-right */}
+      
       {/* Legende: einklappbar, links unter dem Zoom-Control */}
       {!selectedContact && (
         <div
