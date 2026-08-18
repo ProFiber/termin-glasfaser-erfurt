@@ -157,8 +157,9 @@ function exportHausanschluesseXlsx(
         const st = callStates[c.bid]?.status;
         if (statusFilter === "erledigt") return st === "erledigt";
         if (statusFilter === "abgelehnt") return st === "abgelehnt";
-        return st !== "erledigt" && st !== "abgelehnt";
+        return st !== "erledigt" && st !== "abgelehnt" && !c.storniert;
       });
+
       suffix = `_${statusFilter}`;
     }
   }
