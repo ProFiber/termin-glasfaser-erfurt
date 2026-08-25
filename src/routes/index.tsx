@@ -1197,6 +1197,16 @@ function Index() {
         if (orFilters.has("auskundungOffen") && c.auskundung_erforderlich && !c.auskundung_erfolgt && st !== "erledigt" && st !== "abgelehnt" && !c.storniert) matchesAny = true;
         if (orFilters.has("nochOffen") && st === "offen" && !c.storniert && !(c.auskundung_erforderlich && !c.auskundung_erfolgt) && zustimmungStatus(c.zustimmung, c.bid) === "ok") matchesAny = true;
         if (orFilters.has("abgelehntStorno") && st !== "erledigt" && (st === "abgelehnt" || c.storniert)) matchesAny = true;
+        // Erledigt-Abgleich (wir vs. Telekom-Portal)
+        const tkInstalliert = (c.auftrag_status || "").toLowerCase().includes("installiert");
+        if (orFilters.has("erlNurWir") && st === "erledigt" && !tkInstalliert) matchesAny = true;
+        if (orFilters.has("erlNurTK") && st !== "erledigt" && tkInstalliert) matchesAny = true;
+        if (orFilters.has("erlBeide") && st === "erledigt" && tkInstalliert) matchesAny = true;
+        // Storno-Quellen
+        if (orFilters.has("stornoTK") && c.storniert_telekom && !c.storniert_intern) matchesAny = true;
+        if (orFilters.has("stornoWir") && c.storniert_intern && !c.storniert_telekom) matchesAny = true;
+        if (orFilters.has("stornoBeide") && c.storniert_telekom && c.storniert_intern) matchesAny = true;
+        if (orFilters.has("stornoErledigt") && c.storniert && st === "erledigt") matchesAny = true;
         if (!matchesAny) return false;
       }
       if (teamFilter === "team1" && states[c.bid]?.team !== "team1") return false;
