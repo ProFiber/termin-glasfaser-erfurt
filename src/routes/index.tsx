@@ -1258,13 +1258,13 @@ function Index() {
         if (za !== zb) return zb.localeCompare(za);
       }
       if (listSort === "erstellt_asc") {
-        const da = (a.auftrag_erstellt_am ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? "").toString();
+        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
         if (da !== db) return da.localeCompare(db);
       }
       if (listSort === "erstellt_desc") {
-        const da = (a.auftrag_erstellt_am ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? "").toString();
+        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
         if (da !== db) return db.localeCompare(da);
       }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
@@ -2256,7 +2256,7 @@ function Index() {
                   </div>
                   <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.name}
-                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}{c.auftrag_erstellt_am ? ` · 📅 ${new Date(c.auftrag_erstellt_am).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}` : ""}</span>}
+                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}{(c.auftrag_erstellt_am || c.created_at) ? ` · 📅 ${c.auftrag_erstellt_am ? "" : "~"}${new Date((c.auftrag_erstellt_am || c.created_at) as string).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}` : ""}</span>}
                   </div>
                   {cs?.team && cs?.team_status && (
                     <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>
