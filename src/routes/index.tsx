@@ -2218,12 +2218,33 @@ function Index() {
                         )}
                         {c.storniert && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#7c2d12", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
-                            title={c.storniert_telekom && c.storniert_intern
+                            title={(c.storniert_telekom && c.storniert_intern
                               ? "Storno von uns UND laut Telekom-Portal"
                               : c.storniert_telekom
                               ? "Storno laut Telekom-Portal (Auftrag abgebrochen)"
-                              : "Storno von uns gemeldet (Kunde abgesagt / nicht baubar)"}>
-                            ⊘ STORNIERT{c.storniert_telekom && c.storniert_intern ? " · TK+WIR" : c.storniert_telekom ? " · TK" : " · WIR"}
+                              : c.storniert_intern
+                              ? "Storno von uns gemeldet (Kunde abgesagt / nicht baubar)"
+                              : "Storno-Quelle unbekannt (Altbestand vor Quellen-Trennung)")
+                              + (c.storno_grund ? ` – ${c.storno_grund}` : "")}>
+                            ⊘ STORNIERT{c.storniert_telekom && c.storniert_intern ? " · TK+WIR" : c.storniert_telekom ? " · TK" : c.storniert_intern ? " · WIR" : " · QUELLE?"}
+                          </span>
+                        )}
+                        {st === "erledigt" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#16a34a", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
+                            title="In unserer Datenbank als gebaut erfasst">
+                            🟢 VON UNS ERLEDIGT
+                          </span>
+                        )}
+                        {(c.auftrag_status || "").toLowerCase().includes("installiert") && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#2563eb", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
+                            title="Telekom-Portal meldet den Auftrag als installiert">
+                            🔵 TK: INSTALLIERT
+                          </span>
+                        )}
+                        {c.storniert && st === "erledigt" && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#7c2d12", background: "#fed7aa", padding: "2px 7px", borderRadius: 6, letterSpacing: 0.3 }}
+                            title="Objekt ist storniert, aber bei uns als gebaut erfasst – bitte prüfen (Abrechnung)">
+                            ⚠ STORNO TROTZ ERLEDIGT
                           </span>
                         )}
                         {ai.required && ai.done && (
