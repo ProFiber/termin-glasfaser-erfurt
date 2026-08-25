@@ -23,6 +23,7 @@ export type Contact = {
   auskundung_erfolgt?: boolean;
   auskundung_ergebnis?: string;
   auftrag_erstellt_am?: string | null;
+  created_at?: string | null;
   kls_id?: string | null;
   anschluss_typ?: string | null;
   auftragsquelle?: "gf_plus" | "bulk";
