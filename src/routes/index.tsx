@@ -1240,8 +1240,8 @@ function Index() {
     return list.sort((a, b) => {
       // Filter "neuTelekom20": nach Erstellungsdatum absteigend
       if (filter.has("neuTelekom20")) {
-        const da = (a.auftrag_erstellt_am ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? "").toString();
+        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
+        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
         if (da !== db) return db.localeCompare(da);
         return 0;
       }
