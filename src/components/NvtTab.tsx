@@ -560,9 +560,12 @@ export default function NvtTab({
 
       {/* ══════════════ NEU VON TELEKOM (Top N) ══════════════ */}
       {(() => {
+        // Fallback: neu importierte Telekom-Objekte haben oft kein
+        // „Erstellungsdatum" im Export → dann zählt der Import-Zeitpunkt.
+        const neuDatum = (c: Contact) => c.auftrag_erstellt_am || c.created_at || "";
         const sorted = [...contacts]
-          .filter((c) => !!c.auftrag_erstellt_am)
-          .sort((a, b) => String(b.auftrag_erstellt_am).localeCompare(String(a.auftrag_erstellt_am)));
+          .filter((c) => !!neuDatum(c))
+          .sort((a, b) => String(neuDatum(b)).localeCompare(String(neuDatum(a))));
         const showAll = neuTopN >= 99999;
         const neu = showAll ? sorted : sorted.slice(0, neuTopN);
         if (sorted.length === 0) return null;
