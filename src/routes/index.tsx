@@ -2011,6 +2011,13 @@ function Index() {
               : f === "offen" ? "Ausstehend"
               : f === "nichtErledigt" ? "🎯 Noch offen (bis 100%)"
               : f === "abgelehntStorno" ? "❌ Abgelehnt / Storno"
+              : f === "erlNurWir" ? "🟢 Nur wir erledigt"
+              : f === "erlNurTK" ? "🔵 Nur TK installiert"
+              : f === "erlBeide" ? "✅ Beides erledigt"
+              : f === "stornoTK" ? "⊘ Storno nur TK"
+              : f === "stornoWir" ? "⊘ Storno nur wir"
+              : f === "stornoBeide" ? "⊘ Storno TK+WIR"
+              : f === "stornoErledigt" ? "⚠ Storno trotz erledigt"
               : f === "auskundungOffen" ? "🔎 Auskundung offen"
               : f === "nochOffen" ? "⏳ Noch offen"
               : f === "termin" ? `✅ ${STATUS_META.termin.label}`
