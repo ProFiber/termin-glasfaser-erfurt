@@ -690,6 +690,122 @@ function Admin() {
     }
   }
 
+  async function importOrderCsv(file: File) {
+    setBusy(true);
+    setLog([]);
+    try {
+      append(`Lese Bauauftrags-Export ${file.name} …`);
+      const text = (await file.text()).replace(/^\uFEFF/, "");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length < 2) { append("❌ Datei hat keine Zeilen"); setBusy(false); return; }
+
+      const headers = lines[0].split(";").map((h) => h.trim().replace(/^"|"$/g, ""));
+      const idx = (n: string) => headers.findIndex((h) => h.toLowerCase() === n.toLowerCase());
+      const H = {
+        erstellt: idx("Erstellungsdatum"),
+        bauauftrag: idx("Bauauftrag-ID"),
+        naechster: idx("Nächster Schritt"),
+        status: idx("Status"),
+        auftragTyp: idx("Auftrag Typ"),
+        faellig: idx("Fälligkeit Installation"),
+        plz: idx("PLZ"),
+        ort: idx("Ort"),
+        strasse: idx("Straße"),
+        hnr: idx("Hausnummer"),
+        hnrZ: idx("Hausnummer Zusatz"),
+        kls: idx("KLS-ID"),
+        nvt: idx("NVT Gebiet"),
+        name: idx("Name"),
+        fol: idx("FoL-Id"),
+        wartegrund: idx("Wartegrund"),
+        wiedervorlage: idx("Wiedervorlage"),
+        kommentar: idx("Kommentar"),
+        bestellnummer: idx("Bestellnummer"),
+      };
+      if (H.kls < 0 || H.strasse < 0 || H.hnr < 0 || H.nvt < 0 || H.status < 0) {
+        append("❌ Order-Datei nicht erkannt: KLS-ID, Straße, Hausnummer, NVT Gebiet oder Status fehlt");
+        setBusy(false);
+        return;
+      }
+
+      const clean = (s: string) => (s ?? "").trim().replace(/^"|"$/g, "");
+      const cell = (cells: string[], i: number) => i >= 0 ? clean(cells[i] ?? "") : "";
+      const parseDate = (s: string): string => {
+        const t = clean(s);
+        if (!t) return "";
+        const de = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (de) return `${de[3]}-${de[2].padStart(2, "0")}-${de[1].padStart(2, "0")}`;
+        const named = t.match(/(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\.?\s*(\d{4})/);
+        if (named) {
+          const months: Record<string, string> = { januar:"01", jan:"01", februar:"02", feb:"02", märz:"03", maerz:"03", mär:"03", maer:"03", mrz:"03", april:"04", apr:"04", mai:"05", juni:"06", jun:"06", juli:"07", jul:"07", august:"08", aug:"08", september:"09", sept:"09", sep:"09", oktober:"10", okt:"10", november:"11", nov:"11", dezember:"12", dez:"12" };
+          const m = months[named[2].toLowerCase().replace(/\.$/, "")];
+          if (m) return `${named[3]}-${m}-${named[1].padStart(2, "0")}`;
+        }
+        const d = new Date(t);
+        return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+      };
+      const nvtAllowed = (nvt: string) => {
+        const m = /^2?V?(\d{4})$/i.exec(nvt.trim());
+        if (!m) return false;
+        const n = Number(m[1]);
+        return n >= 8001 && n <= 8043;
+      };
+
+      const payload: Record<string, unknown>[] = [];
+      let skipped = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].split(";");
+        const kls = cell(cells, H.kls);
+        const strasse = cell(cells, H.strasse);
+        const hnr = cell(cells, H.hnr);
+        const nvt = cell(cells, H.nvt);
+        if (!kls || !strasse || !hnr || !nvtAllowed(nvt)) { skipped++; continue; }
+        const status = cell(cells, H.status);
+        payload.push({
+          kls_id: kls,
+          strasse,
+          hnr,
+          hnr_zusatz: cell(cells, H.hnrZ),
+          plz: cell(cells, H.plz),
+          ort: cell(cells, H.ort),
+          name: cell(cells, H.name),
+          nvt,
+          zustimmung: "AGREED",
+          fol_id: cell(cells, H.fol),
+          telekom_bid: cell(cells, H.bauauftrag),
+          naechster_schritt: cell(cells, H.naechster),
+          auftrag_status: status,
+          auftrag_typ: cell(cells, H.auftragTyp),
+          bestellnummer: cell(cells, H.bestellnummer) || cell(cells, H.bauauftrag),
+          installation_faellig: parseDate(cell(cells, H.faellig)),
+          auftrag_erstellt_am: parseDate(cell(cells, H.erstellt)),
+          storniert: /abgebrochen|storniert|cancel/i.test(status),
+          wartegrund: cell(cells, H.wartegrund),
+          wiedervorlage: parseDate(cell(cells, H.wiedervorlage)),
+          telekom_kommentar: cell(cells, H.kommentar),
+        });
+      }
+
+      append(`✓ ${payload.length} relevante Order-Zeilen geparst · ${skipped} übersprungen`);
+      let updated = 0, inserted = 0;
+      const CHUNK = 80;
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const part = payload.slice(i, i + CHUNK);
+        const { data, error } = await supabase.rpc("bulk_import_orders", { payload: part as never });
+        if (error) { append(`  ⚠ Chunk ${i / CHUNK + 1}: ${error.message}`); continue; }
+        const r = data as { updated?: number; inserted?: number };
+        updated += r?.updated ?? 0;
+        inserted += r?.inserted ?? 0;
+        append(`  ✓ Chunk ${i / CHUNK + 1}: ${r?.updated ?? 0} update · ${r?.inserted ?? 0} neu`);
+      }
+      append(`✅ Fertig: ${updated} aktualisiert · ${inserted} neu`);
+    } catch (e) {
+      append(`❌ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function importBotCsv(file: File) {
     setBusy(true);
     setLog([]);
@@ -843,15 +959,22 @@ function Admin() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importPropertyFile(f); e.target.value = ""; }} />
         </label>
 
+        <label style={{ ...btn("#0f766e"), display: "block" }}>
+          [2] Bauaufträge (Order_…csv)
+          <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ maßgeblich: KLS, Telekom-Status, Storno, Erstellungsdatum</div>
+          <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importOrderCsv(f); e.target.value = ""; }} />
+        </label>
+
         <label style={{ ...btn("#0891b2"), display: "block" }}>
-          [2] Bot-Export (schmücke_kontaktdaten…csv)
+          [3] Bot-Export (schmücke_kontaktdaten…csv)
           <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Eigentümer-Kontakt, 2./3. Ansprechpartner, Kommentare, Wartegrund, Storniert</div>
           <input type="file" accept=".csv,text/csv" disabled={busy} style={{ display: "none" }}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importBotCsv(f); e.target.value = ""; }} />
         </label>
 
         <label style={{ ...btn("#7c3aed"), display: "block" }}>
-          [3] Pro-Fiber Database.xlsx
+          [4] Pro-Fiber Database.xlsx
           <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, opacity: 0.85 }}>→ Umsatz, Grabenlänge, Doku, Buchhaltung (Sheet „Alle GF+ HA")</div>
           <input type="file" accept=".xlsx,.xls" disabled={busy} style={{ display: "none" }}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importDatabaseXlsx(f); e.target.value = ""; }} />
