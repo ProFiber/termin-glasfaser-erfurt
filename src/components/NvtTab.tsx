@@ -655,8 +655,11 @@ export default function NvtTab({
                             {c.strasse} {c.hnr}{c.hnr_zusatz ?? ""}
                           </div>
                         </div>
-                        <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, flexShrink: 0 }}>
-                          {fmtDate(c.auftrag_erstellt_am)}
+                        <div
+                          style={{ fontSize: 11, color: "#475569", fontWeight: 600, flexShrink: 0 }}
+                          title={c.auftrag_erstellt_am ? "Erstellungsdatum Telekom" : "Import-Datum (kein Erstellungsdatum im Export)"}
+                        >
+                          {c.auftrag_erstellt_am ? fmtDate(c.auftrag_erstellt_am) : `~${fmtDate(c.created_at)}`}
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
