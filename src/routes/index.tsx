@@ -1634,6 +1634,75 @@ function Index() {
           );
         })()}
         {(() => {
+          // ✅ Erledigt-Abgleich (unsere DB vs. Telekom-Portal) & ⊘ Storno-Quellen
+          let nurWir = 0, nurTK = 0, beide = 0;
+          let sTK = 0, sWir = 0, sBeide = 0, sUnklar = 0, sErledigt = 0;
+          for (const c of contacts) {
+            const st = states[c.bid]?.status;
+            const tk = (c.auftrag_status || "").toLowerCase().includes("installiert");
+            if (st === "erledigt" && tk) beide++;
+            else if (st === "erledigt") nurWir++;
+            else if (tk) nurTK++;
+            if (c.storniert) {
+              if (c.storniert_telekom && c.storniert_intern) sBeide++;
+              else if (c.storniert_telekom) sTK++;
+              else if (c.storniert_intern) sWir++;
+              else sUnklar++;
+              if (st === "erledigt") sErledigt++;
+            }
+          }
+          const line = (label: string, val: number, color: string, filterKey: string, hint?: string) => (
+            <div
+              onClick={() => { setFilter(new Set([filterKey])); setActiveTab("objekte"); }}
+              title={hint}
+              style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "8px 10px", borderRadius: 8, background: "#f8fafc",
+                borderLeft: `4px solid ${color}`, cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 12, color: "#334155" }}>{label}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{val}</span>
+            </div>
+          );
+          return (
+            <div style={{ margin: "10px 12px 0", padding: 12, borderRadius: 12, background: "white", border: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>✅ Erledigt-Abgleich · wir vs. Telekom</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {line("🟢 Nur wir erledigt", nurWir, "#16a34a", "erlNurWir", "Von uns gebaut – Telekom-Portal zeigt (noch) keine Installation. Erledigte HA werden im Portal nach einiger Zeit ausgeblendet.")}
+                {line("🔵 Nur TK installiert", nurTK, "#2563eb", "erlNurTK", "Telekom meldet installiert – bei uns nicht als gebaut erfasst (meist Auftraggeber oder anderer Nachunternehmer).")}
+                {line("✅ Beides erledigt", beide, "#0f766e", "erlBeide", "Von uns gebaut und im Telekom-Portal als installiert bestätigt.")}
+                {line("📋 Gesamt erledigt (wir)", nurWir + beide, "#94a3b8", "erledigt", "Alle in unserer DB als gebaut erfassten HA.")}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 10, color: "#64748b" }}>
+                Maßgeblich für unsere Leistung ist unsere DB. Das Telekom-Portal ist nur Abgleich – erledigte HA verschwinden dort mit der Zeit.
+              </div>
+
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", margin: "14px 0 8px" }}>⊘ Storno-Quellen</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {line("⊘ Nur Telekom (TK)", sTK, "#7c2d12", "stornoTK", "Auftrag im Telekom-Portal abgebrochen.")}
+                {line("⊘ Nur wir (WIR)", sWir, "#b45309", "stornoWir", "Von uns storniert (z. B. Straße im Bau, Kunde abgesagt).")}
+                {line("⊘ TK + WIR", sBeide, "#991b1b", "stornoBeide", "Storno aus beiden Quellen.")}
+                {line("❓ Quelle unbekannt", sUnklar, "#64748b", "storniert", "Altbestand: storniert markiert, aber ohne Quelle (vor der Quellen-Trennung).")}
+              </div>
+              {sErledigt > 0 && (
+                <div
+                  onClick={() => { setFilter(new Set(["stornoErledigt"])); setActiveTab("objekte"); }}
+                  style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#fff7ed", border: "1px solid #fdba74", cursor: "pointer" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>⚠️ Storniert, aber bei uns erledigt</span>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: "#9a3412" }}>{sErledigt}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: "#9a3412", marginTop: 4 }}>
+                    Konflikt – gebaute HA mit Storno-Flag. Relevant für die Abrechnung, bitte prüfen.
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {(() => {
           // 📋 Offene Auskundungen & Eigentümerzustimmungen
           const active = contacts.filter((c) => {
             const st = states[c.bid]?.status;
