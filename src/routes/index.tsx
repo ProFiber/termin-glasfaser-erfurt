@@ -1623,6 +1623,123 @@ function Index() {
             </div>
           );
         })()}
+        {(() => {
+          // 📋 Offene Auskundungen & Eigentümerzustimmungen
+          const active = contacts.filter((c) => {
+            const st = states[c.bid]?.status;
+            return st !== "erledigt" && st !== "abgelehnt" && !c.storniert;
+          });
+          const auskOffen = active.filter((c) => c.auskundung_erforderlich && !c.auskundung_erfolgt);
+          const zustOffen = active.filter((c) => zustimmungStatus(c.zustimmung, c.bid) === "fehlt");
+          if (!auskOffen.length && !zustOffen.length) return null;
+
+          const groupByOrt = (list: Contact[]) => {
+            const m = new Map<string, Contact[]>();
+            for (const c of list) {
+              const key = ortOf(c.nvt) ?? "Sonstige";
+              if (!m.has(key)) m.set(key, []);
+              m.get(key)!.push(c);
+            }
+            return [...m.entries()].sort((a, b) => b[1].length - a[1].length);
+          };
+
+          const exportXlsx = () => {
+            const map = (c: Contact) => ({
+              Ort: ortOf(c.nvt) ?? "",
+              NVT: c.nvt || "",
+              Adresse: `${c.strasse} ${c.hnr}${c.hnr_zusatz || ""}`.trim(),
+              PLZ: c.plz || "",
+              Eigentümer: c.name || "",
+              Mobil: c.mobil || "",
+              Festnetz: c.festnetz || "",
+              Zustimmung: c.zustimmung || "—",
+              "Auskundung erforderlich": c.auskundung_erforderlich ? "ja" : "nein",
+              "Auskundung Status": c.auskundung_status || "",
+              "Auskundung von": c.auskundung_von || "",
+              "KLS-ID": c.kls_id || "",
+              "FoL-ID": c.fol_id || "",
+              Wartegrund: c.wartegrund || "",
+            });
+            const wb = XLSX.utils.book_new();
+            const add = (name: string, list: Contact[]) => {
+              if (!list.length) return;
+              const rows = list.map(map);
+              const ws = XLSX.utils.json_to_sheet(rows);
+              ws["!cols"] = Object.keys(rows[0]).map(() => ({ wch: 18 }));
+              XLSX.utils.book_append_sheet(wb, ws, name);
+            };
+            add("Auskundung offen", auskOffen);
+            add("Zustimmung offen", zustOffen);
+            XLSX.writeFile(wb, `offene_auskundung_zustimmung_${new Date().toISOString().slice(0, 10)}.xlsx`);
+          };
+
+          const block = (
+            title: string,
+            list: Contact[],
+            color: string,
+            bg: string,
+            filterKey: string,
+          ) => (
+            <div style={{ borderRadius: 10, background: bg, border: `1px solid ${color}33`, padding: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color }}>{title}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color }}>{list.length}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {groupByOrt(list).map(([ort, cs]) => (
+                  <div
+                    key={ort}
+                    onClick={() => {
+                      setOrtSel(ort === "Sonstige" ? "alle" : (ort as typeof ortSel));
+                      setStreetSel(new Set());
+                      setNvtSel(new Set());
+                      setFilter(new Set([filterKey]));
+                      setActiveTab("objekte");
+                    }}
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      background: "white", borderRadius: 8, padding: "6px 9px", cursor: "pointer",
+                      fontSize: 11, color: "#334155",
+                    }}
+                  >
+                    <span>{ort}</span>
+                    <span style={{ fontWeight: 800, color: "#0f172a" }}>{cs.length}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => { setOrtSel("alle"); setStreetSel(new Set()); setNvtSel(new Set()); setFilter(new Set([filterKey])); setActiveTab("objekte"); }}
+                style={{
+                  marginTop: 6, width: "100%", padding: "5px 8px", borderRadius: 999,
+                  border: `1px solid ${color}`, background: "white", color, fontWeight: 700,
+                  fontSize: 11, cursor: "pointer",
+                }}
+              >Liste öffnen →</button>
+            </div>
+          );
+
+          return (
+            <div style={{ margin: "10px 12px 0", padding: 12, borderRadius: 12, background: "white", border: "1px solid #e5e7eb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>📋 Offene Auskundungen & Zustimmungen</div>
+                <button
+                  onClick={exportXlsx}
+                  style={{
+                    padding: "4px 10px", borderRadius: 999, border: "1px solid #cbd5e1",
+                    background: "#f8fafc", color: "#334155", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  }}
+                >⬇️ Excel</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {block("🔎 Auskundung offen", auskOffen, "#b45309", "#fffbeb", "auskundungOffen")}
+                {block("✋ Zustimmung offen", zustOffen, "#7e22ce", "#faf5ff", "ohneZustimmung")}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 10, color: "#64748b" }}>
+                Nur aktive Objekte (nicht erledigt, nicht storniert/abgelehnt). Klick auf einen Ort filtert die Objektliste.
+              </div>
+            </div>
+          );
+        })()}
         {bulkStats.total > 0 && (
 
           <div style={{
