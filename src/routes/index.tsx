@@ -1155,6 +1155,8 @@ function Index() {
       }
 
       if (filter.has("nichtErledigt") && st === "erledigt") return false;
+      // "Neu von Telekom": nur Objekte mit echtem Telekom-Erstellungsdatum
+      if (filter.has("neuTelekom20") && !c.auftrag_erstellt_am) return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
       orFilters.delete("offen");
@@ -1239,10 +1241,16 @@ function Index() {
     });
     return list.sort((a, b) => {
       // Filter "neuTelekom20": nach Erstellungsdatum absteigend
+      // Filter "neuTelekom20": nach Telekom-Erstellungsdatum absteigend
+      const erstellt = (c: Contact) => {
+        const t = c.auftrag_erstellt_am ? new Date(c.auftrag_erstellt_am).getTime() : NaN;
+        return Number.isNaN(t) ? null : t;
+      };
       if (filter.has("neuTelekom20")) {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return db.localeCompare(da);
+        const ta = erstellt(a), tb = erstellt(b);
+        if (ta === null && tb !== null) return 1;
+        if (ta !== null && tb === null) return -1;
+        if (ta !== null && tb !== null && ta !== tb) return tb - ta;
         return 0;
       }
       // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
@@ -1257,17 +1265,16 @@ function Index() {
         const zb = states[b.bid]?.termin_zeit ?? "";
         if (za !== zb) return zb.localeCompare(za);
       }
-      if (listSort === "erstellt_asc") {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return da.localeCompare(db);
-      }
-      if (listSort === "erstellt_desc") {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return db.localeCompare(da);
+      if (listSort === "erstellt_asc" || listSort === "erstellt_desc") {
+        const ta = erstellt(a), tb = erstellt(b);
+        if (ta === null && tb !== null) return 1;
+        if (ta !== null && tb === null) return -1;
+        if (ta !== null && tb !== null && ta !== tb) {
+          return listSort === "erstellt_asc" ? ta - tb : tb - ta;
+        }
       }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
+
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       const na = parseInt(a.hnr, 10);
@@ -2256,7 +2263,7 @@ function Index() {
                   </div>
                   <div style={{ fontSize: 13, color: "#444", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.name}
-                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}{(c.auftrag_erstellt_am || c.created_at) ? ` · 📅 ${c.auftrag_erstellt_am ? "" : "~"}${new Date((c.auftrag_erstellt_am || c.created_at) as string).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}` : ""}</span>}
+                    {c.nvt && <span style={{ color: "#9ca3af", fontWeight: 500, marginLeft: 6, fontSize: 11 }}>· {c.nvt}{ortOf(c.nvt) ? ` · ${ortOf(c.nvt)}` : ""}{c.auftrag_erstellt_am ? ` · 📅 ${new Date(c.auftrag_erstellt_am).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}` : ""}</span>}
                   </div>
                   {cs?.team && cs?.team_status && (
                     <div style={{ fontSize: 11, color: cs.team === "team1" ? "#3b82f6" : "#7c3aed", fontWeight: 700, marginTop: 2 }}>
