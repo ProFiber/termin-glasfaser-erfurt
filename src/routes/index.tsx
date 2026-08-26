@@ -1241,10 +1241,16 @@ function Index() {
     });
     return list.sort((a, b) => {
       // Filter "neuTelekom20": nach Erstellungsdatum absteigend
+      // Filter "neuTelekom20": nach Telekom-Erstellungsdatum absteigend
+      const erstellt = (c: Contact) => {
+        const t = c.auftrag_erstellt_am ? new Date(c.auftrag_erstellt_am).getTime() : NaN;
+        return Number.isNaN(t) ? null : t;
+      };
       if (filter.has("neuTelekom20")) {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return db.localeCompare(da);
+        const ta = erstellt(a), tb = erstellt(b);
+        if (ta === null && tb !== null) return 1;
+        if (ta !== null && tb === null) return -1;
+        if (ta !== null && tb !== null && ta !== tb) return tb - ta;
         return 0;
       }
       // Bei Filter "Termin": nach Termin-Datum sortieren, jüngste zuerst
@@ -1259,17 +1265,16 @@ function Index() {
         const zb = states[b.bid]?.termin_zeit ?? "";
         if (za !== zb) return zb.localeCompare(za);
       }
-      if (listSort === "erstellt_asc") {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return da.localeCompare(db);
-      }
-      if (listSort === "erstellt_desc") {
-        const da = (a.auftrag_erstellt_am ?? a.created_at ?? "").toString();
-        const db = (b.auftrag_erstellt_am ?? b.created_at ?? "").toString();
-        if (da !== db) return db.localeCompare(da);
+      if (listSort === "erstellt_asc" || listSort === "erstellt_desc") {
+        const ta = erstellt(a), tb = erstellt(b);
+        if (ta === null && tb !== null) return 1;
+        if (ta !== null && tb === null) return -1;
+        if (ta !== null && tb !== null && ta !== tb) {
+          return listSort === "erstellt_asc" ? ta - tb : tb - ta;
+        }
       }
       // Stabil nach Straße / HNR / Zusatz — kein Pin nach oben beim Anrufen
+
       const s = a.strasse.localeCompare(b.strasse, "de");
       if (s !== 0) return s;
       const na = parseInt(a.hnr, 10);
