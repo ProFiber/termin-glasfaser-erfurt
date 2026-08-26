@@ -1155,6 +1155,8 @@ function Index() {
       }
 
       if (filter.has("nichtErledigt") && st === "erledigt") return false;
+      // "Neu von Telekom": nur Objekte mit echtem Telekom-Erstellungsdatum
+      if (filter.has("neuTelekom20") && !c.auftrag_erstellt_am) return false;
       const orFilters = new Set(filter);
       orFilters.delete("nurGE");
       orFilters.delete("offen");
