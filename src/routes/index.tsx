@@ -683,9 +683,9 @@ const TIME_OPTIONS: string[] = (() => {
   return out;
 })();
 
-type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben";
+type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben" | "Bretleben";
 // NVT → Ortsteil. 8001–8021 = Heldrungen · 8022–8025 = Sachsenburg
-// 8026–8030 = Gorsleben · 8031–8045 = Oldisleben
+// 8026–8030 = Gorsleben · 8031–8047 = Oldisleben · 8048–8052 = Bretleben
 const ortOf = (nvt: string): Ort | null => {
   const m = /^2V(\d{4})$/.exec((nvt ?? "").trim());
   if (!m) return null;
@@ -693,7 +693,8 @@ const ortOf = (nvt: string): Ort | null => {
   if (n >= 8001 && n <= 8021) return "Heldrungen";
   if (n >= 8022 && n <= 8025) return "Sachsenburg";
   if (n >= 8026 && n <= 8030) return "Gorsleben";
-  if (n >= 8031 && n <= 8045) return "Oldisleben";
+  if (n >= 8031 && n <= 8047) return "Oldisleben";
+  if (n >= 8048 && n <= 8052) return "Bretleben";
   return null;
 };
 // Alle vier sind Ortsteile der Landgemeinde „An der Schmücke".
