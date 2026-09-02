@@ -1960,10 +1960,10 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
+          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Bretleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Bretleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
               : o === "fokus"
               ? `🎯 Fokus: Heldrungen + Oldisleben (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
               : `${o} (${ortCounts[o]})`;
