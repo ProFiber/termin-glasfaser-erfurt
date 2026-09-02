@@ -683,9 +683,9 @@ const TIME_OPTIONS: string[] = (() => {
   return out;
 })();
 
-type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben";
+type Ort = "Heldrungen" | "Oldisleben" | "Sachsenburg" | "Gorsleben" | "Bretleben";
 // NVT → Ortsteil. 8001–8021 = Heldrungen · 8022–8025 = Sachsenburg
-// 8026–8030 = Gorsleben · 8031–8045 = Oldisleben
+// 8026–8030 = Gorsleben · 8031–8047 = Oldisleben · 8048–8052 = Bretleben
 const ortOf = (nvt: string): Ort | null => {
   const m = /^2V(\d{4})$/.exec((nvt ?? "").trim());
   if (!m) return null;
@@ -693,7 +693,8 @@ const ortOf = (nvt: string): Ort | null => {
   if (n >= 8001 && n <= 8021) return "Heldrungen";
   if (n >= 8022 && n <= 8025) return "Sachsenburg";
   if (n >= 8026 && n <= 8030) return "Gorsleben";
-  if (n >= 8031 && n <= 8045) return "Oldisleben";
+  if (n >= 8031 && n <= 8047) return "Oldisleben";
+  if (n >= 8048 && n <= 8052) return "Bretleben";
   return null;
 };
 // Alle vier sind Ortsteile der Landgemeinde „An der Schmücke".
@@ -1087,7 +1088,7 @@ function Index() {
   }, [ortContacts, nvtSel]);
 
   const ortCounts = useMemo(() => {
-    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0 };
+    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0, Bretleben: 0 };
     contacts.forEach((c) => {
       const x = ortOf(c.nvt);
       if (x) c0[x]++;
@@ -1959,10 +1960,10 @@ function Index() {
           >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
+          {(["alle", "fokus", "Heldrungen", "Oldisleben", "Bretleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
             const label = o === "alle"
-              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
+              ? `Alle Ortsteile (${ortCounts.Heldrungen + ortCounts.Oldisleben + ortCounts.Bretleben + ortCounts.Sachsenburg + ortCounts.Gorsleben})`
               : o === "fokus"
               ? `🎯 Fokus: Heldrungen + Oldisleben (${ortCounts.Heldrungen + ortCounts.Oldisleben})`
               : `${o} (${ortCounts[o]})`;
