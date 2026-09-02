@@ -1088,7 +1088,7 @@ function Index() {
   }, [ortContacts, nvtSel]);
 
   const ortCounts = useMemo(() => {
-    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0 };
+    const c0: Record<Ort, number> = { Heldrungen: 0, Oldisleben: 0, Sachsenburg: 0, Gorsleben: 0, Bretleben: 0 };
     contacts.forEach((c) => {
       const x = ortOf(c.nvt);
       if (x) c0[x]++;
