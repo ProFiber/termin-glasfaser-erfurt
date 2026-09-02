@@ -748,7 +748,7 @@ function Admin() {
         const m = /^2?V?(\d{4})$/i.exec(nvt.trim());
         if (!m) return false;
         const n = Number(m[1]);
-        return n >= 8001 && n <= 8043;
+        return n >= 8001 && n <= 8045;
       };
 
       const payload: Record<string, unknown>[] = [];
