@@ -217,6 +217,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [heuteOnly, setHeuteOnly] = useState(false);
   const [phoneInvalidOnly, setPhoneInvalidOnly] = useState(false);
+  const [klarfallOnly, setKlarfallOnly] = useState(false);
+
   const [selected, setSelected] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routeLineRef = useRef<any>(null);
@@ -699,6 +701,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
+      if (klarfallOnly) {
+        if (!states[c.bid]?.klarfall || c.storniert) return false;
+        return true;
+      }
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (openOnly) {
         const status = states[c.bid]?.status;
@@ -708,8 +714,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       if (phoneInvalidOnly && !states[c.bid]?.telefon_ungueltig) return false;
       return true;
     }),
-    [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
+    [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly, klarfallOnly],
   );
+
+  const klarfallCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall && !c.storniert ? 1 : 0), 0),
+    [contacts, states],
+  );
+
 
   // Mehrere Objekte teilen sich oft dieselbe (straßengenaue) Koordinate.
   // Damit nicht nur ein Pin sichtbar ist, werden Duplikate leicht im Kreis verteilt.
@@ -797,9 +809,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const isFertig = team && teamStatus === "fertig";
 
       const orderNum = todayOrder[c.bid];
+      const isKlarfall = !!cs?.klarfall && !c.storniert;
       let html: string;
       let sz: number;
-      if (heuteOnly && orderNum) {
+      if (isKlarfall) {
+        // Klärfall: kann nicht gebaut werden — gelbes Warndreieck-Pin
+        sz = heuteOnly && orderNum ? 32 : 26;
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:#f59e0b;border:3px solid white;box-shadow:0 0 0 2px #b45309, 0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${sz > 28 ? 15 : 13}px;font-family:system-ui,sans-serif;">⚠</div>`;
+      } else if (heuteOnly && orderNum) {
         sz = 32;
         // Farbe nach Status: grün=erledigt, orange (pochend) = in-Arbeit, blau=bevorstehend
         let pinColor = "#3b82f6"; // blau default
@@ -827,6 +844,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
         html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
       }
+
       const icon = L.divIcon({ html, className: "", iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
       const existing = markersRef.current[c.bid];
       if (existing) {
@@ -918,6 +936,18 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
           }}
         >🔥 Nur Priorität</button>
+        <button
+          onClick={() => setKlarfallOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${klarfallOnly ? "#f59e0b" : "#e5e7eb"}`,
+            background: klarfallOnly ? "#f59e0b" : "white",
+            color: klarfallOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+          title="Klärfälle: kann nicht gebaut werden — Sezai klärt vor Ort"
+        >⚠️ Klärfälle{klarfallCount ? ` (${klarfallCount})` : ""}</button>
+
         <button
           onClick={() => setPhoneInvalidOnly((v) => !v)}
           style={{
@@ -1191,6 +1221,15 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
                   <span style={{ color: "#334155", whiteSpace: "nowrap" }}>{STATUS_LABEL[s]}</span>
                 </div>
               ))}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, paddingTop: 4, borderTop: "1px solid #e5e7eb" }}>
+                <span style={{
+                  width: 14, height: 14, borderRadius: "50%", background: "#f59e0b",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontSize: 9, fontWeight: 800,
+                }}>⚠</span>
+                <span style={{ color: "#92400e", whiteSpace: "nowrap", fontWeight: 700 }}>Klärfall (Sezai)</span>
+              </div>
+
             </div>
           )}
         </div>
@@ -1259,6 +1298,26 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             {[selectedContact.typ, selectedContact.we ? `${selectedContact.we} WE` : ""].filter(Boolean).join(" · ")}
             {selectedContact.nvt ? ` · NVT ${selectedContact.nvt}` : ""}
           </div>
+
+          {selectedState?.klarfall && !selectedContact.storniert && (
+            <div style={{
+              marginTop: 10, padding: "8px 10px", borderRadius: 8,
+              background: "#fef3c7", border: "1px solid #fcd34d",
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e" }}>
+                ⚠️ Klärfall — kann nicht gebaut werden
+              </div>
+              {selectedState.klarfall_notiz && (
+                <div style={{ fontSize: 12, color: "#78350f", marginTop: 3, whiteSpace: "pre-wrap" }}>
+                  {selectedState.klarfall_notiz}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: "#92400e", marginTop: 4, fontWeight: 700 }}>
+                👷 Sezai klärt vor Ort
+              </div>
+            </div>
+          )}
+
 
           <div style={{ marginTop: 10 }}>
             <StreetViewImage

@@ -134,6 +134,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
   const [grabenFor, setGrabenFor] = useState<Contact | null>(null);
+  const [klarfallFor, setKlarfallFor] = useState<{ contact: Contact; notiz: string } | null>(null);
+
 
   // Long-press
   const pressRef = useState<{ timer: number | null }>({ timer: null })[0];
@@ -512,7 +514,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
-                        const inArbeit = cs?.team_status === "in_arbeit" && !done;
+                        const klarfall = !!cs?.klarfall;
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall;
                         return (
                           <div
                             key={c.bid}
@@ -533,21 +536,43 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
+                              background: klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: inArbeit
+                              borderLeft: klarfall
+                                ? "3px solid #f59e0b"
+                                : inArbeit
                                 ? "3px solid #f97316"
                                 : done
                                 ? "3px solid #22c55e"
                                 : "3px solid #3b82f6",
-                              boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+                              boxShadow: klarfall ? "0 0 0 1px #fcd34d" : inArbeit ? "0 0 0 1px #fdba74" : undefined,
                               animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
                               userSelect: "none",
                             }}
                           >
+                            {klarfall && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  color: "#92400e",
+                                  background: "#fde68a",
+                                  padding: "1px 5px",
+                                  borderRadius: 4,
+                                  lineHeight: 1.3,
+                                }}
+                                aria-label="Klärfall"
+                              >
+                                ⚠️ KLÄRFALL
+                              </span>
+                            )}
+
                             {inArbeit && (
                               <span
                                 style={{
@@ -567,7 +592,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 🔨 BAU
                               </span>
                             )}
-                            {done && (
+                            {done && !klarfall && (
                               <span
                                 style={{
                                   position: "absolute",
@@ -581,7 +606,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 ✅
                               </span>
                             )}
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: done ? 16 : 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: klarfall ? 74 : done ? 16 : 0 }}>
                               {c.strasse} {c.hnr}
                               {c.hnr_zusatz}
                             </div>
@@ -596,6 +621,19 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               {c.we ? ` · ${c.we} WE` : ""}
                               {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
+                            {klarfall && (
+                              <div style={{
+                                marginTop: 4, padding: "4px 6px", borderRadius: 5,
+                                background: "#fef3c7", border: "1px solid #fcd34d",
+                                fontSize: 10, color: "#92400e", fontWeight: 700, lineHeight: 1.35,
+                              }}>
+                                🚧 Kann nicht gebaut werden · 👷 Sezai klärt vor Ort
+                                {cs?.klarfall_notiz ? (
+                                  <div style={{ fontWeight: 400, marginTop: 2 }}>{cs.klarfall_notiz}</div>
+                                ) : null}
+                              </div>
+                            )}
+
                             {cs?.team && (
                               <div style={{
                                 display: "inline-block",
@@ -643,9 +681,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         })}
       </div>
 
-      {(menuFor || reschedule) && (
+      {(menuFor || reschedule || klarfallFor) && (
         <div
-          onClick={closeAll}
+          onClick={() => { closeAll(); setKlarfallFor(null); }}
           style={{
             position: "fixed",
             inset: 0,
@@ -655,7 +693,60 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         />
       )}
 
-      {menuFor && !reschedule && (() => {
+      {klarfallFor && (
+        <div
+          style={{
+            position: "fixed", bottom: 56, left: 0, right: 0, background: "#fff",
+            borderTopLeftRadius: 16, borderTopRightRadius: 16, zIndex: 500,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)", padding: "16px 20px 20px",
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#92400e" }}>
+            ⚠️ Klärfall melden
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {klarfallFor.contact.strasse} {klarfallFor.contact.hnr}{klarfallFor.contact.hnr_zusatz} — kann aktuell nicht gebaut werden. Sezai kümmert sich vor Ort.
+          </div>
+          <textarea
+            autoFocus
+            value={klarfallFor.notiz}
+            onChange={(e) => setKlarfallFor((s) => (s ? { ...s, notiz: e.target.value } : s))}
+            placeholder="Grund / Notiz (z. B. Zufahrt versperrt, Eigentümer nicht da, Leerrohr fehlt …)"
+            style={{
+              width: "100%", minHeight: 92, marginTop: 10, padding: 10,
+              border: "1.5px solid #fcd34d", borderRadius: 8, fontSize: 14,
+              fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => setKlarfallFor(null)}
+              style={{
+                flex: 1, padding: "12px 0", borderRadius: 10, border: "1.5px solid #e5e7eb",
+                background: "#fff", color: "#475569", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              }}
+            >Abbrechen</button>
+            <button
+              onClick={() => {
+                const { contact, notiz } = klarfallFor;
+                if (!notiz.trim()) return;
+                if (patch) patch(contact.bid, { klarfall: true, klarfall_notiz: notiz.trim(), team_status: "" });
+                setKlarfallFor(null);
+              }}
+              disabled={!klarfallFor.notiz.trim()}
+              style={{
+                flex: 2, padding: "12px 0", borderRadius: 10, border: "none",
+                background: klarfallFor.notiz.trim() ? "#f59e0b" : "#fde68a",
+                color: "#fff", fontWeight: 800, fontSize: 14,
+                cursor: klarfallFor.notiz.trim() ? "pointer" : "default",
+              }}
+            >⚠️ Als Klärfall speichern</button>
+          </div>
+        </div>
+      )}
+
+      {menuFor && !reschedule && !klarfallFor && (() => {
+
         const c = menuFor;
         const phone = c.mobil || c.festnetz;
         const cs = states[c.bid];
@@ -788,10 +879,24 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               <span>Als erledigt markieren</span>
             </button>
 
-            <button style={menuRow} onClick={() => doPatch(c, { klarfall: true })}>
-              <span style={iconStyle}>⚠️</span>
-              <span>Als Klärfall markieren</span>
-            </button>
+            {cs?.klarfall ? (
+              <button
+                style={{ ...menuRow, color: "#15803d" }}
+                onClick={() => doPatch(c, { klarfall: false, klarfall_notiz: "" })}
+              >
+                <span style={{ ...iconStyle, color: "#15803d" }}>✔️</span>
+                <span>Klärfall aufheben</span>
+              </button>
+            ) : (
+              <button
+                style={menuRow}
+                onClick={() => { setKlarfallFor({ contact: c, notiz: "" }); setMenuFor(null); }}
+              >
+                <span style={{ ...iconStyle, color: "#f59e0b" }}>⚠️</span>
+                <span>Als Klärfall markieren (Notiz für Sezai)</span>
+              </button>
+            )}
+
 
             <button
               style={menuRow}
