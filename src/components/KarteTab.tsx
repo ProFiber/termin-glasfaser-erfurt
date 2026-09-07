@@ -1299,6 +1299,26 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
             {selectedContact.nvt ? ` · NVT ${selectedContact.nvt}` : ""}
           </div>
 
+          {selectedState?.klarfall && !selectedContact.storniert && (
+            <div style={{
+              marginTop: 10, padding: "8px 10px", borderRadius: 8,
+              background: "#fef3c7", border: "1px solid #fcd34d",
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e" }}>
+                ⚠️ Klärfall — kann nicht gebaut werden
+              </div>
+              {selectedState.klarfall_notiz && (
+                <div style={{ fontSize: 12, color: "#78350f", marginTop: 3, whiteSpace: "pre-wrap" }}>
+                  {selectedState.klarfall_notiz}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: "#92400e", marginTop: 4, fontWeight: 700 }}>
+                👷 Sezai klärt vor Ort
+              </div>
+            </div>
+          )}
+
+
           <div style={{ marginTop: 10 }}>
             <StreetViewImage
               strasse={selectedContact.strasse}
