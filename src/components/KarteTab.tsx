@@ -701,6 +701,10 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
   const visibleContacts = useMemo(
     () => contacts.filter((c) => {
+      if (klarfallOnly) {
+        if (!states[c.bid]?.klarfall || c.storniert) return false;
+        return true;
+      }
       if (heuteOnly && states[c.bid]?.termin_datum !== todayStr) return false;
       if (openOnly) {
         const status = states[c.bid]?.status;
@@ -710,8 +714,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       if (phoneInvalidOnly && !states[c.bid]?.telefon_ungueltig) return false;
       return true;
     }),
-    [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
+    [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly, klarfallOnly],
   );
+
+  const klarfallCount = useMemo(
+    () => contacts.reduce((n, c) => n + (states[c.bid]?.klarfall && !c.storniert ? 1 : 0), 0),
+    [contacts, states],
+  );
+
 
   // Mehrere Objekte teilen sich oft dieselbe (straßengenaue) Koordinate.
   // Damit nicht nur ein Pin sichtbar ist, werden Duplikate leicht im Kreis verteilt.
