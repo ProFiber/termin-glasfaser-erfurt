@@ -2229,34 +2229,8 @@ function Index() {
               >{tf.label}</button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => {
-              setFilter(new Set());
-              setTeamFilter("alle");
-              setOrtSel("alle");
-              setStreetSel(new Set());
-              setNvtSel(new Set());
-              setPriorityOnly(false);
-              setUrgentOnly(false);
-              setPriorityFilter("alle");
-              setSearch("");
-            }}
-            title="Alle Filter zurücksetzen"
-            style={{
-              padding: "6px 12px",
-              borderRadius: 999,
-              border: "1px solid #ef4444",
-              background: "#fff",
-              color: "#dc2626",
-              fontSize: 12,
-              fontWeight: 700,
-              whiteSpace: "nowrap",
-              cursor: "pointer",
-              marginLeft: "auto",
-            }}
-          >↺ Reset</button>
         </div>
+        </>)}
       </div>
 
       {focusBid && (
