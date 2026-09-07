@@ -1221,6 +1221,15 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
                   <span style={{ color: "#334155", whiteSpace: "nowrap" }}>{STATUS_LABEL[s]}</span>
                 </div>
               ))}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, paddingTop: 4, borderTop: "1px solid #e5e7eb" }}>
+                <span style={{
+                  width: 14, height: 14, borderRadius: "50%", background: "#f59e0b",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontSize: 9, fontWeight: 800,
+                }}>⚠</span>
+                <span style={{ color: "#92400e", whiteSpace: "nowrap", fontWeight: 700 }}>Klärfall (Sezai)</span>
+              </div>
+
             </div>
           )}
         </div>
