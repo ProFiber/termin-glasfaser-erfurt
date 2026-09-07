@@ -592,7 +592,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 🔨 BAU
                               </span>
                             )}
-                            {done && (
+                            {done && !klarfall && (
                               <span
                                 style={{
                                   position: "absolute",
@@ -606,7 +606,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 ✅
                               </span>
                             )}
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: done ? 16 : 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: klarfall ? 74 : done ? 16 : 0 }}>
                               {c.strasse} {c.hnr}
                               {c.hnr_zusatz}
                             </div>
@@ -621,6 +621,19 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               {c.we ? ` · ${c.we} WE` : ""}
                               {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
+                            {klarfall && (
+                              <div style={{
+                                marginTop: 4, padding: "4px 6px", borderRadius: 5,
+                                background: "#fef3c7", border: "1px solid #fcd34d",
+                                fontSize: 10, color: "#92400e", fontWeight: 700, lineHeight: 1.35,
+                              }}>
+                                🚧 Kann nicht gebaut werden · 👷 Sezai klärt vor Ort
+                                {cs?.klarfall_notiz ? (
+                                  <div style={{ fontWeight: 400, marginTop: 2 }}>{cs.klarfall_notiz}</div>
+                                ) : null}
+                              </div>
+                            )}
+
                             {cs?.team && (
                               <div style={{
                                 display: "inline-block",
