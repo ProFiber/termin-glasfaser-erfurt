@@ -2476,11 +2476,45 @@ function Index() {
                   })()}
 
                   {(() => {
+                    const extra = [
+                      { name: c.contact2_name, mobil: c.contact2_mobil, festnetz: c.contact2_festnetz },
+                      { name: c.contact3_name, mobil: c.contact3_mobil, festnetz: c.contact3_festnetz },
+                    ].filter((p) => p.name || p.mobil || p.festnetz);
+                    if (!extra.length) return null;
+                    return (
+                      <details style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 9, padding: "9px 12px", marginBottom: 12 }}>
+                        <summary style={{ fontSize: 10, fontWeight: 900, color: "#6d28d9", letterSpacing: 1.2, cursor: "pointer", listStyle: "none" }}>
+                          👥 WEITERE PERSONEN AM OBJEKT ({extra.length}) · MIETER / TELEKOM-KUNDEN ▾
+                        </summary>
+                        <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                          {extra.map((p, i) => (
+                            <div key={i} style={{ background: "white", border: "1px solid #ede9fe", borderRadius: 8, padding: "7px 9px" }}>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{p.name || "Ohne Namen"}</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                                {p.mobil && (
+                                  <>
+                                    <a href={`tel:${p.mobil}`} style={{ fontSize: 12, fontWeight: 700, color: "#6d28d9" }}>📱 {p.mobil}</a>
+                                    <a href={`https://wa.me/${waPhone(p.mobil)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>WhatsApp</a>
+                                  </>
+                                )}
+                                {p.festnetz && <a href={`tel:${p.festnetz}`} style={{ fontSize: 12, fontWeight: 700, color: "#6d28d9" }}>☎️ {p.festnetz}</a>}
+                                {!p.mobil && !p.festnetz && <span style={{ fontSize: 12, color: "#94a3b8" }}>keine Nummer</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#7c3aed", marginTop: 6 }}>
+                          Hauptkontakt oben ist der Eigentümer. Hier stehen Mieter bzw. Telekom-Kunden am selben Objekt.
+                        </div>
+                      </details>
+                    );
+                  })()}
+
+                  {(() => {
                     const hasBotInfo = c.telekom_kommentar || c.wartegrund || c.wartegrund_kommentar
                       || c.wiedervorlage || c.fol_id || c.telekom_bid || c.bulk_id || c.naechster_schritt || c.hausstich_status
                       || c.auftrag_status || c.auftrag_typ || c.bestellnummer || c.installation_faellig
-                      || c.contact2_name || c.contact2_mobil || c.contact2_festnetz
-                      || c.contact3_name || c.contact3_mobil || c.contact3_festnetz
+                      || c.storniert
                       || (c.eig_strasse && `${c.eig_strasse} ${c.eig_hnr ?? ""}`.trim() !== `${c.strasse} ${c.hnr}`.trim());
                     if (!hasBotInfo) return null;
                     const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
@@ -2510,24 +2544,7 @@ function Index() {
                           {c.eig_strasse && `${c.eig_strasse} ${c.eig_hnr ?? ""}`.trim() !== `${c.strasse} ${c.hnr}`.trim() && (
                             <Row k="Eig.-Anschrift" v={`${c.eig_strasse} ${c.eig_hnr ?? ""}, ${c.eig_plz ?? ""} ${c.eig_ort ?? ""}`.trim()} />
                           )}
-                          {(c.contact2_name || c.contact2_mobil || c.contact2_festnetz || c.contact2_email) && (
-                            <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed #bae6fd" }}>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: "#0369a1", marginBottom: 3 }}>👤 2. ANSPRECHPARTNER</div>
-                              {c.contact2_name && <Row k="Name" v={c.contact2_name} />}
-                              {c.contact2_mobil && <Row k="Mobil" v={<a href={`tel:${c.contact2_mobil}`}>{c.contact2_mobil}</a>} />}
-                              {c.contact2_festnetz && <Row k="Festnetz" v={<a href={`tel:${c.contact2_festnetz}`}>{c.contact2_festnetz}</a>} />}
-                              {c.contact2_email && <Row k="Email" v={c.contact2_email} />}
-                            </div>
-                          )}
-                          {(c.contact3_name || c.contact3_mobil || c.contact3_festnetz || c.contact3_email) && (
-                            <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed #bae6fd" }}>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: "#0369a1", marginBottom: 3 }}>👤 3. ANSPRECHPARTNER</div>
-                              {c.contact3_name && <Row k="Name" v={c.contact3_name} />}
-                              {c.contact3_mobil && <Row k="Mobil" v={<a href={`tel:${c.contact3_mobil}`}>{c.contact3_mobil}</a>} />}
-                              {c.contact3_festnetz && <Row k="Festnetz" v={<a href={`tel:${c.contact3_festnetz}`}>{c.contact3_festnetz}</a>} />}
-                              {c.contact3_email && <Row k="Email" v={c.contact3_email} />}
-                            </div>
-                          )}
+
                           {c.storniert && (
                             <div style={{ marginTop: 8, padding: "6px 10px", background: "#fee2e2", color: "#7c2d12", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                               ⊘ Storno-Quelle: {c.storniert_telekom && c.storniert_intern
