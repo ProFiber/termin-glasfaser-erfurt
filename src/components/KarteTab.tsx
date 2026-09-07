@@ -217,6 +217,8 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [heuteOnly, setHeuteOnly] = useState(false);
   const [phoneInvalidOnly, setPhoneInvalidOnly] = useState(false);
+  const [klarfallOnly, setKlarfallOnly] = useState(false);
+
   const [selected, setSelected] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routeLineRef = useRef<any>(null);
