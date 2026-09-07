@@ -134,6 +134,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   const [menuFor, setMenuFor] = useState<Contact | null>(null);
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
   const [grabenFor, setGrabenFor] = useState<Contact | null>(null);
+  const [klarfallFor, setKlarfallFor] = useState<{ contact: Contact; notiz: string } | null>(null);
+
 
   // Long-press
   const pressRef = useState<{ timer: number | null }>({ timer: null })[0];
