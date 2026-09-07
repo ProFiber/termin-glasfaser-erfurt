@@ -514,7 +514,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
-                        const inArbeit = cs?.team_status === "in_arbeit" && !done;
+                        const klarfall = !!cs?.klarfall;
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall;
                         return (
                           <div
                             key={c.bid}
@@ -535,21 +536,43 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
+                              background: klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: inArbeit
+                              borderLeft: klarfall
+                                ? "3px solid #f59e0b"
+                                : inArbeit
                                 ? "3px solid #f97316"
                                 : done
                                 ? "3px solid #22c55e"
                                 : "3px solid #3b82f6",
-                              boxShadow: inArbeit ? "0 0 0 1px #fdba74" : undefined,
+                              boxShadow: klarfall ? "0 0 0 1px #fcd34d" : inArbeit ? "0 0 0 1px #fdba74" : undefined,
                               animation: inArbeit ? "kal-pulse 1.8s ease-in-out infinite" : undefined,
                               userSelect: "none",
                             }}
                           >
+                            {klarfall && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  color: "#92400e",
+                                  background: "#fde68a",
+                                  padding: "1px 5px",
+                                  borderRadius: 4,
+                                  lineHeight: 1.3,
+                                }}
+                                aria-label="Klärfall"
+                              >
+                                ⚠️ KLÄRFALL
+                              </span>
+                            )}
+
                             {inArbeit && (
                               <span
                                 style={{
