@@ -681,9 +681,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         })}
       </div>
 
-      {(menuFor || reschedule) && (
+      {(menuFor || reschedule || klarfallFor) && (
         <div
-          onClick={closeAll}
+          onClick={() => { closeAll(); setKlarfallFor(null); }}
           style={{
             position: "fixed",
             inset: 0,
@@ -693,7 +693,60 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         />
       )}
 
-      {menuFor && !reschedule && (() => {
+      {klarfallFor && (
+        <div
+          style={{
+            position: "fixed", bottom: 56, left: 0, right: 0, background: "#fff",
+            borderTopLeftRadius: 16, borderTopRightRadius: 16, zIndex: 500,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)", padding: "16px 20px 20px",
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#92400e" }}>
+            ⚠️ Klärfall melden
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {klarfallFor.contact.strasse} {klarfallFor.contact.hnr}{klarfallFor.contact.hnr_zusatz} — kann aktuell nicht gebaut werden. Sezai kümmert sich vor Ort.
+          </div>
+          <textarea
+            autoFocus
+            value={klarfallFor.notiz}
+            onChange={(e) => setKlarfallFor((s) => (s ? { ...s, notiz: e.target.value } : s))}
+            placeholder="Grund / Notiz (z. B. Zufahrt versperrt, Eigentümer nicht da, Leerrohr fehlt …)"
+            style={{
+              width: "100%", minHeight: 92, marginTop: 10, padding: 10,
+              border: "1.5px solid #fcd34d", borderRadius: 8, fontSize: 14,
+              fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => setKlarfallFor(null)}
+              style={{
+                flex: 1, padding: "12px 0", borderRadius: 10, border: "1.5px solid #e5e7eb",
+                background: "#fff", color: "#475569", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              }}
+            >Abbrechen</button>
+            <button
+              onClick={() => {
+                const { contact, notiz } = klarfallFor;
+                if (!notiz.trim()) return;
+                if (patch) patch(contact.bid, { klarfall: true, klarfall_notiz: notiz.trim(), team_status: "" });
+                setKlarfallFor(null);
+              }}
+              disabled={!klarfallFor.notiz.trim()}
+              style={{
+                flex: 2, padding: "12px 0", borderRadius: 10, border: "none",
+                background: klarfallFor.notiz.trim() ? "#f59e0b" : "#fde68a",
+                color: "#fff", fontWeight: 800, fontSize: 14,
+                cursor: klarfallFor.notiz.trim() ? "pointer" : "default",
+              }}
+            >⚠️ Als Klärfall speichern</button>
+          </div>
+        </div>
+      )}
+
+      {menuFor && !reschedule && !klarfallFor && (() => {
+
         const c = menuFor;
         const phone = c.mobil || c.festnetz;
         const cs = states[c.bid];
