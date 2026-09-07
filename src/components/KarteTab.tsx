@@ -797,9 +797,14 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
       const isFertig = team && teamStatus === "fertig";
 
       const orderNum = todayOrder[c.bid];
+      const isKlarfall = !!cs?.klarfall && !c.storniert;
       let html: string;
       let sz: number;
-      if (heuteOnly && orderNum) {
+      if (isKlarfall) {
+        // Klärfall: kann nicht gebaut werden — gelbes Warndreieck-Pin
+        sz = heuteOnly && orderNum ? 32 : 26;
+        html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:#f59e0b;border:3px solid white;box-shadow:0 0 0 2px #b45309, 0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${sz > 28 ? 15 : 13}px;font-family:system-ui,sans-serif;">⚠</div>`;
+      } else if (heuteOnly && orderNum) {
         sz = 32;
         // Farbe nach Status: grün=erledigt, orange (pochend) = in-Arbeit, blau=bevorstehend
         let pinColor = "#3b82f6"; // blau default
@@ -827,6 +832,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           : `box-shadow:0 1px 4px rgba(0,0,0,0.4)`;
         html = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid white;${ring}"></div>`;
       }
+
       const icon = L.divIcon({ html, className: "", iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
       const existing = markersRef.current[c.bid];
       if (existing) {
