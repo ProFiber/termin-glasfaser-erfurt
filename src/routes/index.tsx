@@ -11,6 +11,7 @@ import GrabenPromptSheet from "@/components/GrabenPromptSheet";
 import { waPhone } from "@/lib/waPhone";
 import LocalNotizTextarea from "@/components/LocalNotizTextarea";
 import StreetViewImage from "@/components/StreetViewImage";
+import PinPicker from "@/components/PinPicker";
 import TeamSection from "@/components/TeamSection";
 import FinanzTab from "@/components/FinanzTab";
 import PipelineTab from "@/components/PipelineTab";
