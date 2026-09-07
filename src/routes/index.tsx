@@ -2401,6 +2401,25 @@ function Index() {
                     plz={c.plz}
                     ort={c.ort}
                   />
+                  <button
+                    onClick={() => setPinFor(c.bid)}
+                    style={{
+                      width: "100%", marginTop: 8, padding: "9px 10px", borderRadius: 9,
+                      border: "1px solid #fbcfe8", background: "#fdf2f8", color: "#9d174d",
+                      fontSize: 13, fontWeight: 800, cursor: "pointer",
+                    }}
+                  >
+                    📍 Standort auf Karte setzen{c.lat == null ? " (fehlt)" : ""}
+                  </button>
+                  {pinFor === c.bid && (
+                    <PinPicker
+                      label={`${c.strasse} ${c.hnr}${c.hnr_zusatz}`}
+                      lat={c.lat}
+                      lng={c.lng}
+                      onClose={() => setPinFor(null)}
+                      onSave={(la, ln) => patchContact(c.bid, { lat: la, lng: ln })}
+                    />
+                  )}
                   {/* Anschluss-Typ (Schätzung Grabenlänge) */}
                   <div style={{ margin: "10px 0 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: "#475569", letterSpacing: 1, marginBottom: 6 }}>
