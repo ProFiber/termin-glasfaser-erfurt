@@ -2046,7 +2046,7 @@ function Index() {
             })}
           </div>
         )}
-        {filtersOpen && (<></>)}
+        {filtersOpen && (<>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           {(["alle", "fokus", "Heldrungen", "Oldisleben", "Bretleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
