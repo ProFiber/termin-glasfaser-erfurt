@@ -783,7 +783,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
     injectStyles();
     visibleContacts.forEach((c) => {
-      const co = coords[c.bid];
+      const co = displayCoords[c.bid];
       if (!co) return;
       const cs = states[c.bid];
       const status = (cs?.status ?? "offen") as CallStatus;
@@ -863,7 +863,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         }
       }
     }
-  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
+  }, [ready, visibleContacts, coords, displayCoords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
