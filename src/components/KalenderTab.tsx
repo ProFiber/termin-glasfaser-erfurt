@@ -879,10 +879,24 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               <span>Als erledigt markieren</span>
             </button>
 
-            <button style={menuRow} onClick={() => doPatch(c, { klarfall: true })}>
-              <span style={iconStyle}>⚠️</span>
-              <span>Als Klärfall markieren</span>
-            </button>
+            {cs?.klarfall ? (
+              <button
+                style={{ ...menuRow, color: "#15803d" }}
+                onClick={() => doPatch(c, { klarfall: false, klarfall_notiz: "" })}
+              >
+                <span style={{ ...iconStyle, color: "#15803d" }}>✔️</span>
+                <span>Klärfall aufheben</span>
+              </button>
+            ) : (
+              <button
+                style={menuRow}
+                onClick={() => { setKlarfallFor({ contact: c, notiz: "" }); setMenuFor(null); }}
+              >
+                <span style={{ ...iconStyle, color: "#f59e0b" }}>⚠️</span>
+                <span>Als Klärfall markieren (Notiz für Sezai)</span>
+              </button>
+            )}
+
 
             <button
               style={menuRow}
