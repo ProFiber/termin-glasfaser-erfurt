@@ -3,6 +3,7 @@ import type { Contact, CallState, CallStatus } from "@/lib/types";
 import { isPriorityNvt, isUrgentNvt } from "@/lib/priority";
 import { REASON_LABEL, type RelationIndex } from "@/lib/relatedContacts";
 import StreetViewImage from "@/components/StreetViewImage";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   contacts: Contact[];
@@ -607,6 +608,9 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
               pendingWrites++;
               if (pendingWrites >= 5) { pendingWrites = 0; flushCache(); }
               if (!cancelled) setCoords((p) => ({ ...p, [c.bid]: { lat, lng } }));
+              // Koordinaten dauerhaft speichern, damit sie nach einem Import
+              // für alle Geräte sofort verfügbar sind.
+              void supabase.from("contacts").update({ lat, lng }).eq("bid", c.bid);
             }
           } catch (e) {
             console.warn("geocode failed", c.bid, e);
