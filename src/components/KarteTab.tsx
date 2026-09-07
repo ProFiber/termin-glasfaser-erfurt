@@ -937,6 +937,18 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
           }}
         >🔥 Nur Priorität</button>
         <button
+          onClick={() => setKlarfallOnly((v) => !v)}
+          style={{
+            padding: "5px 10px", borderRadius: 999,
+            border: `1.5px solid ${klarfallOnly ? "#f59e0b" : "#e5e7eb"}`,
+            background: klarfallOnly ? "#f59e0b" : "white",
+            color: klarfallOnly ? "white" : "#475569",
+            fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+          }}
+          title="Klärfälle: kann nicht gebaut werden — Sezai klärt vor Ort"
+        >⚠️ Klärfälle{klarfallCount ? ` (${klarfallCount})` : ""}</button>
+
+        <button
           onClick={() => setPhoneInvalidOnly((v) => !v)}
           style={{
             padding: "5px 10px", borderRadius: 999,
