@@ -553,62 +553,52 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               userSelect: "none",
                             }}
                           >
-                            {klarfall && (
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  fontSize: 10,
-                                  fontWeight: 800,
-                                  color: "#92400e",
-                                  background: "#fde68a",
-                                  padding: "1px 5px",
-                                  borderRadius: 4,
-                                  lineHeight: 1.3,
-                                }}
-                                aria-label="Klärfall"
-                              >
-                                ⚠️ KLÄRFALL
-                              </span>
-                            )}
-
-                            {inArbeit && (
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  fontSize: 11,
-                                  fontWeight: 800,
-                                  color: "#9a3412",
-                                  background: "#fed7aa",
-                                  padding: "1px 5px",
-                                  borderRadius: 4,
-                                  lineHeight: 1.3,
-                                }}
-                                aria-label="in Arbeit"
-                              >
-                                🔨 BAU
-                              </span>
-                            )}
-                            {done && !klarfall && (
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  fontSize: 12,
-                                  lineHeight: 1,
-                                }}
-                                aria-label="erledigt"
-                              >
-                                ✅
-                              </span>
-                            )}
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", paddingRight: klarfall ? 74 : done ? 16 : 0 }}>
-                              {c.strasse} {c.hnr}
-                              {c.hnr_zusatz}
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", flex: 1, minWidth: 0 }}>
+                                {c.strasse} {c.hnr}
+                                {c.hnr_zusatz}
+                              </div>
+                              {klarfall && (
+                                <span
+                                  style={{
+                                    flexShrink: 0,
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    color: "#92400e",
+                                    background: "#fde68a",
+                                    padding: "1px 5px",
+                                    borderRadius: 4,
+                                    lineHeight: 1.4,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  aria-label="Klärfall"
+                                >
+                                  ⚠️ KLÄRFALL
+                                </span>
+                              )}
+                              {inArbeit && (
+                                <span
+                                  style={{
+                                    flexShrink: 0,
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    color: "#9a3412",
+                                    background: "#fed7aa",
+                                    padding: "1px 5px",
+                                    borderRadius: 4,
+                                    lineHeight: 1.4,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  aria-label="in Arbeit"
+                                >
+                                  🔨 BAU
+                                </span>
+                              )}
+                              {done && !klarfall && (
+                                <span style={{ flexShrink: 0, fontSize: 12, lineHeight: 1.4 }} aria-label="erledigt">
+                                  ✅
+                                </span>
+                              )}
                             </div>
                             <div style={{ fontSize: 11, color: "#334155" }}>
                               {c.name}
@@ -621,18 +611,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               {c.we ? ` · ${c.we} WE` : ""}
                               {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
                             </div>
-                            {klarfall && (
-                              <div style={{
-                                marginTop: 4, padding: "4px 6px", borderRadius: 5,
-                                background: "#fef3c7", border: "1px solid #fcd34d",
-                                fontSize: 10, color: "#92400e", fontWeight: 700, lineHeight: 1.35,
-                              }}>
-                                🚧 Kann nicht gebaut werden · 👷 Sezai klärt vor Ort
-                                {cs?.klarfall_notiz ? (
-                                  <div style={{ fontWeight: 400, marginTop: 2 }}>{cs.klarfall_notiz}</div>
-                                ) : null}
-                              </div>
-                            )}
+
 
                             {cs?.team && (
                               <div style={{
