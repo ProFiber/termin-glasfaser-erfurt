@@ -1056,7 +1056,7 @@ function Index() {
     }
   }
 
-  async function patchContact(bid: string, changes: Partial<Pick<Contact, "anschluss_typ">>) {
+  async function patchContact(bid: string, changes: Partial<Pick<Contact, "anschluss_typ" | "lat" | "lng">>) {
     // Optimistisch aktualisieren
     setContacts((cs) => cs.map((c) => (c.bid === bid ? { ...c, ...changes } : c)));
     showFlash("saving");
