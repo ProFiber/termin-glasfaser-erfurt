@@ -1956,13 +1956,97 @@ function Index() {
             </button>
           )}
         </div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
-          <button
-            onClick={() => setListSort((s) => s === "strasse" ? "erstellt_desc" : s === "erstellt_desc" ? "erstellt_asc" : "strasse")}
-            title="Sortierung umschalten"
-            style={sortBtn()}
-          >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Erstellt ↓" : "📅 Erstellt ↑"}</button>
-        </div>
+        {(() => {
+          const activeCount =
+            filter.size +
+            (teamFilter !== "alle" ? 1 : 0) +
+            (ortSel !== "alle" ? 1 : 0) +
+            streetSel.size +
+            nvtSel.size +
+            (priorityOnly ? 1 : 0) +
+            (urgentOnly ? 1 : 0) +
+            (priorityFilter !== "alle" ? 1 : 0);
+          const resetAll = () => {
+            setFilter(new Set());
+            setTeamFilter("alle");
+            setOrtSel("alle");
+            setStreetSel(new Set());
+            setNvtSel(new Set());
+            setPriorityOnly(false);
+            setUrgentOnly(false);
+            setPriorityFilter("alle");
+            setSearch("");
+          };
+          return (
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button
+                onClick={() => setFiltersOpen((v) => !v)}
+                style={{
+                  flex: 1, minWidth: 0, padding: "9px 12px", borderRadius: 10,
+                  border: `1px solid ${activeCount > 0 ? "#e20074" : "#e5e7eb"}`,
+                  background: activeCount > 0 ? "#fdf2f8" : "#fff",
+                  color: activeCount > 0 ? "#e20074" : "#475569",
+                  fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                <span>🎚 Filter{activeCount > 0 ? ` (${activeCount})` : ""}</span>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{filtersOpen ? "▲" : "▼"}</span>
+              </button>
+              <button
+                onClick={() => setListSort((s) => s === "strasse" ? "erstellt_desc" : s === "erstellt_desc" ? "erstellt_asc" : "strasse")}
+                title="Sortierung umschalten"
+                style={{
+                  padding: "9px 12px", borderRadius: 10, border: "1px solid #e5e7eb",
+                  background: "#fff", color: "#475569", fontSize: 13, fontWeight: 700,
+                  whiteSpace: "nowrap", cursor: "pointer",
+                }}
+              >{listSort === "strasse" ? "📍 Straße" : listSort === "erstellt_desc" ? "📅 Neu" : "📅 Alt"}</button>
+              {(activeCount > 0 || search) && (
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  title="Alle Filter zurücksetzen"
+                  style={{
+                    padding: "9px 12px", borderRadius: 10, border: "1px solid #ef4444",
+                    background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 700,
+                    whiteSpace: "nowrap", cursor: "pointer",
+                  }}
+                >↺</button>
+              )}
+            </div>
+          );
+        })()}
+        {!filtersOpen && (
+          <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+            {([
+              { k: "nichtErledigt", label: "🎯 Noch offen" },
+              { k: "termin", label: "✅ Termin" },
+              { k: "klarfall", label: `⚠️ Klärfall (${klarfallCount})` },
+              { k: "erledigt", label: "✓ Erledigt" },
+            ] as const).map(({ k, label }) => {
+              const on = filter.has(k);
+              return (
+                <button
+                  key={k}
+                  onClick={() => setFilter((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(k)) next.delete(k); else next.add(k);
+                    return next;
+                  })}
+                  style={{
+                    padding: "6px 12px", borderRadius: 999, whiteSpace: "nowrap",
+                    border: `1px solid ${on ? "#0f172a" : "#e5e7eb"}`,
+                    background: on ? "#0f172a" : "#fff",
+                    color: on ? "#fff" : "#475569",
+                    fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}
+                >{label}</button>
+              );
+            })}
+          </div>
+        )}
+        {filtersOpen && (<></>)}
         <div style={{ display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
           {(["alle", "fokus", "Heldrungen", "Oldisleben", "Bretleben", "Sachsenburg", "Gorsleben"] as const).map((o) => {
             const active = ortSel === o;
