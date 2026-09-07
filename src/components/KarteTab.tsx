@@ -711,7 +711,36 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
     [contacts, states, filter, openOnly, priorityOnly, heuteOnly, todayStr, phoneInvalidOnly],
   );
 
+  // Mehrere Objekte teilen sich oft dieselbe (straßengenaue) Koordinate.
+  // Damit nicht nur ein Pin sichtbar ist, werden Duplikate leicht im Kreis verteilt.
+  const displayCoords = useMemo(() => {
+    const groups: Record<string, string[]> = {};
+    visibleContacts.forEach((c) => {
+      const co = coords[c.bid];
+      if (!co) return;
+      const k = `${co.lat.toFixed(6)},${co.lng.toFixed(6)}`;
+      (groups[k] ||= []).push(c.bid);
+    });
+    const out: Record<string, { lat: number; lng: number }> = {};
+    Object.values(groups).forEach((bids) => {
+      if (bids.length === 1) {
+        out[bids[0]] = coords[bids[0]];
+        return;
+      }
+      const base = coords[bids[0]];
+      const rMeters = 14;
+      const dLat = rMeters / 111320;
+      const dLng = rMeters / (111320 * Math.cos((base.lat * Math.PI) / 180));
+      bids.forEach((bid, i) => {
+        const a = (2 * Math.PI * i) / bids.length;
+        out[bid] = { lat: base.lat + dLat * Math.sin(a), lng: base.lng + dLng * Math.cos(a) };
+      });
+    });
+    return out;
+  }, [visibleContacts, coords]);
+
   const phoneInvalidCount = useMemo(
+
     () => contacts.reduce((n, c) => n + (states[c.bid]?.telefon_ungueltig ? 1 : 0), 0),
     [contacts, states],
   );
@@ -754,7 +783,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
 
     injectStyles();
     visibleContacts.forEach((c) => {
-      const co = coords[c.bid];
+      const co = displayCoords[c.bid];
       if (!co) return;
       const cs = states[c.bid];
       const status = (cs?.status ?? "offen") as CallStatus;
@@ -834,7 +863,7 @@ export default function KarteTab({ contacts, states, onOpenContact, focusBid, on
         }
       }
     }
-  }, [ready, visibleContacts, coords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
+  }, [ready, visibleContacts, coords, displayCoords, states, heuteOnly, todayOrder, todaySequence, routeInfo]);
 
   // External focus: fly to a contact and select it
   useEffect(() => {
