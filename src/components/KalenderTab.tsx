@@ -553,101 +553,107 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                               userSelect: "none",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", flex: 1, minWidth: 0 }}>
-                                {c.strasse} {c.hnr}
-                                {c.hnr_zusatz}
-                              </div>
-                              {klarfall && (
-                                <span
-                                  style={{
-                                    flexShrink: 0,
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>
+                                  {c.strasse} {c.hnr}
+                                  {c.hnr_zusatz}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#334155" }}>
+                                  {c.name}
+                                  {c.nvt && (
+                                    <span style={{ color: "#94a3b8", fontWeight: 400 }}> · {c.nvt}</span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: 10, color: "#64748b" }}>
+                                  {c.typ}
+                                  {c.we ? ` · ${c.we} WE` : ""}
+                                  {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
+                                </div>
+                                {cs?.team && (
+                                  <div style={{
+                                    display: "inline-block",
+                                    marginTop: 3,
                                     fontSize: 10,
-                                    fontWeight: 800,
-                                    color: "#92400e",
-                                    background: "#fde68a",
-                                    padding: "1px 5px",
+                                    fontWeight: 700,
+                                    color: "#fff",
+                                    background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
+                                    padding: "1px 6px",
                                     borderRadius: 4,
-                                    lineHeight: 1.4,
-                                    whiteSpace: "nowrap",
-                                  }}
-                                  aria-label="Klärfall"
-                                >
-                                  ⚠️ KLÄRFALL
-                                </span>
-                              )}
-                              {inArbeit && (
-                                <span
-                                  style={{
-                                    flexShrink: 0,
-                                    fontSize: 11,
-                                    fontWeight: 800,
-                                    color: "#9a3412",
-                                    background: "#fed7aa",
-                                    padding: "1px 5px",
-                                    borderRadius: 4,
-                                    lineHeight: 1.4,
-                                    whiteSpace: "nowrap",
-                                  }}
-                                  aria-label="in Arbeit"
-                                >
-                                  🔨 BAU
-                                </span>
-                              )}
-                              {done && !klarfall && (
-                                <span style={{ flexShrink: 0, fontSize: 12, lineHeight: 1.4 }} aria-label="erledigt">
-                                  ✅
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#334155" }}>
-                              {c.name}
-                              {c.nvt && (
-                                <span style={{ color: "#94a3b8", fontWeight: 400 }}> · {c.nvt}</span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 10, color: "#64748b" }}>
-                              {c.typ}
-                              {c.we ? ` · ${c.we} WE` : ""}
-                              {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
-                            </div>
-
-
-                            {cs?.team && (
-                              <div style={{
-                                display: "inline-block",
-                                marginTop: 3,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: "#fff",
-                                background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
-                                padding: "1px 6px",
-                                borderRadius: 4,
-                              }}>
-                                👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"}
+                                  }}>
+                                    👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"}
+                                  </div>
+                                )}
+                                {cs?.termin_zeit && (
+                                  <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
+                                    ⏰ ab {cs.termin_zeit} Uhr
+                                  </div>
+                                )}
+                                {c.mobil && (
+                                  <a
+                                    href={`tel:${c.mobil}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      display: "block",
+                                      marginTop: 3,
+                                      fontSize: 10,
+                                      color: "#e20074",
+                                      fontWeight: 700,
+                                      textDecoration: "none",
+                                    }}
+                                  >
+                                    📱 {c.mobil}
+                                  </a>
+                                )}
                               </div>
-                            )}
-                            {cs?.termin_zeit && (
-                              <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
-                                ⏰ ab {cs.termin_zeit} Uhr
+                              <div style={{ display: "flex", flexDirection: "column", gap: 3, flexShrink: 0, alignItems: "flex-end" }}>
+                                {klarfall && (
+                                  <span
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      color: "#92400e",
+                                      background: "#fde68a",
+                                      padding: "1px 3px",
+                                      borderRadius: 3,
+                                      lineHeight: 1.3,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    aria-label="Klärfall"
+                                  >
+                                    ⚠️ KLÄRFALL
+                                  </span>
+                                )}
+                                {inArbeit && (
+                                  <span
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      color: "#9a3412",
+                                      background: "#fed7aa",
+                                      padding: "1px 3px",
+                                      borderRadius: 3,
+                                      lineHeight: 1.3,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    aria-label="in Arbeit"
+                                  >
+                                    🔨 BAU
+                                  </span>
+                                )}
+                                {done && !klarfall && (
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      lineHeight: 1.3,
+                                    }}
+                                    aria-label="erledigt"
+                                  >
+                                    ✅
+                                  </span>
+                                )}
                               </div>
-                            )}
-                            {c.mobil && (
-                              <a
-                                href={`tel:${c.mobil}`}
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  display: "block",
-                                  marginTop: 3,
-                                  fontSize: 10,
-                                  color: "#e20074",
-                                  fontWeight: 700,
-                                  textDecoration: "none",
-                                }}
-                              >
-                                📱 {c.mobil}
-                              </a>
-                            )}
+                            </div>
                           </div>
                         );
                       })
