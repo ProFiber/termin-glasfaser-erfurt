@@ -485,7 +485,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </div>
 
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 8 }}>
                 {buckets.map(({ key, lbl, color, appts }) => (
                   <div
                     key={key}
