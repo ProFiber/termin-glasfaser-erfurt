@@ -688,7 +688,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         })}
       </div>
 
-      {(menuFor || reschedule || klarfallFor) && (
+      {(menuFor || reschedule || klarfallFor || stornoFor) && (
         <div
           onClick={() => { closeAll(); setKlarfallFor(null); }}
           style={{
