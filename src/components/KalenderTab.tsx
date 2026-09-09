@@ -612,6 +612,23 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 3, flexShrink: 0, alignItems: "flex-end" }}>
+                                {storniert && (
+                                  <span
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      color: "#475569",
+                                      background: "#e2e8f0",
+                                      padding: "1px 3px",
+                                      borderRadius: 3,
+                                      lineHeight: 1.3,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    aria-label="storniert"
+                                  >
+                                    ⊘ STORNO{c.storniert_telekom && c.storniert_intern ? " TK+WIR" : c.storniert_telekom ? " TK" : c.storniert_intern ? " WIR" : ""}
+                                  </span>
+                                )}
                                 {klarfall && (
                                   <span
                                     style={{
