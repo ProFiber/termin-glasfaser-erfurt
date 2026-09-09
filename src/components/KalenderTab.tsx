@@ -56,7 +56,7 @@ type Props = {
   onClearFocusDate?: () => void;
   /** Höhe des App-Headers, damit die Wochen-Leiste darunter klebt statt darüber */
   headerOffset?: number;
-
+  patchContact?: (bid: string, changes: Partial<Contact>) => void;
 };
 
 const navBtn: CSSProperties = {
@@ -98,7 +98,7 @@ const iconStyle: CSSProperties = {
 const VIEW_MODE_KEY = "kalender:viewMode";
 const DAY_MODES_KEY = "kalender:dayModes";
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, headerOffset = 0 }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, headerOffset = 0, patchContact }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
@@ -135,6 +135,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
   const [reschedule, setReschedule] = useState<{ contact: Contact; time: string; slot: "vm" | "nm" } | null>(null);
   const [grabenFor, setGrabenFor] = useState<Contact | null>(null);
   const [klarfallFor, setKlarfallFor] = useState<{ contact: Contact; notiz: string } | null>(null);
+  const [stornoFor, setStornoFor] = useState<{ contact: Contact; grund: string } | null>(null);
 
 
   // Long-press
@@ -514,8 +515,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
-                        const klarfall = !!cs?.klarfall;
-                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall;
+                        const storniert = !!(c.storniert || c.storniert_intern || c.storniert_telekom);
+                        const klarfall = !!cs?.klarfall && !storniert;
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall && !storniert;
                         return (
                           <div
                             key={c.bid}
@@ -536,12 +538,15 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
+                              background: storniert ? "#f1f5f9" : klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: klarfall
+                              opacity: storniert ? 0.7 : 1,
+                              borderLeft: storniert
+                                ? "3px solid #94a3b8"
+                                : klarfall
                                 ? "3px solid #f59e0b"
                                 : inArbeit
                                 ? "3px solid #f97316"
@@ -555,7 +560,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                           >
                             <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: storniert ? "#64748b" : "#0f172a", lineHeight: 1.3, textDecoration: storniert ? "line-through" : "none" }}>
                                   {c.strasse} {c.hnr}
                                   {c.hnr_zusatz}
                                 </div>
@@ -607,6 +612,23 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                 )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 3, flexShrink: 0, alignItems: "flex-end" }}>
+                                {storniert && (
+                                  <span
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      color: "#475569",
+                                      background: "#e2e8f0",
+                                      padding: "1px 3px",
+                                      borderRadius: 3,
+                                      lineHeight: 1.3,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    aria-label="storniert"
+                                  >
+                                    ⊘ STORNO{c.storniert_telekom && c.storniert_intern ? " TK+WIR" : c.storniert_telekom ? " TK" : c.storniert_intern ? " WIR" : ""}
+                                  </span>
+                                )}
                                 {klarfall && (
                                   <span
                                     style={{
@@ -666,9 +688,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         })}
       </div>
 
-      {(menuFor || reschedule || klarfallFor) && (
+      {(menuFor || reschedule || klarfallFor || stornoFor) && (
         <div
-          onClick={() => { closeAll(); setKlarfallFor(null); }}
+          onClick={() => { closeAll(); setKlarfallFor(null); setStornoFor(null); }}
           style={{
             position: "fixed",
             inset: 0,
@@ -730,7 +752,60 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         </div>
       )}
 
-      {menuFor && !reschedule && !klarfallFor && (() => {
+      {stornoFor && (
+        <div
+          style={{
+            position: "fixed", bottom: 56, left: 0, right: 0, background: "#fff",
+            borderTopLeftRadius: 16, borderTopRightRadius: 16, zIndex: 500,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)", padding: "16px 20px 20px",
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#475569" }}>
+            ⊘ Storno erfassen
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {stornoFor.contact.strasse} {stornoFor.contact.hnr}{stornoFor.contact.hnr_zusatz} — Objekt wird nicht gebaut (interner Storno).
+          </div>
+          <textarea
+            autoFocus
+            value={stornoFor.grund}
+            onChange={(e) => setStornoFor((s) => (s ? { ...s, grund: e.target.value } : s))}
+            placeholder="Storno-Grund (z. B. Eigentümer will nicht mehr, Objekt abgerissen, kein Zugang möglich …)"
+            style={{
+              width: "100%", minHeight: 92, marginTop: 10, padding: 10,
+              border: "1.5px solid #cbd5e1", borderRadius: 8, fontSize: 14,
+              fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => setStornoFor(null)}
+              style={{
+                flex: 1, padding: "12px 0", borderRadius: 10, border: "1.5px solid #e5e7eb",
+                background: "#fff", color: "#475569", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              }}
+            >Abbrechen</button>
+            <button
+              onClick={() => {
+                const { contact, grund } = stornoFor;
+                if (!grund.trim()) return;
+                if (patchContact) patchContact(contact.bid, { storniert_intern: true, storno_grund: grund.trim() } as Partial<Contact>);
+                if (patch) patch(contact.bid, { klarfall: false, klarfall_notiz: "", team_status: "" });
+                setStornoFor(null);
+              }}
+              disabled={!stornoFor.grund.trim()}
+              style={{
+                flex: 2, padding: "12px 0", borderRadius: 10, border: "none",
+                background: stornoFor.grund.trim() ? "#64748b" : "#cbd5e1",
+                color: "#fff", fontWeight: 800, fontSize: 14,
+                cursor: stornoFor.grund.trim() ? "pointer" : "default",
+              }}
+            >⊘ Storno speichern</button>
+          </div>
+        </div>
+      )}
+
+      {menuFor && !reschedule && !klarfallFor && !stornoFor && (() => {
 
         const c = menuFor;
         const phone = c.mobil || c.festnetz;
@@ -881,6 +956,28 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 <span>Als Klärfall markieren (Notiz für Sezai)</span>
               </button>
             )}
+
+            {(c.storniert || c.storniert_intern) ? (
+              <button
+                style={{ ...menuRow, color: "#15803d" }}
+                onClick={() => {
+                  if (patchContact) patchContact(c.bid, { storniert_intern: false, storno_grund: null } as Partial<Contact>);
+                  closeAll();
+                }}
+              >
+                <span style={{ ...iconStyle, color: "#15803d" }}>✔️</span>
+                <span>Storno aufheben</span>
+              </button>
+            ) : (
+              <button
+                style={menuRow}
+                onClick={() => { setStornoFor({ contact: c, grund: "" }); setMenuFor(null); }}
+              >
+                <span style={{ ...iconStyle, color: "#64748b" }}>⊘</span>
+                <span>Als Storno markieren (mit Grund)</span>
+              </button>
+            )}
+
 
 
             <button
