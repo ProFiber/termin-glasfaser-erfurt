@@ -56,7 +56,7 @@ type Props = {
   onClearFocusDate?: () => void;
   /** Höhe des App-Headers, damit die Wochen-Leiste darunter klebt statt darüber */
   headerOffset?: number;
-
+  patchContact?: (bid: string, changes: Partial<Contact>) => void;
 };
 
 const navBtn: CSSProperties = {
