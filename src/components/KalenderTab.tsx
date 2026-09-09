@@ -604,7 +604,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                       📱 {c.mobil}
                                     </a>
                                   )}
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignItems: "center" }}>
+                              
                                 {storniert && (
                                   <span
                                     style={{
