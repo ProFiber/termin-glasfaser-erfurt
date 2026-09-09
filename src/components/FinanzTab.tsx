@@ -17,6 +17,7 @@ type FinRow = {
   zusatz_eur: number | string;
   grabenlaenge: number;
   erledigt_datum: string | null;
+  termin_datum: string | null;
   aufmass_am: string | null;
   gutschrift_nr: string;
   avis_am: string | null;
