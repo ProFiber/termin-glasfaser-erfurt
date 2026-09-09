@@ -96,7 +96,7 @@ const iconStyle: CSSProperties = {
 const VIEW_MODE_KEY = "kalender:viewMode";
 const DAY_MODES_KEY = "kalender:dayModes";
 
-export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, headerOffset = 0, patchContact }: Props) {
+export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, patchContact }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
