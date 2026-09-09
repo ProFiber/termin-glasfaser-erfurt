@@ -869,6 +869,8 @@ export default function FinanzTab() {
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
       arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
       samstagSzenarien,
+      terminierteCount: terminierteMonat.length, terminierteEur,
+      prognoseEur, prognosePct, luecheEur, luecheHa, zielErreicht, prognoseChart,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
