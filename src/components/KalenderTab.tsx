@@ -668,6 +668,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                   </span>
                                 )}
                               </div>
+                              </div>
                             </div>
                           </div>
                         );
