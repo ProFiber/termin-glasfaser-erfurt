@@ -634,7 +634,7 @@ export default function FinanzTab() {
       const [{ data: cs }, { data: zList }] = await Promise.all([
         supabase
           .from("call_states")
-          .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
+          .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,termin_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
         supabase.from("umsatz_ziele").select("*"),
       ]);
       setRows((cs as FinRow[]) || []);
