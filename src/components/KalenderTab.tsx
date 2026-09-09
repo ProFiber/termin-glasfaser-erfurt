@@ -690,7 +690,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
 
       {(menuFor || reschedule || klarfallFor || stornoFor) && (
         <div
-          onClick={() => { closeAll(); setKlarfallFor(null); }}
+          onClick={() => { closeAll(); setKlarfallFor(null); setStornoFor(null); }}
           style={{
             position: "fixed",
             inset: 0,
