@@ -564,52 +564,53 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                                   {c.strasse} {c.hnr}
                                   {c.hnr_zusatz}
                                 </div>
-                                <div style={{ fontSize: 11, color: "#334155" }}>
-                                  {c.name}
-                                  {c.nvt && (
-                                    <span style={{ color: "#94a3b8", fontWeight: 400 }}> · {c.nvt}</span>
+                                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", marginTop: 2 }}>
+                                  <span style={{ fontSize: 11, color: "#334155" }}>
+                                    {c.name}
+                                    {c.nvt && (
+                                      <span style={{ color: "#94a3b8", fontWeight: 400 }}> · {c.nvt}</span>
+                                    )}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: "#64748b" }}>
+                                    {c.typ}
+                                    {c.we ? ` · ${c.we} WE` : ""}
+                                    {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
+                                  </span>
+                                  {cs?.team && (
+                                    <span style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 2,
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      color: "#fff",
+                                      background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
+                                      padding: "1px 6px",
+                                      borderRadius: 4,
+                                    }}>
+                                      👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"}
+                                    </span>
+                                  )}
+                                  {cs?.termin_zeit && (
+                                    <span style={{ fontSize: 10, color: "#0891b2", fontWeight: 700 }}>
+                                      ⏰ ab {cs.termin_zeit} Uhr
+                                    </span>
+                                  )}
+                                  {c.mobil && (
+                                    <a
+                                      href={`tel:${c.mobil}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{
+                                        fontSize: 10,
+                                        color: "#e20074",
+                                        fontWeight: 700,
+                                        textDecoration: "none",
+                                      }}
+                                    >
+                                      📱 {c.mobil}
+                                    </a>
                                   )}
                                 </div>
-                                <div style={{ fontSize: 10, color: "#64748b" }}>
-                                  {c.typ}
-                                  {c.we ? ` · ${c.we} WE` : ""}
-                                  {done && cs?.grabenlaenge ? ` · ⛏️ ${cs.grabenlaenge} m` : ""}
-                                </div>
-                                {cs?.team && (
-                                  <div style={{
-                                    display: "inline-block",
-                                    marginTop: 3,
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    color: "#fff",
-                                    background: cs.team === "team1" ? "#3b82f6" : "#7c3aed",
-                                    padding: "1px 6px",
-                                    borderRadius: 4,
-                                  }}>
-                                    👷 {cs.team === "team1" ? "Team Jozey" : "Team Adil"}
-                                  </div>
-                                )}
-                                {cs?.termin_zeit && (
-                                  <div style={{ fontSize: 10, color: "#0891b2", fontWeight: 700, marginTop: 2 }}>
-                                    ⏰ ab {cs.termin_zeit} Uhr
-                                  </div>
-                                )}
-                                {c.mobil && (
-                                  <a
-                                    href={`tel:${c.mobil}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    style={{
-                                      display: "block",
-                                      marginTop: 3,
-                                      fontSize: 10,
-                                      color: "#e20074",
-                                      fontWeight: 700,
-                                      textDecoration: "none",
-                                    }}
-                                  >
-                                    📱 {c.mobil}
-                                  </a>
-                                )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 3, flexShrink: 0, alignItems: "flex-end" }}>
                                 {storniert && (
