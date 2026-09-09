@@ -1362,3 +1362,13 @@ function getWeek(d: Date) {
   if (date.getDay() !== 4) date.setMonth(0, 1 + ((4 - date.getDay()) + 7) % 7);
   return 1 + Math.ceil((firstThursday - date.valueOf()) / 604800000);
 }
+
+function MiniStat({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+  return (
+    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 10px", borderLeft: `4px solid ${color}` }}>
+      <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{sub}</div>
+    </div>
+  );
+}
