@@ -1569,7 +1569,6 @@ function Index() {
           onShowOnMap={openContactOnMap}
           focusDate={kalenderFocusDate}
           onClearFocusDate={() => setKalenderFocusDate(null)}
-          headerOffset={headerHeight}
           patchContact={patchContact}
         />
       )}
