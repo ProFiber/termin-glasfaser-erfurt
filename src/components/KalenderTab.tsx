@@ -560,7 +560,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                           >
                             <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: storniert ? "#64748b" : "#0f172a", lineHeight: 1.3, textDecoration: storniert ? "line-through" : "none" }}>
                                   {c.strasse} {c.hnr}
                                   {c.hnr_zusatz}
                                 </div>
