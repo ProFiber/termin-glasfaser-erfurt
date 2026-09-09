@@ -820,6 +820,35 @@ export default function FinanzTab() {
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
 
+    // ---- Prognose: bereits terminierte HA im laufenden Monat ----
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const monthEndIso = toIso(monthEnd);
+    const terminierteMonat = rows.filter(
+      (r) =>
+        r.status === "termin" &&
+        r.termin_datum &&
+        r.termin_datum >= todayIso &&
+        r.termin_datum <= monthEndIso
+    );
+    const terminierteEur = terminierteMonat.length * haPreis;
+    const prognoseEur = umsatzMonat + terminierteEur;
+    const prognosePct = zielMonat > 0 ? (prognoseEur / zielMonat) * 100 : 0;
+    const luecheEur = Math.max(0, zielMonat - prognoseEur);
+    const luecheHa = haPreis > 0 ? luecheEur / haPreis : 0;
+    const zielErreicht = prognoseEur >= zielMonat;
+
+    // Balken-Daten (gestapelt): Ist + Terminiert + Lücke = Ziel
+    const prognoseChart = [
+      {
+        name: "Monat",
+        ist: Math.round(umsatzMonat),
+        terminiert: Math.round(Math.min(terminierteEur, Math.max(0, zielMonat - umsatzMonat))),
+        ueber: Math.round(Math.max(0, prognoseEur - zielMonat)),
+        luecke: Math.round(luecheEur),
+      },
+    ];
+
+
     return {
       umsatzHeute, umsatzWoche, umsatzMonat,
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
