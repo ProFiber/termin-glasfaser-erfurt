@@ -306,15 +306,11 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
       <style>{`@keyframes kal-pulse { 0%,100% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 0 rgba(249,115,22,0.5);} 50% { box-shadow: 0 0 0 1px #fdba74, 0 0 0 8px rgba(249,115,22,0);} }`}</style>
       <div
         style={{
-          position: "sticky",
-          top: headerOffset,
-          zIndex: 15,
           background: "#fff",
           borderRadius: 10,
-
-          padding: 12,
-          marginBottom: 12,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+          padding: "8px 12px",
+          marginBottom: 8,
+          border: "1px solid #f1f5f9",
         }}
       >
         <div
@@ -322,12 +318,11 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 8,
           }}
         >
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>📅 Kalender</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", lineHeight: 1.2 }}>📅 Kalender</div>
+            <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.2 }}>
               {weekTermine} Termin{weekTermine === 1 ? "" : "e"} diese Woche
             </div>
           </div>
@@ -341,11 +336,11 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   return x;
                 })
               }
-              style={navBtn}
+              style={{ ...navBtn, padding: "3px 8px", fontSize: 13 }}
             >
               ‹
             </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#334155", minWidth: 110, textAlign: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#334155", minWidth: 100, textAlign: "center" }}>
               {weekRangeLabel}
             </span>
             <button
@@ -357,7 +352,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                   return x;
                 })
               }
-              style={navBtn}
+              style={{ ...navBtn, padding: "3px 8px", fontSize: 13 }}
             >
               ›
             </button>
@@ -370,6 +365,7 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                 color: "#0891b2",
                 marginLeft: 2,
                 fontSize: 10,
+                padding: "3px 8px",
               }}
             >
               Heute
