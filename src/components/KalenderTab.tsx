@@ -515,8 +515,9 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                       appts.map((c) => {
                         const cs = states[c.bid];
                         const done = cs?.status === "erledigt";
-                        const klarfall = !!cs?.klarfall;
-                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall;
+                        const storniert = !!(c.storniert || c.storniert_intern || c.storniert_telekom);
+                        const klarfall = !!cs?.klarfall && !storniert;
+                        const inArbeit = cs?.team_status === "in_arbeit" && !done && !klarfall && !storniert;
                         return (
                           <div
                             key={c.bid}
