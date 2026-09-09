@@ -904,6 +904,28 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               </button>
             )}
 
+            {(c.storniert || c.storniert_intern) ? (
+              <button
+                style={{ ...menuRow, color: "#15803d" }}
+                onClick={() => {
+                  if (patchContact) patchContact(c.bid, { storniert_intern: false, storno_grund: null } as Partial<Contact>);
+                  closeAll();
+                }}
+              >
+                <span style={{ ...iconStyle, color: "#15803d" }}>✔️</span>
+                <span>Storno aufheben</span>
+              </button>
+            ) : (
+              <button
+                style={menuRow}
+                onClick={() => { setStornoFor({ contact: c, grund: "" }); setMenuFor(null); }}
+              >
+                <span style={{ ...iconStyle, color: "#64748b" }}>⊘</span>
+                <span>Als Storno markieren (mit Grund)</span>
+              </button>
+            )}
+
+
 
             <button
               style={menuRow}
