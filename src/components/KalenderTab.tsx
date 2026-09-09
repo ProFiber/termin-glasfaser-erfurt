@@ -538,12 +538,15 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               position: "relative",
-                              background: klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
+                              background: storniert ? "#f1f5f9" : klarfall ? "#fffbeb" : inArbeit ? "#fff7ed" : done ? "#f0fff6" : "#ffffff",
                               borderRadius: 7,
                               padding: "6px 8px",
                               marginBottom: 4,
                               cursor: "pointer",
-                              borderLeft: klarfall
+                              opacity: storniert ? 0.7 : 1,
+                              borderLeft: storniert
+                                ? "3px solid #94a3b8"
+                                : klarfall
                                 ? "3px solid #f59e0b"
                                 : inArbeit
                                 ? "3px solid #f97316"
