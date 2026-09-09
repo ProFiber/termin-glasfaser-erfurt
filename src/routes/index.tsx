@@ -1570,7 +1570,7 @@ function Index() {
           focusDate={kalenderFocusDate}
           onClearFocusDate={() => setKalenderFocusDate(null)}
           headerOffset={headerHeight}
-
+          patchContact={patchContact}
         />
       )}
 
