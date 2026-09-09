@@ -752,7 +752,60 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
         </div>
       )}
 
-      {menuFor && !reschedule && !klarfallFor && (() => {
+      {stornoFor && (
+        <div
+          style={{
+            position: "fixed", bottom: 56, left: 0, right: 0, background: "#fff",
+            borderTopLeftRadius: 16, borderTopRightRadius: 16, zIndex: 500,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)", padding: "16px 20px 20px",
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#475569" }}>
+            ⊘ Storno erfassen
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {stornoFor.contact.strasse} {stornoFor.contact.hnr}{stornoFor.contact.hnr_zusatz} — Objekt wird nicht gebaut (interner Storno).
+          </div>
+          <textarea
+            autoFocus
+            value={stornoFor.grund}
+            onChange={(e) => setStornoFor((s) => (s ? { ...s, grund: e.target.value } : s))}
+            placeholder="Storno-Grund (z. B. Eigentümer will nicht mehr, Objekt abgerissen, kein Zugang möglich …)"
+            style={{
+              width: "100%", minHeight: 92, marginTop: 10, padding: 10,
+              border: "1.5px solid #cbd5e1", borderRadius: 8, fontSize: 14,
+              fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => setStornoFor(null)}
+              style={{
+                flex: 1, padding: "12px 0", borderRadius: 10, border: "1.5px solid #e5e7eb",
+                background: "#fff", color: "#475569", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              }}
+            >Abbrechen</button>
+            <button
+              onClick={() => {
+                const { contact, grund } = stornoFor;
+                if (!grund.trim()) return;
+                if (patchContact) patchContact(contact.bid, { storniert_intern: true, storno_grund: grund.trim() } as Partial<Contact>);
+                if (patch) patch(contact.bid, { klarfall: false, klarfall_notiz: "", team_status: "" });
+                setStornoFor(null);
+              }}
+              disabled={!stornoFor.grund.trim()}
+              style={{
+                flex: 2, padding: "12px 0", borderRadius: 10, border: "none",
+                background: stornoFor.grund.trim() ? "#64748b" : "#cbd5e1",
+                color: "#fff", fontWeight: 800, fontSize: 14,
+                cursor: stornoFor.grund.trim() ? "pointer" : "default",
+              }}
+            >⊘ Storno speichern</button>
+          </div>
+        </div>
+      )}
+
+      {menuFor && !reschedule && !klarfallFor && !stornoFor && (() => {
 
         const c = menuFor;
         const phone = c.mobil || c.festnetz;
