@@ -1047,6 +1047,44 @@ export default function FinanzTab() {
         )}
       </div>
 
+      {/* Prognose mit terminierten Hausanschlüssen */}
+      <Card title="Prognose mit Terminen">
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          background: data.zielErreicht ? "#dcfce7" : "#fef3c7",
+          color: data.zielErreicht ? "#166534" : "#78350f",
+          borderRadius: 10, padding: "10px 12px", fontSize: 13, fontWeight: 700, marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 18 }}>{data.zielErreicht ? "✅" : "⚠️"}</span>
+          <span>
+            {data.zielErreicht
+              ? `Ziel geschafft: mit den ${data.terminierteCount} terminierten HA kommen wir auf ${data.prognosePct.toFixed(0)} % vom Monatsziel`
+              : `Ziel noch nicht erreicht: mit den ${data.terminierteCount} terminierten HA kommen wir auf ${data.prognosePct.toFixed(0)} % – es fehlen ${Math.ceil(data.luecheHa)} HA (${EUR(data.luecheEur)})`}
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <MiniStat label="Erledigt" value={EUR(data.umsatzMonat)} sub={`${data.countMonat} HA`} color="#22c55e" />
+          <MiniStat label="Terminiert" value={EUR(data.terminierteEur)} sub={`${data.terminierteCount} HA`} color="#3b82f6" />
+          <MiniStat label="Prognose" value={EUR(data.prognoseEur)} sub={`Ziel ${EUR(data.zielMonat)}`} color={data.zielErreicht ? "#22c55e" : "#f59e0b"} />
+        </div>
+
+        <div style={{ height: 110 }}>
+          <ResponsiveContainer>
+            <BarChart data={data.prognoseChart} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }} barSize={38}>
+              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <YAxis type="category" dataKey="name" hide />
+              <Tooltip formatter={(v: number) => EUR(v)} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="ist" stackId="a" name="Erledigt" fill="#22c55e" />
+              <Bar dataKey="terminiert" stackId="a" name="Terminiert" fill="#3b82f6" />
+              <Bar dataKey="ueber" stackId="a" name="Über Ziel" fill="#a3e635" />
+              <Bar dataKey="luecke" stackId="a" name="Fehlt zum Ziel" fill="#e5e7eb" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
       {editingZiel && (() => {
         const atMonat = data.arbeitstageMonat || 22;
         const syncFromHaProTag = (v: string) => {
