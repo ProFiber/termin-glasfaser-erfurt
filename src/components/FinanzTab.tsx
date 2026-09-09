@@ -17,6 +17,7 @@ type FinRow = {
   zusatz_eur: number | string;
   grabenlaenge: number;
   erledigt_datum: string | null;
+  termin_datum: string | null;
   aufmass_am: string | null;
   gutschrift_nr: string;
   avis_am: string | null;
@@ -633,7 +634,7 @@ export default function FinanzTab() {
       const [{ data: cs }, { data: zList }] = await Promise.all([
         supabase
           .from("call_states")
-          .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
+          .select("bid,status,umsatz_eur,zusatz_eur,grabenlaenge,erledigt_datum,termin_datum,aufmass_am,gutschrift_nr,avis_am,verguetet_am,team"),
         supabase.from("umsatz_ziele").select("*"),
       ]);
       setRows((cs as FinRow[]) || []);
@@ -819,6 +820,35 @@ export default function FinanzTab() {
     const auftragsvolumen = sumUmsatz(fertig);
     const offeneBetraege = auftragsvolumen - sumUmsatz(verguetet);
 
+    // ---- Prognose: bereits terminierte HA im laufenden Monat ----
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const monthEndIso = toIso(monthEnd);
+    const terminierteMonat = rows.filter(
+      (r) =>
+        r.status === "termin" &&
+        r.termin_datum &&
+        r.termin_datum >= todayIso &&
+        r.termin_datum <= monthEndIso
+    );
+    const terminierteEur = terminierteMonat.length * haPreis;
+    const prognoseEur = umsatzMonat + terminierteEur;
+    const prognosePct = zielMonat > 0 ? (prognoseEur / zielMonat) * 100 : 0;
+    const luecheEur = Math.max(0, zielMonat - prognoseEur);
+    const luecheHa = haPreis > 0 ? luecheEur / haPreis : 0;
+    const zielErreicht = prognoseEur >= zielMonat;
+
+    // Balken-Daten (gestapelt): Ist + Terminiert + Lücke = Ziel
+    const prognoseChart = [
+      {
+        name: "Monat",
+        ist: Math.round(umsatzMonat),
+        terminiert: Math.round(Math.min(terminierteEur, Math.max(0, zielMonat - umsatzMonat))),
+        ueber: Math.round(Math.max(0, prognoseEur - zielMonat)),
+        luecke: Math.round(luecheEur),
+      },
+    ];
+
+
     return {
       umsatzHeute, umsatzWoche, umsatzMonat,
       meterHeute: sumMeter(heute), meterWoche: sumMeter(woche), meterMonat: sumMeter(monat),
@@ -839,6 +869,8 @@ export default function FinanzTab() {
       arbeitstageMonat, arbeitstagePassed, satBuffer, samstageRest,
       arbeitstageRest, benoetigtProTagEur, benoetigtProTagHa,
       samstagSzenarien,
+      terminierteCount: terminierteMonat.length, terminierteEur,
+      prognoseEur, prognosePct, luecheEur, luecheHa, zielErreicht, prognoseChart,
       pipeline: {
         auftragsvolumen,
         verguetet: sumUmsatz(verguetet),
@@ -1014,6 +1046,44 @@ export default function FinanzTab() {
           </div>
         )}
       </div>
+
+      {/* Prognose mit terminierten Hausanschlüssen */}
+      <Card title="Prognose mit Terminen">
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          background: data.zielErreicht ? "#dcfce7" : "#fef3c7",
+          color: data.zielErreicht ? "#166534" : "#78350f",
+          borderRadius: 10, padding: "10px 12px", fontSize: 13, fontWeight: 700, marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 18 }}>{data.zielErreicht ? "✅" : "⚠️"}</span>
+          <span>
+            {data.zielErreicht
+              ? `Ziel geschafft: mit den ${data.terminierteCount} terminierten HA kommen wir auf ${data.prognosePct.toFixed(0)} % vom Monatsziel`
+              : `Ziel noch nicht erreicht: mit den ${data.terminierteCount} terminierten HA kommen wir auf ${data.prognosePct.toFixed(0)} % – es fehlen ${Math.ceil(data.luecheHa)} HA (${EUR(data.luecheEur)})`}
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <MiniStat label="Erledigt" value={EUR(data.umsatzMonat)} sub={`${data.countMonat} HA`} color="#22c55e" />
+          <MiniStat label="Terminiert" value={EUR(data.terminierteEur)} sub={`${data.terminierteCount} HA`} color="#3b82f6" />
+          <MiniStat label="Prognose" value={EUR(data.prognoseEur)} sub={`Ziel ${EUR(data.zielMonat)}`} color={data.zielErreicht ? "#22c55e" : "#f59e0b"} />
+        </div>
+
+        <div style={{ height: 110 }}>
+          <ResponsiveContainer>
+            <BarChart data={data.prognoseChart} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }} barSize={38}>
+              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <YAxis type="category" dataKey="name" hide />
+              <Tooltip formatter={(v: number) => EUR(v)} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="ist" stackId="a" name="Erledigt" fill="#22c55e" />
+              <Bar dataKey="terminiert" stackId="a" name="Terminiert" fill="#3b82f6" />
+              <Bar dataKey="ueber" stackId="a" name="Über Ziel" fill="#a3e635" />
+              <Bar dataKey="luecke" stackId="a" name="Fehlt zum Ziel" fill="#e5e7eb" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {editingZiel && (() => {
         const atMonat = data.arbeitstageMonat || 22;
@@ -1291,4 +1361,14 @@ function getWeek(d: Date) {
   date.setMonth(0, 1);
   if (date.getDay() !== 4) date.setMonth(0, 1 + ((4 - date.getDay()) + 7) % 7);
   return 1 + Math.ceil((firstThursday - date.valueOf()) / 604800000);
+}
+
+function MiniStat({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+  return (
+    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 10px", borderLeft: `4px solid ${color}` }}>
+      <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{sub}</div>
+    </div>
+  );
 }
