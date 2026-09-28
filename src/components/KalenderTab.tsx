@@ -368,6 +368,32 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
             >
               Heute
             </button>
+            <button
+              type="button"
+              disabled={syncing}
+              onClick={async () => {
+                setSyncing(true);
+                try {
+                  const r = await syncGoogleCalendar();
+                  const lines = [
+                    `In Google eingetragen: ${r.created.length}`,
+                    ...r.created.map((x) => "  • " + x),
+                    `Aus Google übernommen: ${r.imported.length}`,
+                    ...r.imported.map((x) => "  • " + x),
+                  ];
+                  if (r.unmatched.length) lines.push(`Nicht zuordenbar: ${r.unmatched.join(", ")}`);
+                  alert(lines.join("\n"));
+                  if (r.imported.length) window.location.reload();
+                } catch (e) {
+                  alert("Abgleich fehlgeschlagen: " + (e instanceof Error ? e.message : String(e)));
+                } finally {
+                  setSyncing(false);
+                }
+              }}
+              style={{ ...navBtn, background: "#fef3c7", color: "#b45309", marginLeft: 2, fontSize: 10, padding: "3px 8px" }}
+            >
+              {syncing ? "…" : "⇄ Google"}
+            </button>
           </div>
         </div>
       </div>
