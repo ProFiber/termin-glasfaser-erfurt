@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Contact, CallState } from "@/lib/types";
 import GrabenPromptSheet from "./GrabenPromptSheet";
 import { waPhone } from "@/lib/waPhone";
+import { syncGoogleCalendar } from "@/lib/gcal.functions";
 
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -98,6 +99,7 @@ const DAY_MODES_KEY = "kalender:dayModes";
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, patchContact }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
     const v = window.localStorage.getItem(VIEW_MODE_KEY);
@@ -367,6 +369,32 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
               }}
             >
               Heute
+            </button>
+            <button
+              type="button"
+              disabled={syncing}
+              onClick={async () => {
+                setSyncing(true);
+                try {
+                  const r = await syncGoogleCalendar();
+                  const lines = [
+                    `In Google eingetragen: ${r.created.length}`,
+                    ...r.created.map((x) => "  • " + x),
+                    `Aus Google übernommen: ${r.imported.length}`,
+                    ...r.imported.map((x) => "  • " + x),
+                  ];
+                  if (r.unmatched.length) lines.push(`Nicht zuordenbar: ${r.unmatched.join(", ")}`);
+                  alert(lines.join("\n"));
+                  if (r.imported.length) window.location.reload();
+                } catch (e) {
+                  alert("Abgleich fehlgeschlagen: " + (e instanceof Error ? e.message : String(e)));
+                } finally {
+                  setSyncing(false);
+                }
+              }}
+              style={{ ...navBtn, background: "#fef3c7", color: "#b45309", marginLeft: 2, fontSize: 10, padding: "3px 8px" }}
+            >
+              {syncing ? "…" : "⇄ Google"}
             </button>
           </div>
         </div>
