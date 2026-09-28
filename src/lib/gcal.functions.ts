@@ -91,14 +91,43 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
     return null;
   };
   const eventBids = new Set<string>();
+  const eventByBid = new Map<string, GEvent>();
   for (const e of events) {
     const b = eventBid(e);
-    if (b) eventBids.add(b);
+    if (b) {
+      eventBids.add(b);
+      if (!eventByBid.has(b)) eventByBid.set(b, e);
+    }
   }
 
   const created: string[] = [];
   const imported: string[] = [];
+  const updated: string[] = [];
   const unmatched: string[] = [];
+
+  // Verschobene Termine: App gewinnt -> Google anpassen
+  for (const s of states) {
+    if (s.status !== "termin" || !s.termin_datum) continue;
+    const e = eventByBid.get(s.bid);
+    const dt = e?.start?.dateTime;
+    if (!e || !dt) continue;
+    const time = s.termin_zeit || "08:00";
+    if (dt.slice(0, 10) === s.termin_datum && dt.slice(11, 16) === time) continue;
+    const [h, m] = time.split(":").map(Number);
+    const end = `${String(Math.min(h + 2, 23)).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+    const r = await fetch(`${GW}/calendars/${encodeURIComponent(CAL_ID)}/events/${e.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({
+        start: { dateTime: `${s.termin_datum}T${time}:00`, timeZone: "Europe/Berlin" },
+        end: { dateTime: `${s.termin_datum}T${end}:00`, timeZone: "Europe/Berlin" },
+      }),
+    });
+    if (!r.ok) throw new Error(`Google [${r.status}]: ${await r.text()}`);
+    const c = contacts.find((x) => x.bid === s.bid);
+    const addr = c ? `${c.strasse} ${c.hnr}${c.hnr_zusatz ? " " + c.hnr_zusatz : ""}` : s.bid;
+    updated.push(`${addr} → ${s.termin_datum.split("-").reverse().join(".")} ${time}`);
+  }
 
   // App -> Google
   for (const s of states) {
@@ -159,5 +188,5 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
     imported.push(`${c.strasse} ${c.hnr}${c.hnr_zusatz ? " " + c.hnr_zusatz : ""} (${date.split("-").reverse().join(".")} ${time})`);
   }
 
-  return { created, imported, unmatched };
+  return { created, imported, updated, unmatched };
 });
