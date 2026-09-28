@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Contact, CallState } from "@/lib/types";
 import GrabenPromptSheet from "./GrabenPromptSheet";
 import { waPhone } from "@/lib/waPhone";
+import { syncGoogleCalendar } from "@/lib/gcal.functions";
 
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -98,6 +99,7 @@ const DAY_MODES_KEY = "kalender:dayModes";
 
 export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patch, onSwitchToDoku, onShowOnMap, focusDate, onClearFocusDate, patchContact }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<"tageszeit" | "team">(() => {
     if (typeof window === "undefined") return "tageszeit";
     const v = window.localStorage.getItem(VIEW_MODE_KEY);
