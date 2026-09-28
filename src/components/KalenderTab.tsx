@@ -382,6 +382,8 @@ export function KalenderTab({ contacts, states, onOpenContact, onPatchTime, patc
                     ...r.created.map((x) => "  • " + x),
                     `Aus Google übernommen: ${r.imported.length}`,
                     ...r.imported.map((x) => "  • " + x),
+                    `In Google verschoben: ${r.updated.length}`,
+                    ...r.updated.map((x) => "  • " + x),
                   ];
                   if (r.unmatched.length) lines.push(`Nicht zuordenbar: ${r.unmatched.join(", ")}`);
                   alert(lines.join("\n"));
