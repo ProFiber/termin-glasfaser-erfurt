@@ -18,6 +18,7 @@ type GEvent = {
   description?: string;
   location?: string;
   start?: { dateTime?: string; date?: string };
+  updated?: string;
   extendedProperties?: { private?: Record<string, string> };
 };
 
@@ -64,11 +65,11 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
     contacts.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
-  const states: Array<{ bid: string; status: string; termin_datum: string | null; termin_zeit: string; klarfall: boolean; notiz: string; team: string }> = [];
+  const states: Array<{ bid: string; status: string; termin_datum: string | null; termin_zeit: string; klarfall: boolean; notiz: string; team: string; updated_at: string }> = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabaseAdmin
       .from("call_states")
-      .select("bid,status,termin_datum,termin_zeit,klarfall,notiz,team")
+      .select("bid,status,termin_datum,termin_zeit,klarfall,notiz,team,updated_at")
       .range(from, from + 999);
     if (error) throw error;
     states.push(...(data ?? []));
@@ -105,7 +106,7 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
   const updated: string[] = [];
   const unmatched: string[] = [];
 
-  // Verschobene Termine: App gewinnt -> Google anpassen
+  // Verschobene Termine: neuere Änderung gewinnt
   for (const s of states) {
     if (s.status !== "termin" || !s.termin_datum) continue;
     const e = eventByBid.get(s.bid);
@@ -113,6 +114,22 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
     if (!e || !dt) continue;
     const time = s.termin_zeit || "08:00";
     if (dt.slice(0, 10) === s.termin_datum && dt.slice(11, 16) === time) continue;
+    // Zuletzt geänderte Seite gewinnt
+    if (e.updated && new Date(e.updated).getTime() > new Date(s.updated_at).getTime()) {
+      const gd = dt.slice(0, 10);
+      const gt = dt.slice(11, 16);
+      const dow = new Date(`${gd}T12:00:00`).getDay();
+      const slot = `${DAY_CODES[dow]}-${Number(gt.slice(0, 2)) < 12 ? "vm" : "nm"}`;
+      const { error } = await supabaseAdmin
+        .from("call_states")
+        .update({ termin_datum: gd, termin_zeit: gt, termin_slot: slot })
+        .eq("bid", s.bid);
+      if (error) throw error;
+      const c0 = contacts.find((x) => x.bid === s.bid);
+      const a0 = c0 ? `${c0.strasse} ${c0.hnr}${c0.hnr_zusatz ? " " + c0.hnr_zusatz : ""}` : s.bid;
+      imported.push(`${a0} → aus Google verschoben auf ${gd.split("-").reverse().join(".")} ${gt}`);
+      continue;
+    }
     const [h, m] = time.split(":").map(Number);
     const end = `${String(Math.min(h + 2, 23)).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
     const r = await fetch(`${GW}/calendars/${encodeURIComponent(CAL_ID)}/events/${e.id}`, {
