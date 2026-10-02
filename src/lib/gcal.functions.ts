@@ -89,6 +89,11 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
       const c = byAddr.get(norm(loc));
       if (c) return c.bid;
     }
+    // Fallback: Adresse im Titel (z. B. "KLÄRFALL - Waldstr. 2")
+    for (const part of (e.summary ?? "").split(/\s[-–]\s/)) {
+      const c = byAddr.get(norm(part));
+      if (c) return c.bid;
+    }
     return null;
   };
   const eventBids = new Set<string>();
@@ -108,7 +113,7 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" }).handler(asy
 
   // Verschobene Termine: neuere Änderung gewinnt
   for (const s of states) {
-    if (s.status !== "termin" || !s.termin_datum) continue;
+    if ((s.status !== "termin" && s.status !== "erledigt") || !s.termin_datum) continue;
     const e = eventByBid.get(s.bid);
     const dt = e?.start?.dateTime;
     if (!e || !dt) continue;
